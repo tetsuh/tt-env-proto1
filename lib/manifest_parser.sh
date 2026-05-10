@@ -16,6 +16,7 @@
 #   - parse_env_manifest <manifest-file>
 #   - resolve_package <virtual-package-name>
 #   - parse_stack_manifest <manifest-file>
+#   - validate_stack_manifest
 
 if [[ -n "${TT_MANIFEST_PARSER_LOADED:-}" ]]; then
     return 0
@@ -31,6 +32,7 @@ declare -ga TT_MANIFEST_LIST_KEYS=()
 declare -g TT_STACK_RELEASE=""
 declare -g TT_STACK_DESCRIPTION=""
 declare -gA TT_STACK_COMPONENTS=()
+declare -ga TT_REQUIRED_STACK_COMPONENTS=("tt-kmd" "tt-smi" "firmware" "tt-metal")
 
 _manifest_is_key() {
     [[ "$1" =~ ^[A-Z_][A-Z0-9_]*$ ]]
@@ -280,4 +282,19 @@ parse_stack_manifest() {
         _parse_stack_manifest_fallback "$manifest_file"
     fi
 
+    validate_stack_manifest
+}
+
+# parse_stack_manifest calls this before returning; keep it public for tests and callers
+# that build TT_STACK_* values in memory.
+validate_stack_manifest() {
+    local component
+
+    [[ -n "${TT_STACK_RELEASE:-}" ]] || fail "Missing required stack manifest key: release"
+
+    for component in "${TT_REQUIRED_STACK_COMPONENTS[@]}"; do
+        if [[ -z "${TT_STACK_COMPONENTS[$component]:-}" ]]; then
+            fail "Missing required stack manifest key: components.${component}"
+        fi
+    done
 }
