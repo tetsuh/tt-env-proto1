@@ -9,6 +9,7 @@
 #   - fail <message>
 #   - command_exists <command>
 #   - detect_os [os-release-file]
+#   - init_tt_home
 
 # Color definitions
 # Use tput if available and attached to a tty
@@ -43,6 +44,17 @@ fail() {
 
 command_exists() {
     command -v -- "$1" >/dev/null 2>&1
+}
+
+init_tt_home() {
+    if [[ -z "${TT_HOME:-}" ]]; then
+        [[ -z "${HOME:-}" ]] && fail "HOME environment variable is not set."
+        TT_HOME="${HOME}/.tt-env"
+    fi
+    export TT_HOME
+
+    mkdir -p "${TT_HOME}/"{bin,lib,manifests,releases,versions,shims} || \
+        fail "Failed to initialize TT_HOME directory layout at ${TT_HOME}"
 }
 
 detect_os() {

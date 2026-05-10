@@ -55,9 +55,11 @@ main() {
             print_version
             ;;
         --help|-h|help)
+            init_tt_home
             usage
             ;;
         install|use|list|status|update)
+            init_tt_home
             shift || true
             run_placeholder "$command" "$@"
             ;;
