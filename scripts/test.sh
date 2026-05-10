@@ -18,4 +18,5 @@ fi
 
 echo "Running tests..."
 # Use bash to run bats to ensure it works on Windows/MSYS
-bash "$BATS" tests/bats
+# Only run tests in tests/bats/ and skip the vendor directory
+bash "$BATS" tests/bats/*.bats
