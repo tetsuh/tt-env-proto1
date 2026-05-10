@@ -3,6 +3,8 @@
 setup() {
   TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
   VERSION_FILE="${BATS_TEST_DIRNAME}/../../VERSION"
+  export HOME="${BATS_TEST_TMPDIR}/home"
+  export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
 }
 
 @test "tt-env --version prints VERSION contents" {
