@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# tt-env command dispatcher
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TT_ENV_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LIB_DIR="${TT_ENV_ROOT}/lib"
+VERSION_FILE="${TT_ENV_ROOT}/VERSION"
+
+# shellcheck disable=SC1091
+source "${LIB_DIR}/core.sh"
+
+usage() {
+    cat <<'EOF'
+tt-env - Tenstorrent Environment Manager
+
+Usage:
+  tt-env <command> [options]
+
+Commands:
+  install    Install a Tenstorrent stack release
+  use        Switch the active Tenstorrent stack release
+  list       List available and installed stack releases
+  status     Show hardware and environment status
+  update     Sync manifests and metadata
+  help       Show this help message
+
+Options:
+  --help     Show this help message
+  --version  Print tt-env version
+EOF
+}
+
+print_version() {
+    if [[ ! -f "$VERSION_FILE" ]]; then
+        fail "VERSION file not found at ${VERSION_FILE}"
+    fi
+
+    local version
+    version="$(<"$VERSION_FILE")"
+    printf '%s\n' "$version"
+}
+
+run_placeholder() {
+    local command_name="$1"
+    log_info "${command_name} command is not implemented yet."
+}
+
+main() {
+    local command="${1:-help}"
+
+    case "$command" in
+        --version)
+            print_version
+            ;;
+        --help|-h|help)
+            usage
+            ;;
+        install|use|list|status|update)
+            shift || true
+            run_placeholder "$command" "$@"
+            ;;
+        *)
+            log_error "Unknown command: ${command}"
+            usage >&2
+            return 1
+            ;;
+    esac
+}
+
+main "$@"
