@@ -32,6 +32,9 @@ Since **proto1** has no automated CI, contributors must run verification scripts
 
 Requires `shellcheck`.
 ```bash
+# Ubuntu 22.04
+sudo apt-get install shellcheck
+
 bash scripts/lint.sh
 ```
 
@@ -44,7 +47,7 @@ bash scripts/test.sh
 
 ### 3. Manual Verification
 
-Major changes (especially those touching KMD or system-level state) must be verified on real Ubuntu 22.04 hardware. Detailed verification steps are documented in [docs/e2e.md](./docs/e2e.md) (Phase 10).
+Major changes (especially those touching KMD or system-level state) must be verified on real Ubuntu 22.04 hardware. Detailed verification steps are documented in the [End-to-End Verification Guide](./docs/e2e.md) (Phase 10).
 
 ## Contributing
 
