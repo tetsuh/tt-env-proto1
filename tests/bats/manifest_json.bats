@@ -96,7 +96,10 @@ EOF
   "release": "2024.1 beta",
   "description": "[preview] Tenstorrent Stable Stack",
   "components": {
-    "firmware": "[19.2.0 beta]"
+    "tt-kmd": "v2.5.0",
+    "tt-smi": "v3.0.38",
+    "firmware": "[19.2.0 beta]",
+    "tt-metal": "v0.65.0"
   }
 }
 EOF
