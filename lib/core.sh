@@ -24,15 +24,15 @@ else
 fi
 
 log_info() {
-    printf '%b\n' "${TT_COLOR_INFO}[INFO]${TT_COLOR_RESET} $*"
+    printf '%s %s\n' "${TT_COLOR_INFO}[INFO]${TT_COLOR_RESET}" "$*"
 }
 
 log_warn() {
-    printf '%b\n' "${TT_COLOR_WARN}[WARN]${TT_COLOR_RESET} $*" >&2
+    printf '%s %s\n' "${TT_COLOR_WARN}[WARN]${TT_COLOR_RESET}" "$*" >&2
 }
 
 log_error() {
-    printf '%b\n' "${TT_COLOR_ERROR}[ERROR]${TT_COLOR_RESET} $*" >&2
+    printf '%s %s\n' "${TT_COLOR_ERROR}[ERROR]${TT_COLOR_RESET}" "$*" >&2
 }
 
 fail() {
@@ -41,5 +41,5 @@ fail() {
 }
 
 command_exists() {
-    command -v "$1" >/dev/null 2>&1
+    command -v -- "$1" >/dev/null 2>&1
 }
