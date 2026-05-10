@@ -29,4 +29,4 @@ The tool will prioritize:
 ## Contribution
 
 Updates to manifests should be made directly in the `tt-env-manifests-proto1` repository.
-Major schema changes should be coordinated with the core `tt-env` tool development.
+Major schema changes should be coordinated with the core `tt-env` tool development by opening an Issue in the [tt-env-proto1](https://github.com/tetsuh/tt-env-proto1/issues) repository.
