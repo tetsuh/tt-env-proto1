@@ -7,25 +7,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Explicitly list files that might not have .sh extension but are shell scripts
-EXPLICIT_FILES=(
-    "install.sh"
-    "bin/tt-env"
-)
-
-# Find all .sh files in the repo, excluding .git and vendor directories
-# shellcheck disable=SC2207
-SH_FILES=($(find . -name "*.sh" -not -path "./.git/*" -not -path "*/vendor/*"))
-
-ALL_FILES=("${EXPLICIT_FILES[@]}" "${SH_FILES[@]}")
-
-# Filter to only existing files
+# Use find -print0 and read -d '' to handle filenames with spaces and special characters.
+# We look for:
+# 1. Files ending in .sh
+# 2. The tt-env executable (which has no extension)
 LINT_TARGETS=()
-for f in "${ALL_FILES[@]}"; do
-    if [[ -f "$f" ]]; then
-        LINT_TARGETS+=("$f")
-    fi
-done
+while IFS= read -r -d '' file; do
+    LINT_TARGETS+=("$file")
+done < <(find . \( -name "*.sh" -o -name "tt-env" \) \
+    -not -path "./.git/*" \
+    -not -path "*/vendor/*" \
+    -type f -print0)
 
 if [[ ${#LINT_TARGETS[@]} -eq 0 ]]; then
     echo "No shell files found to lint."
