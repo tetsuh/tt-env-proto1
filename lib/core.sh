@@ -8,6 +8,7 @@
 #   - log_error <message>
 #   - fail <message>
 #   - command_exists <command>
+#   - detect_os [os-release-file]
 
 # Color definitions
 # Use tput if available and attached to a tty
@@ -42,4 +43,60 @@ fail() {
 
 command_exists() {
     command -v -- "$1" >/dev/null 2>&1
+}
+
+detect_os() {
+    local os_release_file="${1:-/etc/os-release}"
+    local os_id=""
+    local os_version=""
+    local line
+    local key
+    local value
+
+    if [[ -n "${TT_OVERRIDE_OS_ID:-}" || -n "${TT_OVERRIDE_OS_VERSION:-}" ]]; then
+        if [[ -z "${TT_OVERRIDE_OS_ID:-}" || -z "${TT_OVERRIDE_OS_VERSION:-}" ]]; then
+            fail "Both TT_OVERRIDE_OS_ID and TT_OVERRIDE_OS_VERSION must be set for OS override."
+        fi
+
+        OS_ID="${TT_OVERRIDE_OS_ID}"
+        OS_VERSION="${TT_OVERRIDE_OS_VERSION}"
+        export OS_ID OS_VERSION
+        log_info "Using override OS: ${OS_ID} ${OS_VERSION}"
+        return 0
+    fi
+
+    if [[ ! -f "$os_release_file" ]]; then
+        fail "Cannot detect OS: ${os_release_file} not found."
+    fi
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        case "$line" in
+            ID=*|VERSION_ID=*)
+                key="${line%%=*}"
+                value="${line#*=}"
+                value="${value%$'\r'}"
+                value="${value%\"}"
+                value="${value#\"}"
+                value="${value%\'}"
+                value="${value#\'}"
+
+                case "$key" in
+                    ID)
+                        os_id="$value"
+                        ;;
+                    VERSION_ID)
+                        os_version="$value"
+                        ;;
+                esac
+                ;;
+        esac
+    done <"$os_release_file"
+
+    if [[ -z "$os_id" || -z "$os_version" ]]; then
+        fail "Cannot detect OS: ${os_release_file} is missing ID or VERSION_ID."
+    fi
+
+    OS_ID="$os_id"
+    OS_VERSION="$os_version"
+    export OS_ID OS_VERSION
 }
