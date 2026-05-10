@@ -11,6 +11,10 @@
 # Keys must match [A-Z_][A-Z0-9_]*. Values are literal tokens containing only
 # alnum, underscore, dot, slash, colon, plus, or dash. This parser never sources
 # manifest files.
+#
+# Public symbols:
+#   - parse_env_manifest <manifest-file>
+#   - resolve_package <virtual-package-name>
 
 if [[ -n "${TT_MANIFEST_PARSER_LOADED:-}" ]]; then
     return 0
@@ -146,4 +150,24 @@ parse_env_manifest() {
     if [[ -n "$in_array_key" ]]; then
         fail "Unterminated manifest array: ${in_array_key}"
     fi
+}
+
+resolve_package() {
+    local virtual_name="${1:-}"
+    local lookup_name
+    local key
+
+    [[ -n "$virtual_name" ]] || fail "resolve_package requires a virtual package name."
+
+    lookup_name="${virtual_name^^}"
+    lookup_name="${lookup_name//-/_}"
+    key="VIRT_PKG_${lookup_name}"
+
+    _manifest_is_key "$key" || fail "Invalid virtual package name: ${virtual_name}"
+
+    if [[ -z "${TT_MANIFEST_SCALARS[$key]+x}" || -z "${TT_MANIFEST_SCALARS[$key]}" ]]; then
+        fail "Virtual package is not defined: ${virtual_name} (${key})"
+    fi
+
+    printf '%s\n' "${TT_MANIFEST_SCALARS[$key]}"
 }

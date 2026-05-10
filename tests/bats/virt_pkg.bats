@@ -1,0 +1,46 @@
+#!/usr/bin/env bats
+
+setup() {
+  MANIFEST_PARSER="${BATS_TEST_DIRNAME}/../../lib/manifest_parser.sh"
+  MANIFEST_FILE="${BATS_TEST_TMPDIR}/packages.env"
+  cat >"$MANIFEST_FILE" <<'EOF'
+PKG_MANAGER="apt"
+VIRT_PKG_CMAKE="cmake"
+VIRT_PKG_NINJA="ninja-build"
+VIRT_PKG_ZLIB="zlib1g-dev"
+VIRT_PKG_KMD="tt-kmd-dkms"
+EOF
+}
+
+@test "resolve_package returns native package for virtual package" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    resolve_package kmd
+  ' bash "$MANIFEST_PARSER" "$MANIFEST_FILE"
+
+  [ "$status" -eq 0 ]
+  [ "$output" = "tt-kmd-dkms" ]
+}
+
+@test "resolve_package uppercases package names" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    resolve_package zlib
+  ' bash "$MANIFEST_PARSER" "$MANIFEST_FILE"
+
+  [ "$status" -eq 0 ]
+  [ "$output" = "zlib1g-dev" ]
+}
+
+@test "resolve_package fails clearly for undefined package" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    resolve_package openssl
+  ' bash "$MANIFEST_PARSER" "$MANIFEST_FILE"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Virtual package is not defined: openssl (VIRT_PKG_OPENSSL)"* ]]
+}
