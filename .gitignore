@@ -1,0 +1,23 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+*.swp
+*.bak
+*.tmp
+
+# tt-env runtime artifacts
+shims/
+versions/
+
+# Agent
+.gemini/
+.copilot/
+
+# Local-only planning / session docs (not part of the repo)
+plan.md
+SESSION.md
+HANDOFF.md
+ISSUE_GUIDELINES.md
