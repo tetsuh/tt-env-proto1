@@ -15,6 +15,7 @@
 # Public symbols:
 #   - parse_env_manifest <manifest-file>
 #   - resolve_package <virtual-package-name>
+#   - parse_stack_manifest <manifest-file>
 
 if [[ -n "${TT_MANIFEST_PARSER_LOADED:-}" ]]; then
     return 0
@@ -27,6 +28,9 @@ source "${MANIFEST_PARSER_DIR}/core.sh"
 
 declare -gA TT_MANIFEST_SCALARS=()
 declare -ga TT_MANIFEST_LIST_KEYS=()
+declare -g TT_STACK_RELEASE=""
+declare -g TT_STACK_DESCRIPTION=""
+declare -gA TT_STACK_COMPONENTS=()
 
 _manifest_is_key() {
     [[ "$1" =~ ^[A-Z_][A-Z0-9_]*$ ]]
@@ -64,6 +68,12 @@ _manifest_append_list_value() {
     _manifest_is_key "$key" || fail "Invalid manifest key: ${key}"
     local -n list_ref="$array_name"
     list_ref+=("$value")
+}
+
+_stack_reset_state() {
+    TT_STACK_RELEASE=""
+    TT_STACK_DESCRIPTION=""
+    TT_STACK_COMPONENTS=()
 }
 
 _manifest_parse_list_tokens() {
@@ -170,4 +180,104 @@ resolve_package() {
     fi
 
     printf '%s\n' "${TT_MANIFEST_SCALARS[$key]}"
+}
+
+_parse_stack_manifest_with_jq() {
+    local manifest_file="$1"
+    local component_key
+    local component_value
+
+    jq -e '
+        type == "object" and
+        ((has("release") | not) or (.release | type == "string")) and
+        ((has("description") | not) or (.description | type == "string")) and
+        ((has("components") | not) or
+            (.components | type == "object" and all(.[]; type == "string"))) and
+        ((keys - ["release", "description", "components"]) | length == 0)
+    ' "$manifest_file" >/dev/null || fail "Unsupported stack manifest shape: ${manifest_file}"
+
+    TT_STACK_RELEASE="$(jq -r '.release // ""' "$manifest_file")"
+    TT_STACK_DESCRIPTION="$(jq -r '.description // ""' "$manifest_file")"
+    TT_STACK_RELEASE="${TT_STACK_RELEASE%$'\r'}"
+    TT_STACK_DESCRIPTION="${TT_STACK_DESCRIPTION%$'\r'}"
+
+    while IFS=$'\t' read -r component_key component_value; do
+        component_key="${component_key%$'\r'}"
+        component_value="${component_value%$'\r'}"
+        [[ -n "$component_key" ]] || continue
+        # shellcheck disable=SC2034
+        TT_STACK_COMPONENTS["$component_key"]="$component_value"
+    done < <(jq -r '.components // {} | to_entries[] | [.key, .value] | @tsv' "$manifest_file")
+}
+
+_parse_stack_manifest_fallback() {
+    local manifest_file="$1"
+    local line
+    local line_no=0
+    local saw_open=0
+    local saw_close=0
+    local in_components=0
+    local key
+    local value
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line_no=$((line_no + 1))
+        line="${line%$'\r'}"
+
+        if [[ "$line" =~ ^[[:space:]]*$ ]]; then
+            continue
+        fi
+
+        if [[ "$saw_open" -eq 0 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\{[[:space:]]*$ ]]; then
+                saw_open=1
+                continue
+            fi
+            fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+        fi
+
+        if [[ "$in_components" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                in_components=0
+            elif [[ "$line" =~ ^[[:space:]]*\"([A-Za-z0-9_.:+-]+)\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                key="${BASH_REMATCH[1]}"
+                value="${BASH_REMATCH[2]}"
+                # shellcheck disable=SC2034
+                TT_STACK_COMPONENTS["$key"]="$value"
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
+        fi
+
+        if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*$ ]]; then
+            saw_close=1
+        elif [[ "$line" =~ ^[[:space:]]*\"release\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+            TT_STACK_RELEASE="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ ^[[:space:]]*\"description\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+            TT_STACK_DESCRIPTION="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ ^[[:space:]]*\"components\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+            in_components=1
+        else
+            fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+        fi
+    done <"$manifest_file"
+
+    if [[ "$saw_open" -ne 1 || "$saw_close" -ne 1 || "$in_components" -ne 0 ]]; then
+        fail "Unsupported stack manifest shape: ${manifest_file}"
+    fi
+}
+
+parse_stack_manifest() {
+    local manifest_file="$1"
+
+    [[ -f "$manifest_file" ]] || fail "Stack manifest file not found: ${manifest_file}"
+    _stack_reset_state
+
+    if [[ -z "${TT_MANIFEST_DISABLE_JQ:-}" ]] && command_exists jq; then
+        _parse_stack_manifest_with_jq "$manifest_file"
+    else
+        _parse_stack_manifest_fallback "$manifest_file"
+    fi
+
 }
