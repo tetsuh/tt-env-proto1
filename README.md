@@ -6,11 +6,6 @@ software stack.
 This repository hosts the **proto1** iteration: the first end-to-end working prototype written in
 Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Development.
 
-## Documentation
-
-- [Project Plan](./PLAN.md) (Japanese)
-- [Issue Authoring & Workflow Guidelines](./ISSUE_GUIDELINES.md) (English)
-
 ## Status
 
 🚧 Work in progress. Development is tracked through the GitHub
