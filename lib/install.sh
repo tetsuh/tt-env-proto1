@@ -15,6 +15,8 @@ INSTALL_ROOT="$(cd "${INSTALL_LIB_DIR}/.." && pwd)"
 source "${INSTALL_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/manifest_parser.sh"
+# shellcheck disable=SC1091
+source "${INSTALL_LIB_DIR}/security.sh"
 
 declare -ga TT_INSTALL_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd")
 
@@ -87,6 +89,30 @@ _install_require_apt_tools() {
     fi
 }
 
+_install_require_sha256_tool() {
+    command_exists sha256sum || command_exists shasum
+}
+
+_install_require_download_tools() {
+    local rollback_dir="$1"
+
+    if ! command_exists curl; then
+        _install_rollback_fail "$rollback_dir" "curl is required to download release artifacts."
+    fi
+
+    if ! _install_require_sha256_tool; then
+        _install_rollback_fail "$rollback_dir" "sha256sum or shasum is required to verify downloaded artifacts."
+    fi
+}
+
+_install_rollback_fail() {
+    local rollback_dir="$1"
+    shift
+
+    rm -rf -- "$rollback_dir"
+    fail "$@"
+}
+
 _install_required_repos() {
     if declare -p TT_MANIFEST_LIST_REQUIRED_REPOS >/dev/null 2>&1; then
         local -n manifest_repos=TT_MANIFEST_LIST_REQUIRED_REPOS
@@ -141,8 +167,77 @@ _install_apt_packages() {
     sudo apt-get install -y "${packages[@]}" || fail "Failed to install apt packages."
 }
 
+_install_component_names() {
+    printf '%s\n' "${!TT_STACK_COMPONENTS[@]}" | sort
+}
+
+_install_download_components() {
+    local dry_run="$1"
+    local target_dir="$2"
+    local artifacts_dir="${target_dir}/artifacts"
+    local -a components=()
+    local -a curl_args=()
+    local component
+    local download_url
+    local expected_sha256
+    local actual_sha256
+    local artifact_path
+
+    mapfile -t components < <(_install_component_names)
+
+    if [[ "${#components[@]}" -eq 0 ]]; then
+        fail "Stack manifest does not define downloadable components."
+    fi
+
+    for component in "${components[@]}"; do
+        download_url="${TT_STACK_COMPONENT_DOWNLOAD_URLS[$component]:-}"
+        expected_sha256="${TT_STACK_COMPONENT_SHA256S[$component]:-}"
+
+        if [[ -z "$download_url" || -z "$expected_sha256" ]]; then
+            fail "Stack component ${component} requires download_url and sha256 when USE_PPA=false."
+        fi
+
+        if [[ "$dry_run" -eq 1 ]]; then
+            log_info "[dry-run] Would download ${component} from ${download_url}"
+        fi
+    done
+
+    if [[ "$dry_run" -eq 1 ]]; then
+        return 0
+    fi
+
+    _install_require_download_tools "$target_dir"
+    mkdir -p "$artifacts_dir" || fail "Failed to create artifacts directory: ${artifacts_dir}"
+
+    curl_args=(--fail --location --retry 3)
+    if [[ -t 2 ]]; then
+        curl_args+=(--progress-bar)
+    else
+        curl_args+=(--silent --show-error)
+    fi
+
+    for component in "${components[@]}"; do
+        download_url="${TT_STACK_COMPONENT_DOWNLOAD_URLS[$component]:-}"
+        expected_sha256="${TT_STACK_COMPONENT_SHA256S[$component],,}"
+        artifact_path="${artifacts_dir}/${component}"
+
+        log_info "Downloading ${component} from ${download_url}"
+        curl "${curl_args[@]}" --output "$artifact_path" "$download_url" || \
+            _install_rollback_fail "$target_dir" "Failed to download ${component} from ${download_url}"
+
+        actual_sha256="$(calculate_sha256 "$artifact_path")"
+        actual_sha256="${actual_sha256,,}"
+        if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+            _install_rollback_fail \
+                "$target_dir" \
+                "sha256 mismatch for ${component}: expected ${expected_sha256}, got ${actual_sha256}"
+        fi
+    done
+}
+
 _install_system_packages() {
     local dry_run="$1"
+    local target_dir="$2"
     local os_manifest
     local detected_os_id
     local detected_os_version
@@ -171,6 +266,7 @@ _install_system_packages() {
             ;;
         false)
             log_info "PPA install path is disabled by ${os_manifest}."
+            _install_download_components "$dry_run" "$target_dir"
             ;;
         *)
             fail "Invalid USE_PPA value in ${os_manifest}: ${use_ppa}"
@@ -238,7 +334,9 @@ install_release() {
     local manifest_file
     local versions_dir="${TT_HOME}/versions"
     local version_dir="${versions_dir}/${release}"
+    local partial_dir="${versions_dir}/.${release}.partial"
     local installed_marker="${version_dir}/.tt-env-installed"
+    local partial_installed_marker="${partial_dir}/.tt-env-installed"
 
     manifest_file="$(_install_stack_manifest_path "$release")"
     parse_stack_manifest "$manifest_file"
@@ -257,7 +355,7 @@ install_release() {
     fi
 
     if [[ "$dry_run" -eq 1 ]]; then
-        _install_system_packages "$dry_run"
+        _install_system_packages "$dry_run" "$version_dir"
         if [[ -e "$version_dir" && "$force" -eq 1 ]]; then
             log_info "[dry-run] Would remove existing version directory: ${version_dir}"
         fi
@@ -267,15 +365,25 @@ install_release() {
 
     mkdir -p "$versions_dir" || fail "Failed to create versions directory: ${versions_dir}"
 
-    _install_system_packages "$dry_run"
+    if [[ -e "$partial_dir" ]]; then
+        _install_remove_version_dir "$versions_dir" "$partial_dir"
+    fi
+
+    mkdir -p "$partial_dir" || fail "Failed to create partial version directory: ${partial_dir}"
+
+    _install_system_packages "$dry_run" "$partial_dir"
+
+    printf 'release=%s\n' "$release" >"$partial_installed_marker" || \
+        _install_rollback_fail "$partial_dir" "Failed to write installed marker: ${partial_installed_marker}"
 
     if [[ -e "$version_dir" && "$force" -eq 1 ]]; then
         _install_remove_version_dir "$versions_dir" "$version_dir"
     fi
 
-    mkdir -p "$version_dir" || fail "Failed to create version directory: ${version_dir}"
-    printf 'release=%s\n' "$release" >"$installed_marker" || \
-        fail "Failed to write installed marker: ${installed_marker}"
+    mv -- "$partial_dir" "$version_dir" || \
+        _install_rollback_fail "$partial_dir" "Failed to finalize version directory: ${version_dir}"
+
+    [[ -f "$installed_marker" ]] || fail "Installed marker missing after finalizing ${version_dir}"
 
     log_info "Installed release ${release} at ${version_dir}."
 }
