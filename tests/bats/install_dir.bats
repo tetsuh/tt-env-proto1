@@ -1,86 +1,13 @@
 #!/usr/bin/env bats
 
 setup() {
-  TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
-  export HOME="${BATS_TEST_TMPDIR}/home"
-  export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
-  export TT_OVERRIDE_OS_ID="ubuntu"
-  export TT_OVERRIDE_OS_VERSION="22.04"
-
-  mkdir -p "${TT_HOME}/manifests" "${BATS_TEST_TMPDIR}/bin"
-  cat >"${BATS_TEST_TMPDIR}/bin/curl" <<'EOF'
-#!/usr/bin/env bash
-output=""
-url=""
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --output)
-      output="$2"
-      shift 2
-      ;;
-    --*)
-      shift
-      ;;
-    *)
-      url="$1"
-      shift
-      ;;
-  esac
-done
-cp "${url#file://}" "$output"
-EOF
-  chmod +x "${BATS_TEST_TMPDIR}/bin/curl"
-  export PATH="${BATS_TEST_TMPDIR}/bin:${PATH}"
-
-  cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
-PKG_MANAGER="apt"
-USE_PPA="false"
-REQUIRED_REPOS=()
-VIRT_PKG_CMAKE="cmake"
-VIRT_PKG_NINJA="ninja-build"
-VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
-WORKAROUNDS=()
-EOF
-
-  mkdir -p "${TT_HOME}/releases" "${BATS_TEST_TMPDIR}/assets"
-  for component in tt-kmd tt-smi firmware tt-metal; do
-    printf 'asset:%s\n' "$component" >"${BATS_TEST_TMPDIR}/assets/${component}"
-  done
-
-  tt_kmd_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-kmd")"
-  tt_smi_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-smi")"
-  firmware_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/firmware")"
-  tt_metal_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-metal")"
-
-  cat >"${TT_HOME}/releases/2024.1.json" <<EOF
-{
-  "release": "2024.1",
-  "description": "Test release",
-  "components": {
-    "tt-kmd": {
-      "version": "v2.5.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-kmd",
-      "sha256": "${tt_kmd_sha%% *}"
-    },
-    "tt-smi": {
-      "version": "v3.0.38",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-smi",
-      "sha256": "${tt_smi_sha%% *}"
-    },
-    "firmware": {
-      "version": "19.2.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/firmware",
-      "sha256": "${firmware_sha%% *}"
-    },
-    "tt-metal": {
-      "version": "v0.65.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-metal",
-      "sha256": "${tt_metal_sha%% *}"
-    }
-  }
-}
-EOF
+  source "${BATS_TEST_DIRNAME}/test_helpers.bash"
+  install_test_setup_common
+  write_install_os_manifest "false"
+  write_download_assets "asset"
+  fake_bin="$(make_fake_curl)"
+  export PATH="${fake_bin}:${PATH}"
+  write_download_release_manifest
 }
 
 @test "tt-env install creates a per-release version directory" {

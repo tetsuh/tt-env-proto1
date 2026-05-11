@@ -1,53 +1,9 @@
 #!/usr/bin/env bats
 
 setup() {
-  TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
-  export HOME="${BATS_TEST_TMPDIR}/home"
-  export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
-  export TT_OVERRIDE_OS_ID="ubuntu"
-  export TT_OVERRIDE_OS_VERSION="22.04"
-  export TT_APT_LOG="${BATS_TEST_TMPDIR}/apt.log"
-
-  mkdir -p "${TT_HOME}/manifests"
-  cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
-PKG_MANAGER="apt"
-USE_PPA="true"
-REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
-)
-VIRT_PKG_CMAKE="cmake"
-VIRT_PKG_NINJA="ninja-build"
-VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
-WORKAROUNDS=()
-EOF
-}
-
-make_fake_sudo() {
-  fake_bin="${BATS_TEST_TMPDIR}/fake-bin"
-  mkdir -p "$fake_bin"
-  cat >"${fake_bin}/sudo" <<'EOF'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >>"$TT_APT_LOG"
-EOF
-  chmod +x "${fake_bin}/sudo"
-  touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
-  chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
-  printf '%s\n' "$fake_bin"
-}
-
-make_command_absent_env() {
-  command_name="$1"
-  bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"
-  cat >"$bash_env" <<EOF
-command() {
-  if [[ "\$1" == "-v" && "\$2" == "--" && "\$3" == "${command_name}" ]]; then
-    return 1
-  fi
-  builtin command "\$@"
-}
-EOF
-  printf '%s\n' "$bash_env"
+  source "${BATS_TEST_DIRNAME}/test_helpers.bash"
+  install_test_setup_common
+  write_install_os_manifest "true"
 }
 
 @test "tt-env install adds required repos before apt install" {
