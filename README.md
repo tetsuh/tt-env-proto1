@@ -24,6 +24,11 @@ Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Developm
 - **Secure Boot**: Not supported in proto1 (the tool aborts when Secure Boot is enabled)
 - **CI**: Not configured for proto1 — verification is manual on real Ubuntu 22.04 hardware
 
+## Install quickstart
+
+See [docs/install.md](./docs/install.md) for `tt-env install <release>` usage,
+prerequisites, sudo behavior, fallback downloads, and troubleshooting.
+
 ## Verification Flow
 
 Since **proto1** has no automated CI, contributors must run verification scripts locally before opening a Pull Request.
