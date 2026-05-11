@@ -31,17 +31,20 @@ make_fake_sudo() {
 printf '%s\n' "$*" >>"$TT_APT_LOG"
 EOF
   chmod +x "${fake_bin}/sudo"
+  touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
+  chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"
 }
 
-make_sudo_absent_env() {
-  bash_env="${BATS_TEST_TMPDIR}/sudo-absent.bash"
-  cat >"$bash_env" <<'EOF'
+make_command_absent_env() {
+  command_name="$1"
+  bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"
+  cat >"$bash_env" <<EOF
 command() {
-  if [[ "$1" == "-v" && "$2" == "--" && "$3" == "sudo" ]]; then
+  if [[ "\$1" == "-v" && "\$2" == "--" && "\$3" == "${command_name}" ]]; then
     return 1
   fi
-  builtin command "$@"
+  builtin command "\$@"
 }
 EOF
   printf '%s\n' "$bash_env"
@@ -61,7 +64,7 @@ EOF
 }
 
 @test "tt-env install fails clearly when sudo is missing" {
-  bash_env="$(make_sudo_absent_env)"
+  bash_env="$(make_command_absent_env sudo)"
 
   run env BASH_ENV="$bash_env" "$TT_ENV" install 2024.1
   [ "$status" -eq 1 ]
@@ -69,8 +72,18 @@ EOF
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
+@test "tt-env install fails clearly when add-apt-repository is missing" {
+  fake_bin="$(make_fake_sudo)"
+  bash_env="$(make_command_absent_env add-apt-repository)"
+
+  run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"add-apt-repository is required to add repositories"* ]]
+  [ ! -e "${TT_HOME}/versions/2024.1" ]
+}
+
 @test "tt-env install --dry-run reports apt actions without sudo" {
-  bash_env="$(make_sudo_absent_env)"
+  bash_env="$(make_command_absent_env sudo)"
 
   run env BASH_ENV="$bash_env" "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]

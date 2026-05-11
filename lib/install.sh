@@ -75,6 +75,18 @@ _install_require_sudo() {
     fi
 }
 
+_install_require_apt_tools() {
+    local repo_count="$1"
+
+    if ! command_exists apt-get; then
+        fail "apt-get is required to install apt packages."
+    fi
+
+    if [[ "$repo_count" -gt 0 ]] && ! command_exists add-apt-repository; then
+        fail "add-apt-repository is required to add repositories. Install software-properties-common."
+    fi
+}
+
 _install_required_repos() {
     if declare -p TT_MANIFEST_LIST_REQUIRED_REPOS >/dev/null 2>&1; then
         local -n manifest_repos=TT_MANIFEST_LIST_REQUIRED_REPOS
@@ -115,17 +127,18 @@ _install_apt_packages() {
     fi
 
     _install_require_sudo
+    _install_require_apt_tools "${#repos[@]}"
 
     for repo in "${repos[@]}"; do
         log_info "Adding apt repository: ${repo}"
-        sudo add-apt-repository -y "$repo"
+        sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"
     done
 
     log_info "Updating apt package metadata."
-    sudo apt-get update
+    sudo apt-get update || fail "Failed to update apt package metadata."
 
     log_info "Installing apt packages: ${packages[*]}"
-    sudo apt-get install -y "${packages[@]}"
+    sudo apt-get install -y "${packages[@]}" || fail "Failed to install apt packages."
 }
 
 _install_system_packages() {
