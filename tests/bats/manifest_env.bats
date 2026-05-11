@@ -11,6 +11,7 @@ write_valid_manifest() {
 
 # Native Package Manager
 PKG_MANAGER="apt"
+USE_PPA="true"
 
 # Required Repositories (e.g., PPA)
 REQUIRED_REPOS=(
@@ -36,6 +37,7 @@ EOF
     source "$1"
     parse_env_manifest "$2"
     printf "%s\n" "${TT_MANIFEST_SCALARS[PKG_MANAGER]}"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[USE_PPA]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
     printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
     printf "%s\n" "${#TT_MANIFEST_LIST_WORKAROUNDS[@]}"
@@ -43,9 +45,10 @@ EOF
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "tt-kmd-dkms" ]
-  [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
-  [ "${lines[3]}" = "0" ]
+  [ "${lines[1]}" = "true" ]
+  [ "${lines[2]}" = "tt-kmd-dkms" ]
+  [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[4]}" = "0" ]
 }
 
 @test "parse_env_manifest rejects command substitution" {
