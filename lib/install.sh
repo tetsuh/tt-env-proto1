@@ -113,6 +113,15 @@ _install_rollback_fail() {
     fail "$@"
 }
 
+_install_enable_partial_cleanup() {
+    TT_INSTALL_CLEANUP_PARTIAL="$1"
+    trap 'if [[ -n "${TT_INSTALL_CLEANUP_PARTIAL:-}" ]]; then rm -rf -- "$TT_INSTALL_CLEANUP_PARTIAL"; fi' EXIT
+}
+
+_install_disable_partial_cleanup() {
+    unset TT_INSTALL_CLEANUP_PARTIAL
+}
+
 _install_required_repos() {
     if declare -p TT_MANIFEST_LIST_REQUIRED_REPOS >/dev/null 2>&1; then
         local -n manifest_repos=TT_MANIFEST_LIST_REQUIRED_REPOS
@@ -370,6 +379,7 @@ install_release() {
     fi
 
     mkdir -p "$partial_dir" || fail "Failed to create partial version directory: ${partial_dir}"
+    _install_enable_partial_cleanup "$partial_dir"
 
     _install_system_packages "$dry_run" "$partial_dir"
 
@@ -384,6 +394,7 @@ install_release() {
         _install_rollback_fail "$partial_dir" "Failed to finalize version directory: ${version_dir}"
 
     [[ -f "$installed_marker" ]] || fail "Installed marker missing after finalizing ${version_dir}"
+    _install_disable_partial_cleanup
 
     log_info "Installed release ${release} at ${version_dir}."
 }
