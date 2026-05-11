@@ -4,6 +4,20 @@ setup() {
   TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
   export HOME="${BATS_TEST_TMPDIR}/home"
   export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
+  export TT_OVERRIDE_OS_ID="ubuntu"
+  export TT_OVERRIDE_OS_VERSION="22.04"
+
+  mkdir -p "${TT_HOME}/manifests"
+  cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
+PKG_MANAGER="apt"
+USE_PPA="false"
+REQUIRED_REPOS=()
+VIRT_PKG_CMAKE="cmake"
+VIRT_PKG_NINJA="ninja-build"
+VIRT_PKG_ZLIB="zlib1g-dev"
+VIRT_PKG_KMD="tt-kmd-dkms"
+WORKAROUNDS=()
+EOF
 }
 
 @test "tt-env install creates a per-release version directory" {
