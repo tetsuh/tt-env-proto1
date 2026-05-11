@@ -80,7 +80,7 @@ new install has completed successfully.
 
 | Symptom | Fix |
 | --- | --- |
-| `sudo is required to install apt packages` | Install or enable `sudo`, or use a manifest with `USE_PPA="false"` and download metadata. |
+| `sudo is required to install apt packages` | Install or enable `sudo`, or use a manifest with `USE_PPA="false"` and component download URLs. |
 | `add-apt-repository is required to add repositories` | Install `software-properties-common`. |
 | `curl is required to download release artifacts` | Install `curl` before using the fallback path. |
 | `sha256 mismatch` | Check the stack manifest `sha256` values and artifact URLs; the partial install is rolled back. |
