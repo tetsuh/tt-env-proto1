@@ -1,106 +1,13 @@
 #!/usr/bin/env bats
 
 setup() {
-  TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
-  export HOME="${BATS_TEST_TMPDIR}/home"
-  export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
-  export TT_OVERRIDE_OS_ID="ubuntu"
-  export TT_OVERRIDE_OS_VERSION="22.04"
-
-  mkdir -p "${TT_HOME}/manifests" "${TT_HOME}/releases" "${BATS_TEST_TMPDIR}/assets" "${BATS_TEST_TMPDIR}/bin"
-  cat >"${BATS_TEST_TMPDIR}/bin/curl" <<'EOF'
-#!/usr/bin/env bash
-output=""
-url=""
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --output)
-      output="$2"
-      shift 2
-      ;;
-    --*)
-      shift
-      ;;
-    *)
-      url="$1"
-      shift
-      ;;
-  esac
-done
-cp "${url#file://}" "$output"
-EOF
-  chmod +x "${BATS_TEST_TMPDIR}/bin/curl"
-  export PATH="${BATS_TEST_TMPDIR}/bin:${PATH}"
-
-  cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
-PKG_MANAGER="apt"
-USE_PPA="false"
-REQUIRED_REPOS=()
-VIRT_PKG_CMAKE="cmake"
-VIRT_PKG_NINJA="ninja-build"
-VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
-WORKAROUNDS=()
-EOF
-
-  for component in tt-kmd tt-smi firmware tt-metal; do
-    printf 'downloaded:%s\n' "$component" >"${BATS_TEST_TMPDIR}/assets/${component}"
-  done
-
+  source "${BATS_TEST_DIRNAME}/test_helpers.bash"
+  install_test_setup_common
+  write_install_os_manifest "false"
+  write_download_assets "downloaded"
+  fake_bin="$(make_fake_curl)"
+  export PATH="${fake_bin}:${PATH}"
   write_download_release_manifest
-}
-
-sha_for_asset() {
-  local output
-  output="$(sha256sum "${BATS_TEST_TMPDIR}/assets/$1")"
-  printf '%s\n' "${output%% *}"
-}
-
-write_download_release_manifest() {
-  local firmware_sha="${1:-$(sha_for_asset firmware)}"
-
-  cat >"${TT_HOME}/releases/2024.1.json" <<EOF
-{
-  "release": "2024.1",
-  "description": "Download test release",
-  "components": {
-    "tt-kmd": {
-      "version": "v2.5.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-kmd",
-      "sha256": "$(sha_for_asset tt-kmd)"
-    },
-    "tt-smi": {
-      "version": "v3.0.38",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-smi",
-      "sha256": "$(sha_for_asset tt-smi)"
-    },
-    "firmware": {
-      "version": "19.2.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/firmware",
-      "sha256": "${firmware_sha}"
-    },
-    "tt-metal": {
-      "version": "v0.65.0",
-      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-metal",
-      "sha256": "$(sha_for_asset tt-metal)"
-    }
-  }
-}
-EOF
-}
-
-make_command_absent_env() {
-  command_name="$1"
-  bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"
-  cat >"$bash_env" <<EOF
-command() {
-  if [[ "\$1" == "-v" && "\$2" == "--" && "\$3" == "${command_name}" ]]; then
-    return 1
-  fi
-  builtin command "\$@"
-}
-EOF
-  printf '%s\n' "$bash_env"
 }
 
 @test "tt-env install downloads release artifacts when PPA is disabled" {
