@@ -115,13 +115,11 @@ _install_rollback_fail() {
 
 _install_enable_partial_cleanup() {
     TT_INSTALL_CLEANUP_PARTIAL="$1"
-    export TT_INSTALL_CLEANUP_PARTIAL
     trap 'if [[ -n "${TT_INSTALL_CLEANUP_PARTIAL:-}" ]]; then rm -rf -- "$TT_INSTALL_CLEANUP_PARTIAL"; fi' EXIT
 }
 
 _install_disable_partial_cleanup() {
     unset TT_INSTALL_CLEANUP_PARTIAL
-    trap - EXIT
 }
 
 _install_required_repos() {
