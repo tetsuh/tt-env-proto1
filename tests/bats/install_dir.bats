@@ -7,7 +7,31 @@ setup() {
   export TT_OVERRIDE_OS_ID="ubuntu"
   export TT_OVERRIDE_OS_VERSION="22.04"
 
-  mkdir -p "${TT_HOME}/manifests"
+  mkdir -p "${TT_HOME}/manifests" "${BATS_TEST_TMPDIR}/bin"
+  cat >"${BATS_TEST_TMPDIR}/bin/curl" <<'EOF'
+#!/usr/bin/env bash
+output=""
+url=""
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --output)
+      output="$2"
+      shift 2
+      ;;
+    --*)
+      shift
+      ;;
+    *)
+      url="$1"
+      shift
+      ;;
+  esac
+done
+cp "${url#file://}" "$output"
+EOF
+  chmod +x "${BATS_TEST_TMPDIR}/bin/curl"
+  export PATH="${BATS_TEST_TMPDIR}/bin:${PATH}"
+
   cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
 PKG_MANAGER="apt"
 USE_PPA="false"
@@ -17,6 +41,45 @@ VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
 VIRT_PKG_KMD="tt-kmd-dkms"
 WORKAROUNDS=()
+EOF
+
+  mkdir -p "${TT_HOME}/releases" "${BATS_TEST_TMPDIR}/assets"
+  for component in tt-kmd tt-smi firmware tt-metal; do
+    printf 'asset:%s\n' "$component" >"${BATS_TEST_TMPDIR}/assets/${component}"
+  done
+
+  tt_kmd_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-kmd")"
+  tt_smi_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-smi")"
+  firmware_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/firmware")"
+  tt_metal_sha="$(sha256sum "${BATS_TEST_TMPDIR}/assets/tt-metal")"
+
+  cat >"${TT_HOME}/releases/2024.1.json" <<EOF
+{
+  "release": "2024.1",
+  "description": "Test release",
+  "components": {
+    "tt-kmd": {
+      "version": "v2.5.0",
+      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-kmd",
+      "sha256": "${tt_kmd_sha%% *}"
+    },
+    "tt-smi": {
+      "version": "v3.0.38",
+      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-smi",
+      "sha256": "${tt_smi_sha%% *}"
+    },
+    "firmware": {
+      "version": "19.2.0",
+      "download_url": "file://${BATS_TEST_TMPDIR}/assets/firmware",
+      "sha256": "${firmware_sha%% *}"
+    },
+    "tt-metal": {
+      "version": "v0.65.0",
+      "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-metal",
+      "sha256": "${tt_metal_sha%% *}"
+    }
+  }
+}
 EOF
 }
 
@@ -47,6 +110,7 @@ EOF
   [ "$status" -eq 0 ]
   [ -d "${TT_HOME}/versions/2024.1" ]
   [ -f "${TT_HOME}/versions/2024.1/.tt-env-installed" ]
+  [ ! -d "${TT_HOME}/versions/2024.1/.2024.1.partial" ]
   [ ! -e "${TT_HOME}/versions/2024.1/sentinel" ]
   [[ "$output" == *"Removing existing version directory"* ]]
 }
