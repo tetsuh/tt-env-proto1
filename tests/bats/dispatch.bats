@@ -36,7 +36,7 @@ setup() {
 }
 
 @test "tt-env subcommand stubs exit successfully" {
-  for command in list status update; do
+  for command in list update; do
     run "$TT_ENV" "$command"
     [ "$status" -eq 0 ]
     [[ "$output" == *"$command command is not implemented yet."* ]]

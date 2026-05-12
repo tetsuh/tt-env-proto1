@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Status helpers for tt-env.
+#
+# Public symbols:
+#   - status_show
+
+if [[ -n "${TT_STATUS_LOADED:-}" ]]; then
+    return 0
+fi
+TT_STATUS_LOADED=1
+
+STATUS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${STATUS_LIB_DIR}/core.sh"
+
+_status_usage() {
+    cat <<'EOF'
+Usage:
+  tt-env status
+EOF
+}
+
+_status_detect_hardware() {
+    local vendor_id="${TT_STATUS_TT_VENDOR_ID:-1e52}"
+    local line
+
+    if ! command_exists lspci; then
+        fail "lspci is required to detect Tenstorrent hardware."
+    fi
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ \[${vendor_id}: ]]; then
+            printf '%s\n' "$line"
+        fi
+    done < <(lspci -Dnn)
+}
+
+status_show() {
+    local arg
+    local -a devices=()
+    local device
+
+    while [[ "$#" -gt 0 ]]; do
+        arg="$1"
+        case "$arg" in
+            --help|-h)
+                _status_usage
+                return 0
+                ;;
+            *)
+                fail "Unknown status option: ${arg}"
+                ;;
+        esac
+        shift
+    done
+
+    mapfile -t devices < <(_status_detect_hardware)
+
+    printf 'Status\n'
+    printf 'Tenstorrent hardware: %d device(s)\n' "${#devices[@]}"
+
+    for device in "${devices[@]}"; do
+        printf '  %s\n' "$device"
+    done
+}
