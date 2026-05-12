@@ -30,6 +30,26 @@ setup() {
   [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]
 }
 
+@test "tt-env install aborts when a GPG signature is missing" {
+  rm -f "${BATS_TEST_TMPDIR}/assets/firmware.asc"
+
+  run "$TT_ENV" install 2024.1
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Missing GPG signature for firmware"* ]]
+  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]
+}
+
+@test "tt-env install aborts when a GPG signature is bad" {
+  export TT_FAKE_GPG_VERIFY_EXIT=1
+
+  run "$TT_ENV" install 2024.1
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"GPG signature verification failed"* ]]
+  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]
+}
+
 @test "tt-env install reports missing download metadata for string components" {
   rm -f "${TT_HOME}/releases/2024.1.json"
 
@@ -43,6 +63,7 @@ setup() {
   run "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would download tt-kmd from file://${BATS_TEST_TMPDIR}/assets/tt-kmd"* ]]
+  [[ "$output" == *"[dry-run] Would download tt-kmd signature from file://${BATS_TEST_TMPDIR}/assets/tt-kmd.asc"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
