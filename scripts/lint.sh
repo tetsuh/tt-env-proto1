@@ -18,7 +18,7 @@ check_manifest_parser_no_source() {
 
     violations="$(awk '
         /^[[:space:]]*(#|$)/ { next }
-        /(^|[;&|[:space:]])(source|\.)([[:space:]]|$)/ {
+        /(^|[;&|[:space:](){!])(source|\.)([[:space:]]|$)/ {
             print FILENAME ":" FNR ":" $0
         }
     ' "$manifest_parser")"

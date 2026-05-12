@@ -33,3 +33,29 @@ setup() {
   [[ "$output" == *"must not invoke source or ."* ]]
   [[ "$output" == *". ./evil.sh"* ]]
 }
+
+@test "lint rejects source after shell grouping separators" {
+  manifest_parser="${BATS_TEST_TMPDIR}/manifest_parser.sh"
+  cp "${REPO_DIR}/lib/manifest_parser.sh" "$manifest_parser"
+  printf '\n(source ./evil.sh)\n{ source ./evil.sh; }\n! source ./evil.sh\n' >>"$manifest_parser"
+
+  run env TT_LINT_NO_SOURCE_ONLY=1 TT_LINT_MANIFEST_PARSER_FILE="$manifest_parser" bash "$LINT_SH"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"(source ./evil.sh)"* ]]
+  [[ "$output" == *"{ source ./evil.sh; }"* ]]
+  [[ "$output" == *"! source ./evil.sh"* ]]
+}
+
+@test "lint rejects dot command after shell grouping separators" {
+  manifest_parser="${BATS_TEST_TMPDIR}/manifest_parser.sh"
+  cp "${REPO_DIR}/lib/manifest_parser.sh" "$manifest_parser"
+  printf '\n(. ./evil.sh)\n{ . ./evil.sh; }\n! . ./evil.sh\n' >>"$manifest_parser"
+
+  run env TT_LINT_NO_SOURCE_ONLY=1 TT_LINT_MANIFEST_PARSER_FILE="$manifest_parser" bash "$LINT_SH"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"(. ./evil.sh)"* ]]
+  [[ "$output" == *"{ . ./evil.sh; }"* ]]
+  [[ "$output" == *"! . ./evil.sh"* ]]
+}
