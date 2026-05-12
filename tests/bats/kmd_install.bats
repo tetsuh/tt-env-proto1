@@ -27,7 +27,11 @@ EOF
 printf 'modprobe %s\n' "$*" >>"$TT_KMD_LOG"
 printf '%s\n' "$1" >"$TT_MODPROBE_MARKER"
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/apt-get" "${fake_bin}/modprobe"
+  cat >"${fake_bin}/mokutil" <<'EOF'
+#!/bin/sh
+printf 'SecureBoot disabled\n'
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/apt-get" "${fake_bin}/modprobe" "${fake_bin}/mokutil"
   printf '%s\n' "$fake_bin"
 }
 
@@ -41,7 +45,11 @@ EOF
   cat >"${fake_bin}/modprobe" <<'EOF'
 #!/usr/bin/env bash
 EOF
-  chmod +x "${fake_bin}/apt-get" "${fake_bin}/modprobe"
+  cat >"${fake_bin}/mokutil" <<'EOF'
+#!/bin/sh
+printf 'SecureBoot disabled\n'
+EOF
+  chmod +x "${fake_bin}/apt-get" "${fake_bin}/modprobe" "${fake_bin}/mokutil"
   printf '%s\n' "$fake_bin"
 }
 

@@ -122,6 +122,31 @@ _kmd_module_loaded() {
     lsmod | grep -qw "^${module}"
 }
 
+_kmd_require_secure_boot_disabled() {
+    local efi_dir="${TT_KMD_EFI_DIR:-/sys/firmware/efi}"
+    local state
+
+    if [[ ! -d "$efi_dir" ]]; then
+        return 0
+    fi
+
+    _kmd_require_command mokutil "mokutil is required to verify Secure Boot state on EFI systems before KMD operations."
+
+    state="$(mokutil --sb-state 2>/dev/null)" || \
+        fail "Failed to determine Secure Boot state with mokutil --sb-state."
+
+    case "$state" in
+        *"SecureBoot disabled"*|*"SecureBoot not enabled"*)
+            return 0
+            ;;
+        *"SecureBoot enabled"*)
+            fail "Secure Boot is enabled; tt-env proto1 does not support Secure Boot for KMD operations. Disable Secure Boot before continuing."
+            ;;
+    esac
+
+    fail "Unable to determine Secure Boot state from mokutil output: ${state}"
+}
+
 kmd_preflight() {
     local -a devices=()
     local holders=""
@@ -168,6 +193,7 @@ kmd_install() {
 
     _kmd_require_command apt-get "apt-get is required to install the KMD package."
     _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
+    _kmd_require_secure_boot_disabled
 
     log_info "Installing KMD package: ${package}"
     _kmd_run_privileged apt-get install -y "$package" || fail "Failed to install KMD package: ${package}"
@@ -193,6 +219,7 @@ kmd_swap() {
     _kmd_require_command lsmod "lsmod is required to inspect loaded KMD modules."
     _kmd_require_command rmmod "rmmod is required to unload the Tenstorrent KMD."
     _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
+    _kmd_require_secure_boot_disabled
 
     kmd_preflight || fail "KMD preflight failed."
 

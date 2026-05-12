@@ -46,7 +46,12 @@ if [[ -n "${TT_KMD_FAIL_FIRST_MODPROBE:-}" && "$count" -eq 1 ]]; then
 fi
 printf '%s\n' "$1" >"$TT_KMD_LOADED_MARKER"
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/lsmod" "${fake_bin}/rmmod" "${fake_bin}/modprobe"
+  cat >"${fake_bin}/mokutil" <<'EOF'
+#!/usr/bin/env bash
+printf 'SecureBoot disabled\n'
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/lsmod" "${fake_bin}/rmmod" \
+    "${fake_bin}/modprobe" "${fake_bin}/mokutil"
   printf '%s\n' "$fake_bin"
 }
 
