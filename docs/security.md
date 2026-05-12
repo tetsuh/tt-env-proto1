@@ -14,6 +14,14 @@ The armored public key is stored at
 gpg --homedir "${TT_HOME:-$HOME/.tt-env}/keys" --list-keys
 ```
 
-This is the proto1 project signing key used to anchor later manifest and binary
-verification work. Signature verification logic is implemented in follow-up
-Phase 8 tickets.
+This is the proto1 project signing key used to verify manifest and binary
+artifact signatures.
+
+Downloaded binary artifacts must provide a detached ASCII-armored signature next
+to the artifact URL using the `.asc` suffix. For example, a component downloaded
+from `https://example.invalid/tt-smi` must also provide
+`https://example.invalid/tt-smi.asc`.
+
+Manifest updates verify each downloaded `releases/*.json` and `manifests/*.env`
+file against its sidecar `.asc` file before replacing the local manifest cache.
+Missing or invalid signatures abort before the existing cache is mutated.

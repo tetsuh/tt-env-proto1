@@ -6,6 +6,7 @@
 #   - verify_sha256 <file> <expected-sha256>
 #   - bootstrap_trusted_key [key-home]
 #   - trusted_key_fingerprint
+#   - verify_gpg <file> <signature-file> [key-home]
 
 if [[ -n "${TT_SECURITY_LOADED:-}" ]]; then
     return 0
@@ -102,5 +103,51 @@ bootstrap_trusted_key() {
 
     if ! _trusted_key_primary_fingerprints "$key_home" | grep -Fxq "$TT_TRUSTED_KEY_FINGERPRINT"; then
         fail "Trusted key fingerprint mismatch in ${key_home}; expected ${TT_TRUSTED_KEY_FINGERPRINT}"
+    fi
+}
+
+verify_gpg() {
+    local file="$1"
+    local signature_file="$2"
+    local key_home="${3:-${TT_HOME}/keys}"
+    local status_output
+    local status_summary
+
+    command_exists gpg || fail "gpg is required to verify GPG signatures."
+    [[ -f "$file" ]] || fail "Cannot verify GPG signature; file not found: ${file}"
+    [[ -f "$signature_file" ]] || fail "Missing GPG signature for ${file}: ${signature_file}"
+
+    if ! _trusted_key_primary_fingerprints "$key_home" | grep -Fxq "$TT_TRUSTED_KEY_FINGERPRINT"; then
+        bootstrap_trusted_key "$key_home"
+    fi
+
+    if ! status_output="$(GNUPGHOME="$key_home" gpg --batch --no-tty --status-fd 1 \
+        --homedir "$key_home" --verify "$signature_file" "$file" 2>&1)"; then
+        status_summary="$(printf '%s\n' "$status_output" | awk '$1 == "[GNUPG:]" { print; found = 1 } END { exit found ? 0 : 1 }')" || \
+            status_summary="$status_output"
+        fail "GPG signature verification failed for ${file}: ${status_summary}"
+    fi
+
+    if ! awk -v expected="$TT_TRUSTED_KEY_FINGERPRINT" '
+        $1 == "[GNUPG:]" && ($2 == "BADSIG" || $2 == "ERRSIG" || $2 == "EXPKEYSIG" || $2 == "REVKEYSIG") {
+            bad = 1
+        }
+        $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
+            signer = toupper($3)
+            primary = toupper($12)
+            if (signer == expected || primary == expected) {
+                valid = 1
+            }
+        }
+        END {
+            if (bad) {
+                exit 2
+            }
+            exit valid ? 0 : 1
+        }
+    ' <<<"$status_output"; then
+        status_summary="$(printf '%s\n' "$status_output" | awk '$1 == "[GNUPG:]" { print; found = 1 } END { exit found ? 0 : 1 }')" || \
+            status_summary="$status_output"
+        fail "GPG signature for ${file} was not made by trusted key ${TT_TRUSTED_KEY_FINGERPRINT}: ${status_summary}"
     fi
 }

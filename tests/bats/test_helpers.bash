@@ -62,6 +62,7 @@ write_download_assets() {
   mkdir -p "${BATS_TEST_TMPDIR}/assets"
   for component in tt-kmd tt-smi firmware tt-metal; do
     printf '%s:%s\n' "$prefix" "$component" >"${BATS_TEST_TMPDIR}/assets/${component}"
+    printf 'signature:%s\n' "$component" >"${BATS_TEST_TMPDIR}/assets/${component}.asc"
   done
 }
 
@@ -133,6 +134,26 @@ if [[ -n "${TT_CURL_LOG:-}" ]]; then
 fi
 cp "${url#file://}" "$output"
 EOF
-  chmod +x "${fake_bin}/curl"
+  cat >"${fake_bin}/gpg" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"--with-colons"* && "$*" == *"--fingerprint"* ]]; then
+  printf 'pub:::::::::\n'
+  printf 'fpr:::::::::C55FEB196FB67D83F63FE18CBEF418235C011DF8:\n'
+  exit 0
+fi
+if [[ "$*" == *"--import"* ]]; then
+  exit 0
+fi
+if [[ "$*" == *"--verify"* ]]; then
+  if [[ -n "${TT_FAKE_GPG_VERIFY_EXIT:-}" && "${TT_FAKE_GPG_VERIFY_EXIT}" -ne 0 ]]; then
+    printf '[GNUPG:] BADSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 test\n'
+    exit "$TT_FAKE_GPG_VERIFY_EXIT"
+  fi
+  printf '[GNUPG:] VALIDSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 0 0 0 0 0 0 0 0 C55FEB196FB67D83F63FE18CBEF418235C011DF8\n'
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${fake_bin}/curl" "${fake_bin}/gpg"
   printf '%s\n' "$fake_bin"
 }

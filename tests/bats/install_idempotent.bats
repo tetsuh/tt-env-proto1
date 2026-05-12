@@ -17,12 +17,12 @@ write_download_manifest() {
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
   [ "$status" -eq 0 ]
-  [ "$(wc -l <"$TT_CURL_LOG")" -eq 4 ]
+  [ "$(wc -l <"$TT_CURL_LOG")" -eq 8 ]
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
   [ "$status" -eq 0 ]
   [[ "$output" == *"already installed"* ]]
-  [ "$(wc -l <"$TT_CURL_LOG")" -eq 4 ]
+  [ "$(wc -l <"$TT_CURL_LOG")" -eq 8 ]
 }
 
 @test "tt-env install --force reruns apt path from scratch" {
@@ -54,5 +54,5 @@ write_download_manifest() {
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force 2024.1
   [ "$status" -eq 0 ]
-  [ "$(wc -l <"$TT_CURL_LOG")" -eq 8 ]
+  [ "$(wc -l <"$TT_CURL_LOG")" -eq 16 ]
 }

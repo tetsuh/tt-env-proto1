@@ -30,9 +30,32 @@ write_release_manifest() {
 EOF
 }
 
+write_manifest_signatures() {
+  local dir="$1"
+
+  for manifest_file in "${dir}/releases/"*.json "${dir}/manifests/"*.env; do
+    [ -f "$manifest_file" ] || continue
+    printf 'signature:%s\n' "$(basename "$manifest_file")" >"${manifest_file}.asc"
+  done
+}
+
 make_manifest_archive() {
   local archive_path="${BATS_TEST_TMPDIR}/manifests.tar.gz"
   local source_root="${BATS_TEST_TMPDIR}/archive-source"
+  local repo_root="${source_root}/tt-env-manifests-proto1-main"
+
+  rm -rf "$source_root"
+  mkdir -p "${repo_root}/manifests"
+  write_release_manifest "$repo_root" "2024.2"
+  printf 'PKG_MANAGER="apt"\n' >"${repo_root}/manifests/ubuntu-22.04.env"
+  write_manifest_signatures "$repo_root"
+  tar -czf "$archive_path" -C "$source_root" "tt-env-manifests-proto1-main"
+  printf '%s\n' "$archive_path"
+}
+
+make_manifest_archive_without_signature() {
+  local archive_path="${BATS_TEST_TMPDIR}/unsigned-manifests.tar.gz"
+  local source_root="${BATS_TEST_TMPDIR}/archive-source-unsigned"
   local repo_root="${source_root}/tt-env-manifests-proto1-main"
 
   rm -rf "$source_root"
@@ -113,7 +136,27 @@ if [ "$1" = "auth" ] && [ "$2" = "token" ] && [ -n "${TT_FAKE_GH_TOKEN:-}" ]; th
 fi
 exit 1
 EOF
-  chmod +x "${fake_bin}/curl" "${fake_bin}/gh"
+  cat >"${fake_bin}/gpg" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"--with-colons"* && "$*" == *"--fingerprint"* ]]; then
+  printf 'pub:::::::::\n'
+  printf 'fpr:::::::::C55FEB196FB67D83F63FE18CBEF418235C011DF8:\n'
+  exit 0
+fi
+if [[ "$*" == *"--import"* ]]; then
+  exit 0
+fi
+if [[ "$*" == *"--verify"* ]]; then
+  if [[ -n "${TT_FAKE_GPG_VERIFY_EXIT:-}" && "${TT_FAKE_GPG_VERIFY_EXIT}" -ne 0 ]]; then
+    printf '[GNUPG:] BADSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 test\n'
+    exit "$TT_FAKE_GPG_VERIFY_EXIT"
+  fi
+  printf '[GNUPG:] VALIDSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 0 0 0 0 0 0 0 0 C55FEB196FB67D83F63FE18CBEF418235C011DF8\n'
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${fake_bin}/curl" "${fake_bin}/gh" "${fake_bin}/gpg"
   printf '%s\n' "$fake_bin"
 }
 
@@ -198,6 +241,41 @@ EOF
 
   [ "$status" -ne 0 ]
   [[ "$output" == *"Manifest archive is missing manifests/"* ]]
+  [ "$(cat "${TT_HOME}/releases/old.json")" = "old release" ]
+  [ "$(cat "${TT_HOME}/manifests/old.env")" = "old manifest" ]
+}
+
+@test "tt-env update preserves existing manifests when a signature is missing" {
+  fake_bin="$(make_fake_update_tools)"
+  export TT_FAKE_ARCHIVE
+  TT_FAKE_ARCHIVE="$(make_manifest_archive_without_signature)"
+  export GITHUB_TOKEN="env-token"
+  mkdir -p "${TT_HOME}/releases" "${TT_HOME}/manifests"
+  printf 'old release\n' >"${TT_HOME}/releases/old.json"
+  printf 'old manifest\n' >"${TT_HOME}/manifests/old.env"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Missing GPG signature"* ]]
+  [ "$(cat "${TT_HOME}/releases/old.json")" = "old release" ]
+  [ "$(cat "${TT_HOME}/manifests/old.env")" = "old manifest" ]
+}
+
+@test "tt-env update preserves existing manifests when a signature is bad" {
+  fake_bin="$(make_fake_update_tools)"
+  export TT_FAKE_ARCHIVE
+  TT_FAKE_ARCHIVE="$(make_manifest_archive)"
+  export GITHUB_TOKEN="env-token"
+  export TT_FAKE_GPG_VERIFY_EXIT=1
+  mkdir -p "${TT_HOME}/releases" "${TT_HOME}/manifests"
+  printf 'old release\n' >"${TT_HOME}/releases/old.json"
+  printf 'old manifest\n' >"${TT_HOME}/manifests/old.env"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"GPG signature verification failed"* ]]
   [ "$(cat "${TT_HOME}/releases/old.json")" = "old release" ]
   [ "$(cat "${TT_HOME}/manifests/old.env")" = "old manifest" ]
 }
