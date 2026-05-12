@@ -66,11 +66,10 @@ Add tt-env and its command shims to your PATH:
     export PATH="${TT_SHIM_DIR}:${TT_BIN_DIR}:\$PATH"
 
   fish:
-    fish_add_path "${TT_SHIM_DIR}"
-    fish_add_path "${TT_BIN_DIR}"
+    fish_add_path "${TT_SHIM_DIR}" "${TT_BIN_DIR}"
 
 Verify the installation:
 
   tt-env --version
-  tt-smi --help
+  tt-env install --help
 EOF

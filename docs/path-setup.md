@@ -41,8 +41,7 @@ source ~/.zshrc
 Run these once:
 
 ```fish
-fish_add_path "${HOME}/.tt-env/shims"
-fish_add_path "${HOME}/.tt-env/bin"
+fish_add_path "${HOME}/.tt-env/shims" "${HOME}/.tt-env/bin"
 ```
 
 ## Verify
@@ -51,7 +50,7 @@ After installing tt-env and adding PATH entries, open a new shell and run:
 
 ```bash
 tt-env --version
-tt-smi --help
+tt-env install --help
 ```
 
 `tt-env use <release>` updates `${TT_HOME}/current`, and shims dispatch to
