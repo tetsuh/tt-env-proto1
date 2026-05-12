@@ -119,7 +119,7 @@ _kmd_report_holders() {
 _kmd_module_loaded() {
     local module="$1"
 
-    lsmod | grep -Eq "^${module}[[:space:]]"
+    lsmod | grep -qw "^${module}"
 }
 
 kmd_preflight() {
