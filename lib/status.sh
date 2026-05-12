@@ -68,18 +68,21 @@ _status_kmd_version() {
 
 _status_manifest_freshness() {
     local marker="${TT_STATUS_LAST_UPDATE_FILE:-${TT_HOME}/manifests/last_update}"
-    local updated_epoch
+    local updated_epoch=""
     local now_epoch="${TT_STATUS_NOW_EPOCH:-}"
     local delta
     local minutes
     local hours
+    local days
 
     if [[ ! -f "$marker" ]]; then
         printf '(never)\n'
         return 0
     fi
 
-    read -r updated_epoch <"$marker" || updated_epoch=""
+    updated_epoch="$(<"$marker")" || updated_epoch=""
+    updated_epoch="${updated_epoch//$'\r'/}"
+    updated_epoch="${updated_epoch//$'\n'/}"
     if [[ ! "$updated_epoch" =~ ^[0-9]+$ ]]; then
         printf '(unknown)\n'
         return 0
@@ -114,11 +117,21 @@ _status_manifest_freshness() {
         return 0
     fi
 
-    hours=$((delta / 3600))
-    if [[ "$hours" -eq 1 ]]; then
-        printf '1 hour ago\n'
+    if [[ "$delta" -lt 86400 ]]; then
+        hours=$((delta / 3600))
+        if [[ "$hours" -eq 1 ]]; then
+            printf '1 hour ago\n'
+        else
+            printf '%d hours ago\n' "$hours"
+        fi
+        return 0
+    fi
+
+    days=$((delta / 86400))
+    if [[ "$days" -eq 1 ]]; then
+        printf '1 day ago\n'
     else
-        printf '%d hours ago\n' "$hours"
+        printf '%d days ago\n' "$days"
     fi
 }
 

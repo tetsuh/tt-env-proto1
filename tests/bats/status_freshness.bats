@@ -57,3 +57,39 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"Manifest freshness: 2 hours ago"* ]]
 }
+
+@test "tt-env status prints manifest update age in days" {
+  fake_bin="$(make_fake_status_freshness_tools)"
+  mkdir -p "${TT_HOME}/manifests"
+  printf '%s\n' "1699740800" >"${TT_HOME}/manifests/last_update"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Manifest freshness: 3 days ago"* ]]
+}
+
+@test "tt-env status reads manifest marker without trailing newline" {
+  fake_bin="$(make_fake_status_freshness_tools)"
+  mkdir -p "${TT_HOME}/manifests"
+  printf '1699999700' >"${TT_HOME}/manifests/last_update"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Manifest freshness: 5 minutes ago"* ]]
+}
+
+@test "tt-env status prints unknown when manifest update marker is invalid" {
+  fake_bin="$(make_fake_status_freshness_tools)"
+  mkdir -p "${TT_HOME}/manifests"
+  printf '%s\n' "invalid" >"${TT_HOME}/manifests/last_update"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Manifest freshness: (unknown)"* ]]
+}
