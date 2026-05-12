@@ -37,6 +37,7 @@ _status_active_release() {
 
     current_target="$(readlink "$current_link")" || \
         fail "Failed to read current symlink: ${current_link}"
+    current_target="${current_target%/}"
 
     printf '%s\n' "${current_target##*/}"
 }
@@ -66,7 +67,7 @@ status_show() {
     fi
 
     mapfile -t devices < <(_status_detect_hardware)
-    active_release="$(_status_active_release)"
+    active_release="$(_status_active_release)" || return 1
 
     printf 'Status\n'
     printf 'Tenstorrent hardware: %d device(s)\n' "${#devices[@]}"

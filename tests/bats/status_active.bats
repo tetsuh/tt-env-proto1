@@ -51,3 +51,17 @@ symlinks_supported() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"Active release: 2024.1"* ]]
 }
+
+@test "tt-env status strips trailing slash from current symlink target" {
+  symlinks_supported || skip "POSIX symlinks are not supported in this environment"
+  fake_bin="$(make_fake_lspci)"
+  release_dir="${TT_HOME}/versions/2024.1"
+  mkdir -p "$release_dir"
+  ln -sfn "${release_dir}/" "${TT_HOME}/current"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Active release: 2024.1"* ]]
+}
