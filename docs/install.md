@@ -12,6 +12,7 @@ Proto1 targets Ubuntu 22.04.
 - `sudo`, `apt-get`, and `add-apt-repository` for the default PPA path.
   `add-apt-repository` is provided by `software-properties-common`.
 - `curl` plus `sha256sum` or `shasum` for the GitHub Releases download fallback.
+- `gpg` for bootstrapping the proto1 trusted public key into `${TT_HOME}/keys`.
 - A stack manifest in `releases/<release>.json`.
 - An OS manifest in `manifests/ubuntu-22.04.env`.
 

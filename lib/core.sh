@@ -53,7 +53,7 @@ init_tt_home() {
     fi
     export TT_HOME
 
-    mkdir -p "${TT_HOME}/"{bin,lib,manifests,releases,versions,shims} || \
+    mkdir -p "${TT_HOME}/"{bin,lib,manifests,releases,versions,shims,keys} || \
         fail "Failed to initialize TT_HOME directory layout at ${TT_HOME}"
 }
 
