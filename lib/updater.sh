@@ -29,6 +29,13 @@ _list_release_installed() {
     [[ -d "$version_dir" && -f "${version_dir}/.tt-env-installed" ]]
 }
 
+_list_manifest_release() {
+    local manifest_file="$1"
+
+    parse_stack_manifest "$manifest_file"
+    printf '%s\n' "$TT_STACK_RELEASE"
+}
+
 list_releases() {
     local arg
     local manifest_file
@@ -61,8 +68,10 @@ list_releases() {
     fi
 
     for manifest_file in "${manifests[@]}"; do
-        parse_stack_manifest "$manifest_file"
-        release="$TT_STACK_RELEASE"
+        if ! release="$(_list_manifest_release "$manifest_file" 2>/dev/null)"; then
+            log_warn "Skipping invalid release manifest: ${manifest_file}"
+            continue
+        fi
 
         if _list_release_installed "$release"; then
             state="installed"
@@ -73,4 +82,3 @@ list_releases() {
         printf '  %s [%s]\n' "$release" "$state"
     done
 }
-

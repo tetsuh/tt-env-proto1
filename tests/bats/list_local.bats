@@ -55,3 +55,14 @@ EOF
   [[ "$output" == *"2024.1 [available]"* ]]
 }
 
+@test "tt-env list skips invalid release manifests with a warning" {
+  write_release_manifest "2024.1"
+  printf '{ "release": "broken" }\n' >"${TT_HOME}/releases/broken.json"
+
+  run "$TT_ENV" list
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"2024.1 [available]"* ]]
+  [[ "$output" == *"Skipping invalid release manifest:"* ]]
+  [[ "$output" == *"broken.json"* ]]
+}
