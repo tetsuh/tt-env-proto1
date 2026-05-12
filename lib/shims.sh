@@ -46,7 +46,7 @@ command_name="${0##*/}"
 target="${TT_HOME}/current/bin/${command_name}"
 
 if [[ ! -x "$target" ]]; then
-  printf '[ERROR] Active tt-env command is not executable: %s\n' "$target" >&2
+  printf '[ERROR] Active tt-env command not found or not executable: %s\n' "$target" >&2
   exit 1
 fi
 
@@ -61,7 +61,6 @@ generate_shims() {
 
     init_tt_home
     shim_dir="${TT_HOME}/shims"
-    mkdir -p "$shim_dir" || fail "Failed to create shim directory: ${shim_dir}"
 
     for command_name in "${TT_SHIM_COMMANDS[@]}"; do
         _write_shim "${shim_dir}/${command_name}"
