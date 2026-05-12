@@ -30,6 +30,8 @@ See [docs/install.md](./docs/install.md) for `tt-env install <release>` usage,
 prerequisites, sudo behavior, fallback downloads, and troubleshooting.
 See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
+See [docs/kmd-safety.md](./docs/kmd-safety.md) for KMD preflight, Secure Boot,
+swap, rollback, and recovery guidance.
 
 ## Verification Flow
 
