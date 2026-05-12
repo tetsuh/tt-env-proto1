@@ -19,8 +19,8 @@ applicable:
 
 1. If `/sys/firmware/efi` does not exist, the machine is treated as non-EFI and
    Secure Boot is not applicable.
-2. On EFI systems, `mokutil --sb-state` must be available and must report Secure
-   Boot as disabled or not enabled.
+2. On EFI systems, `mokutil --sb-state` must be available and must report
+   `SecureBoot disabled` or `SecureBoot not enabled`.
 3. If Secure Boot is enabled, proto1 aborts and prints a message naming the
    proto1 limitation.
 
@@ -43,8 +43,8 @@ loading the same module again:
 
 - If rollback succeeds, proto1 logs the rollback and returns a non-zero status
   so the caller knows the requested swap did not complete.
-- If rollback also fails, proto1 exits with an error because the machine may be
-  left without the expected KMD module loaded.
+- If rollback also fails, proto1 exits with an error because the machine is left
+  without the expected KMD module loaded.
 
 When the module is not already loaded, proto1 only runs `modprobe`. If that load
 fails, there is no prior loaded state to restore, so the operation exits with an
@@ -67,8 +67,8 @@ On real Ubuntu 22.04 hardware, operators can inspect the same state manually:
 
 ```bash
 mokutil --sb-state
-lsof /dev/tenstorrent/*
-fuser /dev/tenstorrent/*
+sudo lsof /dev/tenstorrent/*
+sudo fuser /dev/tenstorrent/*
 lsmod | grep -w '^tenstorrent'
 ```
 
