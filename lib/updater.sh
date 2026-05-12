@@ -3,6 +3,7 @@
 #
 # Public symbols:
 #   - list_releases
+#   - maybe_update_manifests
 #   - update_manifests
 
 if [[ -n "${TT_UPDATER_LOADED:-}" ]]; then
@@ -145,6 +146,59 @@ _update_require_tools() {
     command_exists mktemp || fail "mktemp is required to update manifests."
 }
 
+_update_last_update_file() {
+    printf '%s\n' "${TT_UPDATE_LAST_UPDATE_FILE:-${TT_STATUS_LAST_UPDATE_FILE:-${TT_HOME}/manifests/last_update}}"
+}
+
+_update_now_epoch() {
+    local now_epoch="${TT_UPDATE_NOW_EPOCH:-}"
+
+    if [[ -z "$now_epoch" ]]; then
+        now_epoch="$(date +%s)" || fail "Failed to read current time."
+    fi
+
+    [[ "$now_epoch" =~ ^[0-9]+$ ]] || fail "Invalid update timestamp: ${now_epoch}"
+    printf '%s\n' "$now_epoch"
+}
+
+_update_mark_success() {
+    local marker
+    local marker_dir
+    local now_epoch
+
+    marker="$(_update_last_update_file)"
+    marker_dir="$(dirname "$marker")"
+    now_epoch="$(_update_now_epoch)"
+
+    mkdir -p "$marker_dir" || fail "Failed to create update marker directory: ${marker_dir}"
+    printf '%s\n' "$now_epoch" >"$marker" || \
+        fail "Failed to write update marker: ${marker}"
+}
+
+_update_cache_is_fresh() {
+    local marker
+    local updated_epoch=""
+    local now_epoch
+    local delta
+    local ttl="${TT_UPDATE_CACHE_SECONDS:-10800}"
+
+    [[ "$ttl" =~ ^[0-9]+$ ]] || fail "Invalid update cache TTL: ${ttl}"
+
+    marker="$(_update_last_update_file)"
+    [[ -f "$marker" ]] || return 1
+
+    updated_epoch="$(<"$marker")" || updated_epoch=""
+    updated_epoch="${updated_epoch//$'\r'/}"
+    updated_epoch="${updated_epoch//$'\n'/}"
+    [[ "$updated_epoch" =~ ^[0-9]+$ ]] || return 1
+
+    now_epoch="$(_update_now_epoch)"
+    delta=$((now_epoch - updated_epoch))
+    [[ "$delta" -lt 0 ]] && delta=0
+
+    [[ "$delta" -lt "$ttl" ]]
+}
+
 _update_write_headers() {
     local headers_file="$1"
     local token="$2"
@@ -256,6 +310,7 @@ _update_apply_staged_manifests() {
     rm -rf -- "$backup_dir"
 }
 
+# shellcheck disable=SC2120 # Called with CLI arguments from bin/tt-env.
 update_manifests() {
     local arg
     local repo="${TT_UPDATE_MANIFESTS_REPO:-tetsuh/tt-env-manifests-proto1}"
@@ -306,8 +361,25 @@ update_manifests() {
     _update_fetch_archive "$archive_file" "$headers_file" "$repo" "$ref"
     _update_stage_manifests "$archive_file" "$extract_dir" "$staging_dir"
     _update_apply_staged_manifests "$staging_dir" "$backup_dir"
+    _update_mark_success
 
     _update_disable_cleanup
     rm -rf -- "$work_dir"
     log_info "Updated manifests from ${repo}@${ref}."
+}
+
+maybe_update_manifests() {
+    local marker
+
+    marker="$(_update_last_update_file)"
+    [[ -f "$marker" ]] || return 0
+
+    if _update_cache_is_fresh; then
+        return 0
+    fi
+
+    log_info "Manifest cache is stale; refreshing manifests."
+    if ! ( update_manifests "$@" ); then
+        log_warn "Automatic manifest update failed; continuing with cached manifests."
+    fi
 }
