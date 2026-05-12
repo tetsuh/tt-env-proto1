@@ -22,17 +22,8 @@ EOF
 
 _status_detect_hardware() {
     local vendor_id="${TT_STATUS_TT_VENDOR_ID:-1e52}"
-    local line
 
-    if ! command_exists lspci; then
-        fail "lspci is required to detect Tenstorrent hardware."
-    fi
-
-    while IFS= read -r line; do
-        if [[ "$line" =~ \[${vendor_id}: ]]; then
-            printf '%s\n' "$line"
-        fi
-    done < <(lspci -Dnn)
+    lspci -Dnn | grep -i "\\[${vendor_id}:" || true
 }
 
 status_show() {
@@ -53,6 +44,10 @@ status_show() {
         esac
         shift
     done
+
+    if ! command_exists lspci; then
+        fail "lspci is required to detect Tenstorrent hardware."
+    fi
 
     mapfile -t devices < <(_status_detect_hardware)
 

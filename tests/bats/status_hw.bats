@@ -52,3 +52,21 @@ EOF
   [[ "$output" == *"Wormhole"* ]]
   [[ "$output" != *"Intel Corporation"* ]]
 }
+
+@test "tt-env status fails clearly when lspci is missing" {
+  fake_bin="${BATS_TEST_TMPDIR}/path-without-lspci"
+  mkdir -p "$fake_bin"
+  for command in bash dirname mkdir; do
+    cat >"${fake_bin}/${command}" <<EOF
+#!/usr/bin/bash
+exec /usr/bin/${command} "\$@"
+EOF
+    chmod +x "${fake_bin}/${command}"
+  done
+
+  PATH="$fake_bin" run "$TT_ENV" status
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"lspci is required to detect Tenstorrent hardware"* ]]
+  [[ "$output" != *"Tenstorrent hardware: 0 device(s)"* ]]
+}
