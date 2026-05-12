@@ -260,7 +260,11 @@ _update_fetch_archive() {
     TT_UPDATE_SOURCE_USED=""
 
     for repo in "$@"; do
-        _update_validate_source "$repo" "$ref"
+        if ! ( _update_validate_source "$repo" "$ref" ) >/dev/null 2>&1; then
+            last_error="Invalid manifest source: ${repo}"
+            log_warn "$last_error"
+            continue
+        fi
         url="https://api.github.com/repos/${repo}/tarball/${ref}"
 
         if ! http_code="$(curl \

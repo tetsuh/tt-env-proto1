@@ -132,6 +132,28 @@ EOF
   [[ "$output" == *"Updated manifests from tetsuh/tt-env-manifests-proto1@main"* ]]
 }
 
+@test "tt-env update skips invalid mirror entries" {
+  fake_bin="$(make_fake_mirror_tools)"
+  export TT_FAKE_ARCHIVE
+  TT_FAKE_ARCHIVE="$(make_manifest_archive)"
+  export TT_FAKE_SUCCESS_REPO="tetsuh/tt-env-manifests-proto1"
+  export GITHUB_TOKEN="env-token"
+  mkdir -p "$TT_HOME"
+  cat >"${TT_HOME}/config" <<'EOF'
+MIRRORS=(
+  "invalid-mirror"
+)
+EOF
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+
+  [ "$status" -eq 0 ]
+  [ "$(wc -l <"$TT_FAKE_CURL_URL_LOG")" -eq 1 ]
+  [ "$(sed -n '1p' "$TT_FAKE_CURL_URL_LOG")" = "https://api.github.com/repos/tetsuh/tt-env-manifests-proto1/tarball/main" ]
+  [[ "$output" == *"Invalid manifest source: invalid-mirror"* ]]
+  [[ "$output" == *"Updated manifests from tetsuh/tt-env-manifests-proto1@main"* ]]
+}
+
 @test "tt-env update fails clearly when all mirrors are down" {
   fake_bin="$(make_fake_mirror_tools)"
   export TT_FAKE_ARCHIVE
@@ -156,4 +178,3 @@ EOF
   [ "$(cat "${TT_HOME}/releases/old.json")" = "old release" ]
   [ "$(cat "${TT_HOME}/manifests/old.env")" = "old manifest" ]
 }
-
