@@ -4,6 +4,7 @@
 # Public symbols:
 #   - kmd_install [package]
 #   - kmd_preflight
+#   - kmd_swap [module]
 
 if [[ -n "${TT_KMD_LOADED:-}" ]]; then
     return 0
@@ -115,6 +116,18 @@ _kmd_report_holders() {
     done <<<"$holders"
 }
 
+_kmd_module_loaded() {
+    local module="$1"
+    local loaded_module
+    local rest
+
+    while read -r loaded_module rest; do
+        [[ "$loaded_module" == "$module" ]] && return 0
+    done < <(lsmod)
+
+    return 1
+}
+
 kmd_preflight() {
     local -a devices=()
     local holders=""
@@ -169,4 +182,46 @@ kmd_install() {
     _kmd_run_privileged modprobe "$module" || fail "Failed to load ${module} KMD module."
 
     log_info "${module} KMD module is loaded."
+}
+
+kmd_swap() {
+    local module="${1:-${TT_KMD_MODULE:-tenstorrent}}"
+    local was_loaded=0
+
+    if [[ "$#" -gt 1 ]]; then
+        fail "kmd_swap accepts at most one module name."
+    fi
+
+    if [[ -z "$module" ]]; then
+        fail "KMD module name is empty."
+    fi
+
+    _kmd_require_command lsmod "lsmod is required to inspect loaded KMD modules."
+    _kmd_require_command rmmod "rmmod is required to unload the Tenstorrent KMD."
+    _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
+
+    kmd_preflight || return 1
+
+    if _kmd_module_loaded "$module"; then
+        was_loaded=1
+        log_info "Unloading ${module} KMD module."
+        _kmd_run_privileged rmmod "$module" || fail "Failed to unload ${module} KMD module."
+    else
+        log_info "${module} KMD module is not currently loaded."
+    fi
+
+    log_info "Loading ${module} KMD module."
+    if _kmd_run_privileged modprobe "$module"; then
+        log_info "${module} KMD module is loaded."
+        return 0
+    fi
+
+    if [[ "$was_loaded" -eq 1 ]]; then
+        log_error "Failed to load ${module} KMD module; attempting rollback."
+        _kmd_run_privileged modprobe "$module" || \
+            fail "Failed to load ${module} KMD module and rollback also failed."
+        fail "Failed to load ${module} KMD module; rolled back to previous module."
+    fi
+
+    fail "Failed to load ${module} KMD module."
 }
