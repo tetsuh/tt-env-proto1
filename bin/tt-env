@@ -16,6 +16,8 @@ source "${LIB_DIR}/install.sh"
 source "${LIB_DIR}/version_manager.sh"
 # shellcheck disable=SC1091
 source "${LIB_DIR}/status.sh"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/updater.sh"
 
 usage() {
     cat <<'EOF'
@@ -79,7 +81,12 @@ main() {
             shift || true
             status_show "$@"
             ;;
-        list|update)
+        list)
+            init_tt_home
+            shift || true
+            list_releases "$@"
+            ;;
+        update)
             init_tt_home
             shift || true
             run_placeholder "$command" "$@"
