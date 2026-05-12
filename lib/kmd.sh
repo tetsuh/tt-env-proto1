@@ -123,9 +123,14 @@ _kmd_module_loaded() {
 }
 
 _kmd_require_secure_boot_disabled() {
+    local efi_dir="${TT_KMD_EFI_DIR:-/sys/firmware/efi}"
     local state
 
-    _kmd_require_command mokutil "mokutil is required to verify Secure Boot state before KMD operations."
+    if [[ ! -d "$efi_dir" ]]; then
+        return 0
+    fi
+
+    _kmd_require_command mokutil "mokutil is required to verify Secure Boot state on EFI systems before KMD operations."
 
     state="$(mokutil --sb-state 2>/dev/null)" || \
         fail "Failed to determine Secure Boot state with mokutil --sb-state."

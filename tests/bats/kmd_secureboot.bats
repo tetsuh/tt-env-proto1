@@ -8,6 +8,7 @@ setup() {
   export TT_KMD_LOADED_MARKER="${BATS_TEST_TMPDIR}/tenstorrent.loaded"
   export TT_MODPROBE_MARKER="${BATS_TEST_TMPDIR}/modprobe.loaded"
   export TT_KMD_DEVICE_GLOB="${BATS_TEST_TMPDIR}/dev/tenstorrent/*"
+  export TT_KMD_EFI_DIR="${BATS_TEST_TMPDIR}/sys/firmware/efi"
   source "${REPO_DIR}/lib/kmd.sh"
 }
 
@@ -15,7 +16,7 @@ make_fake_secureboot_tools() {
   local secure_boot_state="$1"
   local fake_bin="${BATS_TEST_TMPDIR}/fake-secureboot-bin"
 
-  mkdir -p "$fake_bin"
+  mkdir -p "$fake_bin" "$TT_KMD_EFI_DIR"
   cat >"${fake_bin}/sudo" <<'EOF'
 #!/usr/bin/env bash
 printf 'sudo %s\n' "$*" >>"$TT_KMD_LOG"
@@ -94,6 +95,19 @@ EOF
   PATH="$fake_bin" run kmd_install
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"mokutil is required to verify Secure Boot state"* ]]
+  [[ "$output" == *"mokutil is required to verify Secure Boot state on EFI systems"* ]]
   [ ! -f "$TT_MODPROBE_MARKER" ]
+}
+
+@test "kmd operations skip mokutil when EFI is unavailable" {
+  fake_bin="$(make_fake_secureboot_tools "SecureBoot enabled")"
+  rm -rf "$TT_KMD_EFI_DIR"
+  rm -f "${fake_bin}/mokutil"
+
+  PATH="${fake_bin}:${PATH}" run kmd_install
+
+  [ "$status" -eq 0 ]
+  ! grep -q "mokutil --sb-state" "$TT_KMD_LOG"
+  grep -q "apt-get install -y tt-kmd-dkms" "$TT_KMD_LOG"
+  [ "$(cat "$TT_MODPROBE_MARKER")" = "tenstorrent" ]
 }
