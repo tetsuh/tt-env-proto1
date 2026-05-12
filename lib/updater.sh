@@ -114,6 +114,11 @@ _update_auth_token() {
         return 0
     fi
 
+    if [[ -n "${GH_TOKEN:-}" ]]; then
+        printf '%s\n' "$GH_TOKEN"
+        return 0
+    fi
+
     if command_exists gh; then
         token="$(gh auth token 2>/dev/null)" || token=""
         if [[ -n "$token" ]]; then

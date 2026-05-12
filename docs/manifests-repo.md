@@ -24,7 +24,8 @@ Since this is a private repository, **tt-env** requires authentication to fetch 
 
 The tool will prioritize:
 1. `GITHUB_TOKEN` environment variable.
-2. The `gh` CLI credentials (if `gh` is installed and authenticated).
+2. `GH_TOKEN` environment variable.
+3. The `gh` CLI credentials (if `gh` is installed and authenticated).
 
 ## Contribution
 

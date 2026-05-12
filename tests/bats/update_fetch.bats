@@ -121,6 +121,7 @@ EOF
   export TT_FAKE_ARCHIVE
   TT_FAKE_ARCHIVE="$(make_manifest_archive)"
   export GITHUB_TOKEN="env-token"
+  export GH_TOKEN="gh-env-token"
   mkdir -p "${TT_HOME}/releases" "${TT_HOME}/manifests"
   printf 'old\n' >"${TT_HOME}/releases/old.json"
   printf 'old\n' >"${TT_HOME}/manifests/old.env"
@@ -135,6 +136,18 @@ EOF
   [ ! -e "${TT_HOME}/manifests/last_update" ]
   [[ "$(cat "$TT_FAKE_CURL_HEADER_LOG")" == *"Authorization: Bearer env-token"* ]]
   [[ "$(cat "$TT_FAKE_CURL_URL_LOG")" == *"tetsuh/tt-env-manifests-proto1/tarball/main"* ]]
+}
+
+@test "tt-env update uses GH_TOKEN without gh auth" {
+  fake_bin="$(make_fake_update_tools)"
+  export TT_FAKE_ARCHIVE
+  TT_FAKE_ARCHIVE="$(make_manifest_archive)"
+  export GH_TOKEN="gh-env-token"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+
+  [ "$status" -eq 0 ]
+  [[ "$(cat "$TT_FAKE_CURL_HEADER_LOG")" == *"Authorization: Bearer gh-env-token"* ]]
 }
 
 @test "tt-env update falls back to gh auth token" {
@@ -187,4 +200,3 @@ EOF
   [ "$(cat "${TT_HOME}/releases/old.json")" = "old release" ]
   [ "$(cat "${TT_HOME}/manifests/old.env")" = "old manifest" ]
 }
-
