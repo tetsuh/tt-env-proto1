@@ -12,6 +12,8 @@ VERSION_FILE="${TT_ENV_ROOT}/VERSION"
 source "${LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
 source "${LIB_DIR}/install.sh"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/version_manager.sh"
 
 usage() {
     cat <<'EOF'
@@ -65,7 +67,12 @@ main() {
             shift || true
             install_release "$@"
             ;;
-        use|list|status|update)
+        use)
+            init_tt_home
+            shift || true
+            use_release "$@"
+            ;;
+        list|status|update)
             init_tt_home
             shift || true
             run_placeholder "$command" "$@"
