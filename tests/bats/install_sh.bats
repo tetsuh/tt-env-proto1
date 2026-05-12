@@ -16,9 +16,11 @@ assert_installed_layout() {
   [ -f "${TT_HOME}/lib/core.sh" ]
   [ -f "${TT_HOME}/lib/install.sh" ]
   [ -f "${TT_HOME}/lib/security.sh" ]
+  [ -f "${TT_HOME}/lib/shims.sh" ]
   [ -f "${TT_HOME}/manifests/ubuntu-22.04.env" ]
   [ -f "${TT_HOME}/releases/2024.1.json" ]
   [ -f "${TT_HOME}/VERSION" ]
+  [ -x "${TT_HOME}/shims/tt-smi" ]
 }
 
 @test "install.sh installs tt-env and --version works on PATH" {

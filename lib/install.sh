@@ -17,6 +17,8 @@ source "${INSTALL_LIB_DIR}/core.sh"
 source "${INSTALL_LIB_DIR}/manifest_parser.sh"
 # shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/security.sh"
+# shellcheck disable=SC1091
+source "${INSTALL_LIB_DIR}/shims.sh"
 
 declare -ga TT_INSTALL_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd")
 
@@ -356,6 +358,7 @@ install_release() {
 
     if [[ -f "$installed_marker" && "$force" -eq 0 ]]; then
         log_info "Release ${release} is already installed at ${version_dir}."
+        generate_shims
         return 0
     fi
 
@@ -396,5 +399,6 @@ install_release() {
     [[ -f "$installed_marker" ]] || fail "Installed marker missing after finalizing ${version_dir}"
     _install_disable_partial_cleanup
 
+    generate_shims
     log_info "Installed release ${release} at ${version_dir}."
 }

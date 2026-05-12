@@ -17,6 +17,7 @@ setup() {
   for component in tt-kmd tt-smi firmware tt-metal; do
     cmp -s "${BATS_TEST_TMPDIR}/assets/${component}" "${TT_HOME}/versions/2024.1/artifacts/${component}"
   done
+  [ -x "${TT_HOME}/shims/tt-smi" ]
 }
 
 @test "tt-env install rolls back when sha256 verification fails" {
