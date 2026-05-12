@@ -25,9 +25,7 @@ EOF
   cat >"${fake_bin}/modprobe" <<'EOF'
 #!/usr/bin/env bash
 printf 'modprobe %s\n' "$*" >>"$TT_KMD_LOG"
-if [[ "$1" == "tenstorrent" ]]; then
-  printf 'loaded\n' >"$TT_MODPROBE_MARKER"
-fi
+printf '%s\n' "$1" >"$TT_MODPROBE_MARKER"
 EOF
   chmod +x "${fake_bin}/sudo" "${fake_bin}/apt-get" "${fake_bin}/modprobe"
   printf '%s\n' "$fake_bin"
@@ -59,7 +57,7 @@ EOF
   [ "${calls[1]}" = "apt-get install -y tt-kmd-dkms" ]
   [ "${calls[2]}" = "sudo modprobe tenstorrent" ]
   [ "${calls[3]}" = "modprobe tenstorrent" ]
-  [[ "$output" == *"Tenstorrent KMD module is loaded"* ]]
+  [[ "$output" == *"tenstorrent KMD module is loaded"* ]]
 }
 
 @test "kmd_install accepts an explicit package name" {
@@ -69,6 +67,17 @@ EOF
 
   [ "$status" -eq 0 ]
   grep -q "apt-get install -y custom-kmd-dkms" "$TT_KMD_LOG"
+}
+
+@test "kmd_install accepts an overridden module name" {
+  fake_bin="$(make_fake_kmd_tools)"
+
+  PATH="${fake_bin}:${PATH}" TT_KMD_MODULE="custom_tenstorrent" run kmd_install
+
+  [ "$status" -eq 0 ]
+  [ "$(cat "$TT_MODPROBE_MARKER")" = "custom_tenstorrent" ]
+  grep -q "modprobe custom_tenstorrent" "$TT_KMD_LOG"
+  [[ "$output" == *"custom_tenstorrent KMD module is loaded"* ]]
 }
 
 @test "kmd_install fails clearly when sudo is missing" {
@@ -108,6 +117,6 @@ EOF
   PATH="${fake_bin}:${PATH}" run kmd_install
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Failed to load Tenstorrent KMD module"* ]]
+  [[ "$output" == *"Failed to load tenstorrent KMD module"* ]]
   [ ! -f "$TT_MODPROBE_MARKER" ]
 }

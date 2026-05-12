@@ -23,6 +23,16 @@ _kmd_require_command() {
     fi
 }
 
+_kmd_run_privileged() {
+    if [[ "${EUID}" -eq 0 ]]; then
+        "$@"
+        return
+    fi
+
+    _kmd_require_command sudo "sudo is required to install and load the KMD."
+    sudo "$@"
+}
+
 _kmd_device_paths() {
     local device_glob="${TT_KMD_DEVICE_GLOB:-/dev/tenstorrent/*}"
     local device_path
@@ -135,6 +145,7 @@ kmd_preflight() {
 
 kmd_install() {
     local package="${1:-${TT_KMD_PACKAGE:-tt-kmd-dkms}}"
+    local module="${TT_KMD_MODULE:-tenstorrent}"
 
     if [[ "$#" -gt 1 ]]; then
         fail "kmd_install accepts at most one package name."
@@ -144,15 +155,18 @@ kmd_install() {
         fail "KMD package name is empty."
     fi
 
-    _kmd_require_command sudo "sudo is required to install and load the KMD."
+    if [[ -z "$module" ]]; then
+        fail "KMD module name is empty."
+    fi
+
     _kmd_require_command apt-get "apt-get is required to install the KMD package."
     _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
 
     log_info "Installing KMD package: ${package}"
-    sudo apt-get install -y "$package" || fail "Failed to install KMD package: ${package}"
+    _kmd_run_privileged apt-get install -y "$package" || fail "Failed to install KMD package: ${package}"
 
-    log_info "Loading Tenstorrent KMD module."
-    sudo modprobe tenstorrent || fail "Failed to load Tenstorrent KMD module."
+    log_info "Loading ${module} KMD module."
+    _kmd_run_privileged modprobe "$module" || fail "Failed to load ${module} KMD module."
 
-    log_info "Tenstorrent KMD module is loaded."
+    log_info "${module} KMD module is loaded."
 }
