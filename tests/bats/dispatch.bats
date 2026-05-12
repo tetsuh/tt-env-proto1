@@ -35,10 +35,20 @@ setup() {
   [[ "$output" == *"Usage:"* ]]
 }
 
-@test "tt-env update stub exits successfully" {
-  run "$TT_ENV" update
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"update command is not implemented yet."* ]]
+@test "tt-env update requires authentication" {
+  fake_bin="${BATS_TEST_TMPDIR}/dispatch-fake-bin"
+  mkdir -p "$fake_bin"
+  cat >"${fake_bin}/gh" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+  chmod +x "${fake_bin}/gh"
+  unset GITHUB_TOKEN
+  unset GH_TOKEN
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Authentication is required to update manifests"* ]]
 }
 
 @test "tt-env install requires a release argument" {

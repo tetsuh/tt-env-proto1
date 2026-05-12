@@ -89,7 +89,7 @@ main() {
         update)
             init_tt_home
             shift || true
-            run_placeholder "$command" "$@"
+            update_manifests "$@"
             ;;
         *)
             log_error "Unknown command: ${command}"
