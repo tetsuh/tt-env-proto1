@@ -2,6 +2,7 @@
 # KMD safety helpers for tt-env.
 #
 # Public symbols:
+#   - kmd_install [package]
 #   - kmd_preflight
 
 if [[ -n "${TT_KMD_LOADED:-}" ]]; then
@@ -12,6 +13,25 @@ TT_KMD_LOADED=1
 KMD_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${KMD_LIB_DIR}/core.sh"
+
+_kmd_require_command() {
+    local command_name="$1"
+    local message="$2"
+
+    if ! command_exists "$command_name"; then
+        fail "$message"
+    fi
+}
+
+_kmd_run_privileged() {
+    if [[ "${EUID}" -eq 0 ]]; then
+        "$@"
+        return
+    fi
+
+    _kmd_require_command sudo "sudo is required to install and load the KMD."
+    sudo "$@"
+}
 
 _kmd_device_paths() {
     local device_glob="${TT_KMD_DEVICE_GLOB:-/dev/tenstorrent/*}"
@@ -121,4 +141,32 @@ kmd_preflight() {
     fi
 
     log_info "KMD preflight passed: no Tenstorrent device holders found."
+}
+
+kmd_install() {
+    local package="${1:-${TT_KMD_PACKAGE:-tt-kmd-dkms}}"
+    local module="${TT_KMD_MODULE:-tenstorrent}"
+
+    if [[ "$#" -gt 1 ]]; then
+        fail "kmd_install accepts at most one package name."
+    fi
+
+    if [[ -z "$package" ]]; then
+        fail "KMD package name is empty."
+    fi
+
+    if [[ -z "$module" ]]; then
+        fail "KMD module name is empty."
+    fi
+
+    _kmd_require_command apt-get "apt-get is required to install the KMD package."
+    _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
+
+    log_info "Installing KMD package: ${package}"
+    _kmd_run_privileged apt-get install -y "$package" || fail "Failed to install KMD package: ${package}"
+
+    log_info "Loading ${module} KMD module."
+    _kmd_run_privileged modprobe "$module" || fail "Failed to load ${module} KMD module."
+
+    log_info "${module} KMD module is loaded."
 }
