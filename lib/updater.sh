@@ -379,7 +379,7 @@ maybe_update_manifests() {
     fi
 
     log_info "Manifest cache is stale; refreshing manifests."
-    if ! ( update_manifests "$@" ); then
+    if ! ( update_manifests ); then
         log_warn "Automatic manifest update failed; continuing with cached manifests."
     fi
 }
