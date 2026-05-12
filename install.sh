@@ -51,6 +51,10 @@ while IFS= read -r -d '' release_file; do
     install -m 644 "$release_file" "${TT_RELEASE_DIR}/"
 done < <(find "${REPO_DIR}/releases" -maxdepth 1 -type f -name "*.json" -print0)
 
+# shellcheck disable=SC1091
+source "${REPO_DIR}/lib/shims.sh"
+generate_shims
+
 log_info "tt-env installed successfully."
 
 cat <<EOF
