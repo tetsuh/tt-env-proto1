@@ -18,6 +18,7 @@ source "${UPDATER_LIB_DIR}/core.sh"
 source "${UPDATER_LIB_DIR}/manifest_parser.sh"
 
 declare -g TT_UPDATE_CLEANUP_DIR=""
+declare -g TT_UPDATE_SOURCE_USED=""
 
 _list_usage() {
     cat <<'EOF'
@@ -105,6 +106,36 @@ _update_validate_source() {
     if [[ ! "$ref" =~ ^[A-Za-z0-9_./-]+$ ]]; then
         fail "Invalid manifests ref: ${ref}"
     fi
+}
+
+_update_config_file() {
+    printf '%s\n' "${TT_UPDATE_CONFIG_FILE:-${TT_HOME}/config}"
+}
+
+_update_configured_mirrors() {
+    local config_file
+
+    config_file="$(_update_config_file)"
+    [[ -f "$config_file" ]] || return 0
+
+    parse_env_manifest "$config_file"
+    if declare -p TT_MANIFEST_LIST_MIRRORS >/dev/null 2>&1; then
+        printf '%s\n' "${TT_MANIFEST_LIST_MIRRORS[@]}"
+    fi
+}
+
+_update_source_repos() {
+    local repo="$1"
+    local mirror
+    local -a sources=()
+
+    while IFS= read -r mirror; do
+        [[ -n "$mirror" ]] || continue
+        sources+=("$mirror")
+    done < <(_update_configured_mirrors)
+    sources+=("$repo")
+
+    printf '%s\n' "${sources[@]}"
 }
 
 _update_auth_token() {
@@ -219,28 +250,47 @@ _update_write_headers() {
 _update_fetch_archive() {
     local archive_file="$1"
     local headers_file="$2"
-    local repo="$3"
-    local ref="$4"
-    local url="https://api.github.com/repos/${repo}/tarball/${ref}"
+    local ref="$3"
+    shift 3
+    local repo
+    local url
     local http_code
+    local last_error="No manifest sources configured."
 
-    http_code="$(curl \
-        --location \
-        --retry 3 \
-        --silent \
-        --show-error \
-        --output "$archive_file" \
-        --write-out "%{http_code}" \
-        --header "@${headers_file}" \
-        "$url")" || fail "Failed to fetch manifests from ${url}."
+    TT_UPDATE_SOURCE_USED=""
 
-    if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
-        fail "Authentication failed while fetching manifests. Check GITHUB_TOKEN or run: gh auth login"
-    fi
+    for repo in "$@"; do
+        _update_validate_source "$repo" "$ref"
+        url="https://api.github.com/repos/${repo}/tarball/${ref}"
 
-    if [[ "$http_code" != "200" ]]; then
-        fail "Failed to fetch manifests from ${url} (HTTP ${http_code})."
-    fi
+        if ! http_code="$(curl \
+            --location \
+            --retry 3 \
+            --silent \
+            --show-error \
+            --output "$archive_file" \
+            --write-out "%{http_code}" \
+            --header "@${headers_file}" \
+            "$url")"; then
+            last_error="Failed to fetch manifests from ${url}."
+            log_warn "$last_error"
+            continue
+        fi
+
+        if [[ "$http_code" == "200" ]]; then
+            TT_UPDATE_SOURCE_USED="$repo"
+            return 0
+        fi
+
+        if [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+            last_error="Authentication failed while fetching manifests from ${repo}. Check GITHUB_TOKEN or run: gh auth login"
+        else
+            last_error="Failed to fetch manifests from ${url} (HTTP ${http_code})."
+        fi
+        log_warn "$last_error"
+    done
+
+    fail "Failed to fetch manifests from all configured sources. ${last_error}"
 }
 
 _update_stage_manifests() {
@@ -316,6 +366,7 @@ update_manifests() {
     local repo="${TT_UPDATE_MANIFESTS_REPO:-tetsuh/tt-env-manifests-proto1}"
     local ref="${TT_UPDATE_MANIFESTS_REF:-main}"
     local token
+    local source_used
     local tmp_root
     local work_dir
     local archive_file
@@ -323,6 +374,7 @@ update_manifests() {
     local extract_dir
     local staging_dir
     local backup_dir
+    local -a source_repos=()
 
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
@@ -357,15 +409,21 @@ update_manifests() {
     staging_dir="${work_dir}/staging"
     backup_dir="${work_dir}/backup"
 
+    mapfile -t source_repos < <(_update_source_repos "$repo")
+    if [[ "${#source_repos[@]}" -eq 0 ]]; then
+        fail "No manifest sources configured."
+    fi
+
     _update_write_headers "$headers_file" "$token"
-    _update_fetch_archive "$archive_file" "$headers_file" "$repo" "$ref"
+    _update_fetch_archive "$archive_file" "$headers_file" "$ref" "${source_repos[@]}"
+    source_used="$TT_UPDATE_SOURCE_USED"
     _update_stage_manifests "$archive_file" "$extract_dir" "$staging_dir"
     _update_apply_staged_manifests "$staging_dir" "$backup_dir"
     _update_mark_success
 
     _update_disable_cleanup
     rm -rf -- "$work_dir"
-    log_info "Updated manifests from ${repo}@${ref}."
+    log_info "Updated manifests from ${source_used}@${ref}."
 }
 
 maybe_update_manifests() {
