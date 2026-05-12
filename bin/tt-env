@@ -55,6 +55,20 @@ run_placeholder() {
     log_info "${command_name} command is not implemented yet."
 }
 
+args_request_help() {
+    local arg
+
+    for arg in "$@"; do
+        case "$arg" in
+            --help|-h)
+                return 0
+                ;;
+        esac
+    done
+
+    return 1
+}
+
 main() {
     local command="${1:-help}"
 
@@ -69,6 +83,9 @@ main() {
         install)
             init_tt_home
             shift || true
+            if ! args_request_help "$@"; then
+                maybe_update_manifests
+            fi
             install_release "$@"
             ;;
         use)
@@ -79,11 +96,17 @@ main() {
         status)
             init_tt_home
             shift || true
+            if ! args_request_help "$@"; then
+                maybe_update_manifests
+            fi
             status_show "$@"
             ;;
         list)
             init_tt_home
             shift || true
+            if ! args_request_help "$@"; then
+                maybe_update_manifests
+            fi
             list_releases "$@"
             ;;
         update)

@@ -6,6 +6,8 @@ setup() {
   export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
   export TT_STATUS_LSPCI_FIXTURE="${BATS_TEST_TMPDIR}/lspci-empty.txt"
   export TT_STATUS_NOW_EPOCH=1700000000
+  unset GITHUB_TOKEN
+  unset GH_TOKEN
 }
 
 make_fake_status_freshness_tools() {
@@ -20,7 +22,11 @@ EOF
 #!/usr/bin/env bash
 exit 1
 EOF
-  chmod +x "${fake_bin}/lspci" "${fake_bin}/modinfo"
+  cat >"${fake_bin}/gh" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+  chmod +x "${fake_bin}/lspci" "${fake_bin}/modinfo" "${fake_bin}/gh"
   printf '%s\n' "$fake_bin"
 }
 

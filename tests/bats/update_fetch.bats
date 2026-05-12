@@ -6,6 +6,7 @@ setup() {
   export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
   export TT_FAKE_CURL_HEADER_LOG="${BATS_TEST_TMPDIR}/curl-headers.log"
   export TT_FAKE_CURL_URL_LOG="${BATS_TEST_TMPDIR}/curl-url.log"
+  export TT_UPDATE_NOW_EPOCH=1700000000
   unset GITHUB_TOKEN
   unset GH_TOKEN
 }
@@ -133,7 +134,7 @@ EOF
   [ -f "${TT_HOME}/manifests/ubuntu-22.04.env" ]
   [ ! -e "${TT_HOME}/releases/old.json" ]
   [ ! -e "${TT_HOME}/manifests/old.env" ]
-  [ ! -e "${TT_HOME}/manifests/last_update" ]
+  [ "$(cat "${TT_HOME}/manifests/last_update")" = "1700000000" ]
   [[ "$(cat "$TT_FAKE_CURL_HEADER_LOG")" == *"Authorization: Bearer env-token"* ]]
   [[ "$(cat "$TT_FAKE_CURL_URL_LOG")" == *"tetsuh/tt-env-manifests-proto1/tarball/main"* ]]
 }
