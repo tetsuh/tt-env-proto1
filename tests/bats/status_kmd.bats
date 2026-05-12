@@ -5,6 +5,7 @@ setup() {
   export HOME="${BATS_TEST_TMPDIR}/home"
   export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
   export TT_STATUS_LSPCI_FIXTURE="${BATS_TEST_TMPDIR}/lspci-empty.txt"
+  export TT_STATUS_SYS_MODULE_DIR="${BATS_TEST_TMPDIR}/sys/module"
 }
 
 make_fake_status_kmd_tools() {
@@ -17,7 +18,7 @@ cat "${TT_STATUS_LSPCI_FIXTURE}"
 EOF
   cat >"${fake_bin}/modinfo" <<'EOF'
 #!/usr/bin/env bash
-if [[ "${TT_STATUS_MODINFO_MODE:-loaded}" = "unloaded" ]]; then
+if [[ "${TT_STATUS_MODINFO_MODE:-loaded}" = "unknown" ]]; then
   exit 1
 fi
 if [[ "$1" = "-F" && "$2" = "version" && "$3" = "tenstorrent" ]]; then
@@ -32,6 +33,7 @@ EOF
 
 @test "tt-env status prints loaded KMD module version" {
   fake_bin="$(make_fake_status_kmd_tools)"
+  mkdir -p "${TT_STATUS_SYS_MODULE_DIR}/tenstorrent"
   printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
 
   PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
@@ -44,7 +46,29 @@ EOF
   fake_bin="$(make_fake_status_kmd_tools)"
   printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
 
-  PATH="${fake_bin}:${PATH}" TT_STATUS_MODINFO_MODE=unloaded run "$TT_ENV" status
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"KMD module version: (not loaded)"* ]]
+}
+
+@test "tt-env status prints unknown when loaded KMD version cannot be read" {
+  fake_bin="$(make_fake_status_kmd_tools)"
+  mkdir -p "${TT_STATUS_SYS_MODULE_DIR}/tenstorrent"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" TT_STATUS_MODINFO_MODE=unknown run "$TT_ENV" status
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"KMD module version: (unknown)"* ]]
+}
+
+@test "tt-env status does not require modinfo when KMD is not loaded" {
+  fake_bin="$(make_fake_status_kmd_tools)"
+  rm -f "${fake_bin}/modinfo"
+  printf '%s\n' "" >"$TT_STATUS_LSPCI_FIXTURE"
+
+  PATH="${fake_bin}:${PATH}" run "$TT_ENV" status
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"KMD module version: (not loaded)"* ]]
