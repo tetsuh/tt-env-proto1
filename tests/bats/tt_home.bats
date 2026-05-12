@@ -7,7 +7,7 @@ setup() {
 }
 
 assert_tt_home_layout() {
-  for subdir in bin lib manifests releases versions shims; do
+  for subdir in bin lib manifests releases versions shims keys; do
     [ -d "${TT_HOME}/${subdir}" ]
   done
 }
@@ -33,7 +33,7 @@ assert_tt_home_layout() {
   run "$TT_ENV" list
   [ "$status" -eq 0 ]
 
-  for subdir in bin lib manifests releases versions shims; do
+  for subdir in bin lib manifests releases versions shims keys; do
     [ -d "${HOME}/.tt-env/${subdir}" ]
   done
 }

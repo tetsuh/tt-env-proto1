@@ -25,6 +25,7 @@ TT_SHIM_DIR="${TT_HOME}/shims"
 TT_LIB_DIR="${TT_HOME}/lib"
 TT_MANIFEST_DIR="${TT_HOME}/manifests"
 TT_RELEASE_DIR="${TT_HOME}/releases"
+TT_KEY_DIR="${TT_HOME}/keys"
 
 [[ -f "${REPO_DIR}/bin/tt-env" ]] || fail "Missing ${REPO_DIR}/bin/tt-env"
 [[ -f "${REPO_DIR}/VERSION" ]] || fail "Missing ${REPO_DIR}/VERSION"
@@ -34,7 +35,7 @@ TT_RELEASE_DIR="${TT_HOME}/releases"
 
 log_info "Installing tt-env to ${TT_HOME}"
 
-mkdir -p "${TT_HOME}/"{bin,lib,manifests,releases,versions,shims} || \
+mkdir -p "${TT_HOME}/"{bin,lib,manifests,releases,versions,shims,keys} || \
     fail "Failed to initialize TT_HOME directory layout at ${TT_HOME}"
 
 install -m 755 "${REPO_DIR}/bin/tt-env" "${TT_BIN_DIR}/tt-env"
@@ -51,6 +52,10 @@ done < <(find "${REPO_DIR}/manifests" -maxdepth 1 -type f -name "*.env" -print0)
 while IFS= read -r -d '' release_file; do
     install -m 644 "$release_file" "${TT_RELEASE_DIR}/"
 done < <(find "${REPO_DIR}/releases" -maxdepth 1 -type f -name "*.json" -print0)
+
+# shellcheck disable=SC1091
+source "${REPO_DIR}/lib/security.sh"
+bootstrap_trusted_key "$TT_KEY_DIR"
 
 # shellcheck disable=SC1091
 source "${REPO_DIR}/lib/shims.sh"
