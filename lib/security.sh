@@ -111,6 +111,7 @@ verify_gpg() {
     local signature_file="$2"
     local key_home="${3:-${TT_HOME}/keys}"
     local status_output
+    local status_summary
 
     command_exists gpg || fail "gpg is required to verify GPG signatures."
     [[ -f "$file" ]] || fail "Cannot verify GPG signature; file not found: ${file}"
@@ -122,7 +123,9 @@ verify_gpg() {
 
     if ! status_output="$(GNUPGHOME="$key_home" gpg --batch --no-tty --status-fd 1 \
         --homedir "$key_home" --verify "$signature_file" "$file" 2>&1)"; then
-        fail "GPG signature verification failed for ${file}"
+        status_summary="$(printf '%s\n' "$status_output" | awk '$1 == "[GNUPG:]" { print; found = 1 } END { exit found ? 0 : 1 }')" || \
+            status_summary="$status_output"
+        fail "GPG signature verification failed for ${file}: ${status_summary}"
     fi
 
     if ! awk -v expected="$TT_TRUSTED_KEY_FINGERPRINT" '
@@ -131,7 +134,7 @@ verify_gpg() {
         }
         $1 == "[GNUPG:]" && $2 == "VALIDSIG" {
             signer = toupper($3)
-            primary = toupper($NF)
+            primary = toupper($12)
             if (signer == expected || primary == expected) {
                 valid = 1
             }
@@ -143,6 +146,8 @@ verify_gpg() {
             exit valid ? 0 : 1
         }
     ' <<<"$status_output"; then
-        fail "GPG signature for ${file} was not made by trusted key ${TT_TRUSTED_KEY_FINGERPRINT}"
+        status_summary="$(printf '%s\n' "$status_output" | awk '$1 == "[GNUPG:]" { print; found = 1 } END { exit found ? 0 : 1 }')" || \
+            status_summary="$status_output"
+        fail "GPG signature for ${file} was not made by trusted key ${TT_TRUSTED_KEY_FINGERPRINT}: ${status_summary}"
     fi
 }
