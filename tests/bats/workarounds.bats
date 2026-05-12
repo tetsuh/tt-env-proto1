@@ -11,10 +11,11 @@ setup() {
   printf '%s\n' 'WORKAROUNDS=(ENABLE_IOMMU)' >"$manifest_file"
 
   run bash -c '
-    source "$1"
+    source "$1/lib/security.sh"
+    source "$1/lib/manifest_parser.sh"
     parse_env_manifest "$2"
     printf "%s\n" "${TT_MANIFEST_LIST_WORKAROUNDS[0]}"
-  ' bash "$MANIFEST_PARSER" "$manifest_file"
+  ' bash "$REPO_DIR" "$manifest_file"
 
   [ "$status" -eq 0 ]
   [ "$output" = "ENABLE_IOMMU" ]
@@ -24,7 +25,7 @@ setup() {
   manifest_file="${BATS_TEST_TMPDIR}/unknown.env"
   printf '%s\n' 'WORKAROUNDS=(RUN_SHELL)' >"$manifest_file"
 
-  run bash -c 'source "$1"; parse_env_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+  run bash -c 'source "$1/lib/security.sh"; source "$1/lib/manifest_parser.sh"; parse_env_manifest "$2"' bash "$REPO_DIR" "$manifest_file"
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"Unsupported WORKAROUNDS entry: RUN_SHELL"* ]]
@@ -34,7 +35,7 @@ setup() {
   manifest_file="${BATS_TEST_TMPDIR}/path.env"
   printf '%s\n' 'WORKAROUNDS=(../ENABLE_IOMMU)' >"$manifest_file"
 
-  run bash -c 'source "$1"; parse_env_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+  run bash -c 'source "$1/lib/security.sh"; source "$1/lib/manifest_parser.sh"; parse_env_manifest "$2"' bash "$REPO_DIR" "$manifest_file"
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"Unsupported WORKAROUNDS entry: ../ENABLE_IOMMU"* ]]
@@ -44,7 +45,7 @@ setup() {
   manifest_file="${BATS_TEST_TMPDIR}/empty.env"
   printf '%s\n' 'WORKAROUNDS=("" ENABLE_IOMMU)' >"$manifest_file"
 
-  run bash -c 'source "$1"; parse_env_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+  run bash -c 'source "$1/lib/security.sh"; source "$1/lib/manifest_parser.sh"; parse_env_manifest "$2"' bash "$REPO_DIR" "$manifest_file"
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"Unsupported WORKAROUNDS entry: <empty>"* ]]

@@ -10,7 +10,8 @@
 #
 # Keys must match [A-Z_][A-Z0-9_]*. Values are literal tokens containing only
 # alnum, underscore, dot, slash, colon, plus, or dash. This parser never sources
-# manifest files.
+# manifest files. This parser also never invokes source or "."; callers load
+# helper libraries before loading this file.
 #
 # Public symbols:
 #   - parse_env_manifest <manifest-file>
@@ -31,11 +32,18 @@ if [[ -n "${TT_MANIFEST_PARSER_LOADED:-}" ]]; then
 fi
 TT_MANIFEST_PARSER_LOADED=1
 
-MANIFEST_PARSER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "${MANIFEST_PARSER_DIR}/core.sh"
-# shellcheck disable=SC1091
-source "${MANIFEST_PARSER_DIR}/security.sh"
+if ! declare -F fail >/dev/null; then
+    fail() {
+        printf '[ERROR] %s\n' "$*" >&2
+        exit 1
+    }
+fi
+
+if ! declare -F command_exists >/dev/null; then
+    command_exists() {
+        command -v -- "$1" >/dev/null 2>&1
+    }
+fi
 
 declare -gA TT_MANIFEST_SCALARS=()
 declare -ga TT_MANIFEST_LIST_KEYS=()
@@ -86,8 +94,11 @@ _manifest_append_list_value() {
 
 _manifest_validate_workarounds() {
     if declare -p TT_MANIFEST_LIST_WORKAROUNDS >/dev/null 2>&1; then
-        local -n workarounds_ref=TT_MANIFEST_LIST_WORKAROUNDS
-        validate_workarounds "${workarounds_ref[@]}"
+        local -a workarounds=("${TT_MANIFEST_LIST_WORKAROUNDS[@]+"${TT_MANIFEST_LIST_WORKAROUNDS[@]}"}")
+        [[ "${#workarounds[@]}" -gt 0 ]] || return 0
+        declare -F validate_workarounds >/dev/null || \
+            fail "validate_workarounds is required to validate WORKAROUNDS entries."
+        validate_workarounds "${workarounds[@]}"
     fi
 }
 

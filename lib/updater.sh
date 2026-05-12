@@ -15,9 +15,9 @@ UPDATER_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${UPDATER_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
-source "${UPDATER_LIB_DIR}/manifest_parser.sh"
-# shellcheck disable=SC1091
 source "${UPDATER_LIB_DIR}/security.sh"
+# shellcheck disable=SC1091
+source "${UPDATER_LIB_DIR}/manifest_parser.sh"
 
 declare -g TT_UPDATE_CLEANUP_DIR=""
 declare -g TT_UPDATE_SOURCE_USED=""
