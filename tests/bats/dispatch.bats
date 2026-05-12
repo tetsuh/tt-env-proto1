@@ -36,7 +36,7 @@ setup() {
 }
 
 @test "tt-env subcommand stubs exit successfully" {
-  for command in use list status update; do
+  for command in list status update; do
     run "$TT_ENV" "$command"
     [ "$status" -eq 0 ]
     [[ "$output" == *"$command command is not implemented yet."* ]]
@@ -47,4 +47,10 @@ setup() {
   run "$TT_ENV" install
   [ "$status" -ne 0 ]
   [[ "$output" == *"tt-env install [--dry-run] [--force] <release>"* ]]
+}
+
+@test "tt-env use requires a release argument" {
+  run "$TT_ENV" use
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"tt-env use <release>"* ]]
 }
