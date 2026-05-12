@@ -23,6 +23,8 @@ make_fake_lsof() {
 cat <<'OUT'
 p1234
 cpython
+p1234
+cpython
 p5678
 ctt-smi
 OUT
@@ -37,6 +39,7 @@ make_fake_fuser_and_ps() {
   mkdir -p "$fake_bin"
   cat >"${fake_bin}/fuser" <<'EOF'
 #!/bin/sh
+printf '%s\n' "$*" >>"$TT_FUSER_LOG"
 printf '2468 1357\n'
 EOF
   cat >"${fake_bin}/ps" <<'EOF'
@@ -68,17 +71,21 @@ EOF
   [[ "$output" == *"Tenstorrent devices are in use"* ]]
   [[ "$output" == *"PID 1234 (python)"* ]]
   [[ "$output" == *"PID 5678 (tt-smi)"* ]]
+  [ "$(printf '%s\n' "$output" | grep -c 'PID 1234 (python)')" -eq 1 ]
 }
 
 @test "kmd_preflight falls back to fuser when lsof is unavailable" {
   make_device_nodes
   fake_bin="$(make_fake_fuser_and_ps)"
+  export TT_FUSER_LOG="${BATS_TEST_TMPDIR}/fuser.log"
 
   PATH="$fake_bin" run kmd_preflight
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"PID 2468 (python)"* ]]
   [[ "$output" == *"PID 1357 (tt-smi)"* ]]
+  mapfile -t fuser_calls <"$TT_FUSER_LOG"
+  [ "${#fuser_calls[@]}" -eq 1 ]
 }
 
 @test "kmd_preflight fails closed when no preflight tool exists" {

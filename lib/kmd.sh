@@ -27,6 +27,7 @@ _kmd_lsof_holders() {
     local line
     local pid=""
     local command_name=""
+    local -A seen_pids=()
 
     output="$(lsof -F pc -- "$@" 2>/dev/null)" || {
         [[ -z "${output:-}" ]] && return 0
@@ -40,7 +41,8 @@ _kmd_lsof_holders() {
                 ;;
             c*)
                 command_name="${line#c}"
-                if [[ -n "$pid" ]]; then
+                if [[ -n "$pid" && -z "${seen_pids[$pid]:-}" ]]; then
+                    seen_pids[$pid]=1
                     printf '%s\t%s\n' "$pid" "${command_name:-unknown}"
                 fi
                 ;;
@@ -63,24 +65,21 @@ _kmd_command_for_pid() {
 }
 
 _kmd_fuser_holders() {
-    local device_path
     local output
     local pid
     local command_name
     local -A seen_pids=()
 
-    for device_path in "$@"; do
-        output="$(fuser -- "$device_path" 2>/dev/null)" || {
-            [[ -z "${output:-}" ]] && continue
-        }
+    output="$(fuser -- "$@" 2>/dev/null)" || {
+        [[ -z "${output:-}" ]] && return 0
+    }
 
-        for pid in $output; do
-            if [[ "$pid" =~ ^[0-9]+$ && -z "${seen_pids[$pid]:-}" ]]; then
-                seen_pids[$pid]=1
-                command_name="$(_kmd_command_for_pid "$pid")"
-                printf '%s\t%s\n' "$pid" "$command_name"
-            fi
-        done
+    for pid in $output; do
+        if [[ "$pid" =~ ^[0-9]+$ && -z "${seen_pids[$pid]:-}" ]]; then
+            seen_pids[$pid]=1
+            command_name="$(_kmd_command_for_pid "$pid")"
+            printf '%s\t%s\n' "$pid" "$command_name"
+        fi
     done
 }
 
