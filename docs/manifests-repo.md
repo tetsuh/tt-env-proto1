@@ -27,6 +27,19 @@ The tool will prioritize:
 2. `GH_TOKEN` environment variable.
 3. The `gh` CLI credentials (if `gh` is installed and authenticated).
 
+## Mirrors
+
+`tt-env update` reads optional mirror repositories from `~/.tt-env/config` before falling back to the default manifest repository.
+
+```sh
+MIRRORS=(
+  "example/tt-env-manifests-mirror"
+  "another-org/tt-env-manifests"
+)
+```
+
+Mirrors use the same archive layout as `tt-env-manifests-proto1` and are tried in order. The first successful source wins.
+
 ## Contribution
 
 Updates to manifests should be made directly in the `tt-env-manifests-proto1` repository.
