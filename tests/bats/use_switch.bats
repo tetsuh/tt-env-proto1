@@ -39,6 +39,18 @@ EOF
   printf '%s\n' "$fake_bin"
 }
 
+make_fake_noop_ln() {
+  local fake_bin="${BATS_TEST_TMPDIR}/fake-noop-ln-bin"
+
+  mkdir -p "$fake_bin"
+  cat >"${fake_bin}/ln" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "${fake_bin}/ln"
+  printf '%s\n' "$fake_bin"
+}
+
 @test "tt-env use switches current symlink between installed releases" {
   symlinks_supported || skip "POSIX symlinks are not supported in this environment"
   make_installed_release "2024.1"
@@ -65,6 +77,20 @@ EOF
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"ln -sfn did not create a symlink"* ]]
+  [ ! -e "${TT_HOME}/current" ]
+}
+
+@test "tt-env use verifies the current symlink target" {
+  symlinks_supported || skip "POSIX symlinks are not supported in this environment"
+  make_installed_release "2024.1"
+  make_installed_release "2024.2"
+  ln -sfn "${TT_HOME}/versions/2024.2" "${TT_HOME}/current"
+  fake_bin="$(make_fake_noop_ln)"
+
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" use 2024.1
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"ln -sfn did not create the expected symlink"* ]]
   [ ! -e "${TT_HOME}/current" ]
 }
 

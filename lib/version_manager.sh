@@ -26,12 +26,6 @@ _version_validate_release_name() {
     if [[ ! "$release" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
         fail "Invalid release name: ${release}"
     fi
-
-    case "$release" in
-        .|..|*/*|*\\*)
-            fail "Invalid release name: ${release}"
-            ;;
-    esac
 }
 
 use_release() {
@@ -40,6 +34,7 @@ use_release() {
     local version_dir
     local installed_marker
     local current_link
+    local current_target
 
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
@@ -87,6 +82,14 @@ use_release() {
     if [[ ! -L "$current_link" ]]; then
         rm -rf -- "$current_link"
         fail "ln -sfn did not create a symlink: ${current_link}"
+    fi
+
+    current_target="$(readlink "$current_link")" || \
+        fail "Failed to read current symlink: ${current_link}"
+
+    if [[ "$current_target" != "$version_dir" ]]; then
+        rm -f -- "$current_link"
+        fail "ln -sfn did not create the expected symlink: ${current_link}"
     fi
 
     log_info "Using release ${release} at ${version_dir}."
