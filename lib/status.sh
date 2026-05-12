@@ -42,11 +42,36 @@ _status_active_release() {
     printf '%s\n' "${current_target##*/}"
 }
 
+_status_kmd_version() {
+    local module="${TT_STATUS_KMD_MODULE:-tenstorrent}"
+    local sys_module_dir="${TT_STATUS_SYS_MODULE_DIR:-/sys/module}"
+    local version
+
+    if [[ ! -d "${sys_module_dir}/${module}" ]]; then
+        printf '(not loaded)\n'
+        return 0
+    fi
+
+    if ! command_exists modinfo; then
+        printf '(unknown)\n'
+        return 0
+    fi
+
+    version="$(modinfo -F version "$module" 2>/dev/null)" || version=""
+
+    if [[ -n "$version" ]]; then
+        printf '%s\n' "$version"
+    else
+        printf '(unknown)\n'
+    fi
+}
+
 status_show() {
     local arg
     local -a devices=()
     local device
     local active_release
+    local kmd_version
 
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
@@ -68,10 +93,12 @@ status_show() {
 
     mapfile -t devices < <(_status_detect_hardware)
     active_release="$(_status_active_release)" || return 1
+    kmd_version="$(_status_kmd_version)"
 
     printf 'Status\n'
     printf 'Tenstorrent hardware: %d device(s)\n' "${#devices[@]}"
     printf 'Active release: %s\n' "$active_release"
+    printf 'KMD module version: %s\n' "$kmd_version"
 
     for device in "${devices[@]}"; do
         printf '  %s\n' "$device"

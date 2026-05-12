@@ -15,7 +15,11 @@ make_fake_lspci() {
 #!/usr/bin/env bash
 cat "${TT_STATUS_LSPCI_FIXTURE}"
 EOF
-  chmod +x "${fake_bin}/lspci"
+  cat >"${fake_bin}/modinfo" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+  chmod +x "${fake_bin}/lspci" "${fake_bin}/modinfo"
   printf '%s\n' "$fake_bin"
 }
 

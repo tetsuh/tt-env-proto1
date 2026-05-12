@@ -14,7 +14,11 @@ make_fake_status_tools() {
 #!/usr/bin/env bash
 cat "${TT_STATUS_LSPCI_FIXTURE}"
 EOF
-  chmod +x "${fake_bin}/lspci"
+  cat >"${fake_bin}/modinfo" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+  chmod +x "${fake_bin}/lspci" "${fake_bin}/modinfo"
   printf '%s\n' "$fake_bin"
 }
 
@@ -56,7 +60,7 @@ EOF
 @test "tt-env status fails clearly when lspci is missing" {
   fake_bin="${BATS_TEST_TMPDIR}/path-without-lspci"
   mkdir -p "$fake_bin"
-  for command in bash dirname mkdir; do
+  for command in bash dirname mkdir modinfo; do
     cat >"${fake_bin}/${command}" <<EOF
 #!/usr/bin/bash
 exec /usr/bin/${command} "\$@"
