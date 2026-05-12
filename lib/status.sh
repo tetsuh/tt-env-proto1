@@ -66,12 +66,69 @@ _status_kmd_version() {
     fi
 }
 
+_status_manifest_freshness() {
+    local marker="${TT_STATUS_LAST_UPDATE_FILE:-${TT_HOME}/manifests/last_update}"
+    local updated_epoch
+    local now_epoch="${TT_STATUS_NOW_EPOCH:-}"
+    local delta
+    local minutes
+    local hours
+
+    if [[ ! -f "$marker" ]]; then
+        printf '(never)\n'
+        return 0
+    fi
+
+    read -r updated_epoch <"$marker" || updated_epoch=""
+    if [[ ! "$updated_epoch" =~ ^[0-9]+$ ]]; then
+        printf '(unknown)\n'
+        return 0
+    fi
+
+    if [[ -z "$now_epoch" ]]; then
+        now_epoch="$(date +%s)" || {
+            printf '(unknown)\n'
+            return 0
+        }
+    fi
+
+    if [[ ! "$now_epoch" =~ ^[0-9]+$ ]]; then
+        printf '(unknown)\n'
+        return 0
+    fi
+
+    delta=$((now_epoch - updated_epoch))
+    if [[ "$delta" -lt 0 ]]; then
+        delta=0
+    fi
+
+    if [[ "$delta" -lt 3600 ]]; then
+        minutes=$((delta / 60))
+        if [[ "$minutes" -le 0 ]]; then
+            printf 'less than 1 minute ago\n'
+        elif [[ "$minutes" -eq 1 ]]; then
+            printf '1 minute ago\n'
+        else
+            printf '%d minutes ago\n' "$minutes"
+        fi
+        return 0
+    fi
+
+    hours=$((delta / 3600))
+    if [[ "$hours" -eq 1 ]]; then
+        printf '1 hour ago\n'
+    else
+        printf '%d hours ago\n' "$hours"
+    fi
+}
+
 status_show() {
     local arg
     local -a devices=()
     local device
     local active_release
     local kmd_version
+    local manifest_freshness
 
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
@@ -94,11 +151,13 @@ status_show() {
     mapfile -t devices < <(_status_detect_hardware)
     active_release="$(_status_active_release)" || return 1
     kmd_version="$(_status_kmd_version)"
+    manifest_freshness="$(_status_manifest_freshness)"
 
     printf 'Status\n'
     printf 'Tenstorrent hardware: %d device(s)\n' "${#devices[@]}"
     printf 'Active release: %s\n' "$active_release"
     printf 'KMD module version: %s\n' "$kmd_version"
+    printf 'Manifest freshness: %s\n' "$manifest_freshness"
 
     for device in "${devices[@]}"; do
         printf '  %s\n' "$device"
