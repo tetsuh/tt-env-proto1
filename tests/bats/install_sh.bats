@@ -28,8 +28,9 @@ assert_installed_layout() {
   run bash "$INSTALL_SH"
   [ "$status" -eq 0 ]
   assert_installed_layout
-  [[ "$output" == *'export PATH='* ]]
-  [[ "$output" == *'fish_add_path'* ]]
+  [[ "$output" == *"export PATH=\"${TT_HOME}/shims:${TT_HOME}/bin:\$PATH\""* ]]
+  [[ "$output" == *"fish_add_path \"${TT_HOME}/shims\" \"${TT_HOME}/bin\""* ]]
+  [[ "$output" == *"tt-env install --help"* ]]
 
   PATH="${TT_HOME}/bin:${PATH}" run tt-env --version
   [ "$status" -eq 0 ]

@@ -28,6 +28,8 @@ Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Developm
 
 See [docs/install.md](./docs/install.md) for `tt-env install <release>` usage,
 prerequisites, sudo behavior, fallback downloads, and troubleshooting.
+See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
+that enables both `tt-env` and generated shims such as `tt-smi`.
 
 ## Verification Flow
 

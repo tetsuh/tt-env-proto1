@@ -21,6 +21,7 @@ fi
 export TT_HOME
 
 TT_BIN_DIR="${TT_HOME}/bin"
+TT_SHIM_DIR="${TT_HOME}/shims"
 TT_LIB_DIR="${TT_HOME}/lib"
 TT_MANIFEST_DIR="${TT_HOME}/manifests"
 TT_RELEASE_DIR="${TT_HOME}/releases"
@@ -59,15 +60,16 @@ log_info "tt-env installed successfully."
 
 cat <<EOF
 
-Add tt-env to your PATH:
+Add tt-env and its command shims to your PATH:
 
   bash/zsh:
-    export PATH="${TT_BIN_DIR}:\$PATH"
+    export PATH="${TT_SHIM_DIR}:${TT_BIN_DIR}:\$PATH"
 
   fish:
-    fish_add_path "${TT_BIN_DIR}"
+    fish_add_path "${TT_SHIM_DIR}" "${TT_BIN_DIR}"
 
 Verify the installation:
 
   tt-env --version
+  tt-env install --help
 EOF
