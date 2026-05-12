@@ -19,9 +19,13 @@ Install `tt-env` itself with:
 
 ```bash
 bash install.sh
-export PATH="${HOME}/.tt-env/bin:${PATH}"
+export PATH="${HOME}/.tt-env/shims:${HOME}/.tt-env/bin:${PATH}"
 tt-env --version
 ```
+
+See [PATH setup](./path-setup.md) for bash, zsh, and fish snippets. The
+`${HOME}/.tt-env/shims` entry exposes commands such as `tt-smi`, while
+`${HOME}/.tt-env/bin` exposes the `tt-env` CLI itself.
 
 ## Install a release
 
