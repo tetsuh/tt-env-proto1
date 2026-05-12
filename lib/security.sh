@@ -6,6 +6,8 @@
 #   - verify_sha256 <file> <expected-sha256>
 #   - bootstrap_trusted_key [key-home]
 #   - trusted_key_fingerprint
+#   - validate_workarounds [workaround-key...]
+#   - workaround_handler_for <workaround-key>
 #   - verify_gpg <file> <signature-file> [key-home]
 
 if [[ -n "${TT_SECURITY_LOADED:-}" ]]; then
@@ -19,6 +21,9 @@ source "${SECURITY_LIB_DIR}/core.sh"
 
 TT_TRUSTED_KEY_FINGERPRINT="C55FEB196FB67D83F63FE18CBEF418235C011DF8"
 TT_TRUSTED_PUBLIC_KEY_FILE="tt-env-proto-signing-key.asc"
+declare -gA TT_WORKAROUND_ALLOWLIST=(
+    [ENABLE_IOMMU]="tt_security_workaround_enable_iommu"
+)
 
 calculate_sha256() {
     local file="$1"
@@ -52,6 +57,35 @@ verify_sha256() {
 
 trusted_key_fingerprint() {
     printf '%s\n' "$TT_TRUSTED_KEY_FINGERPRINT"
+}
+
+tt_security_workaround_enable_iommu() {
+    log_info "Workaround ENABLE_IOMMU is allowlisted."
+}
+
+workaround_handler_for() {
+    local workaround_key="$1"
+    local handler
+
+    [[ -n "$workaround_key" ]] || fail "Unsupported WORKAROUNDS entry: <empty>"
+    if [[ ! "$workaround_key" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+        fail "Unsupported WORKAROUNDS entry: ${workaround_key}"
+    fi
+
+    handler="${TT_WORKAROUND_ALLOWLIST[$workaround_key]:-}"
+    [[ -n "$handler" ]] || fail "Unsupported WORKAROUNDS entry: ${workaround_key}"
+    declare -F "$handler" >/dev/null || \
+        fail "Allowlisted WORKAROUNDS entry ${workaround_key} maps to missing handler: ${handler}"
+
+    printf '%s\n' "$handler"
+}
+
+validate_workarounds() {
+    local workaround_key
+
+    for workaround_key in "$@"; do
+        workaround_handler_for "$workaround_key" >/dev/null
+    done
 }
 
 _trusted_public_key() {

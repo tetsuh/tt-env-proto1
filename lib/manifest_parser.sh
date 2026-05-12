@@ -34,6 +34,8 @@ TT_MANIFEST_PARSER_LOADED=1
 MANIFEST_PARSER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${MANIFEST_PARSER_DIR}/core.sh"
+# shellcheck disable=SC1091
+source "${MANIFEST_PARSER_DIR}/security.sh"
 
 declare -gA TT_MANIFEST_SCALARS=()
 declare -ga TT_MANIFEST_LIST_KEYS=()
@@ -80,6 +82,13 @@ _manifest_append_list_value() {
     _manifest_is_key "$key" || fail "Invalid manifest key: ${key}"
     local -n list_ref="$array_name"
     list_ref+=("$value")
+}
+
+_manifest_validate_workarounds() {
+    if declare -p TT_MANIFEST_LIST_WORKAROUNDS >/dev/null 2>&1; then
+        local -n workarounds_ref=TT_MANIFEST_LIST_WORKAROUNDS
+        validate_workarounds "${workarounds_ref[@]}"
+    fi
 }
 
 _stack_reset_state() {
@@ -198,6 +207,8 @@ parse_env_manifest() {
     if [[ -n "$in_array_key" ]]; then
         fail "Unterminated manifest array: ${in_array_key}"
     fi
+
+    _manifest_validate_workarounds
 }
 
 resolve_package() {
