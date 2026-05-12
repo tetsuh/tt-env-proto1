@@ -76,7 +76,7 @@ _trusted_key_primary_fingerprints() {
         awk -F: '
             $1 == "pub" { want = 1; next }
             want && $1 == "fpr" { print toupper($10); want = 0; next }
-            $1 != "fpr" { want = 0 }
+            $1 == "sub" || $1 == "ssb" { want = 0 }
         '
 }
 
