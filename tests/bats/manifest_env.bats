@@ -107,16 +107,16 @@ EOF
 
 @test "parse_env_manifest allows empty quoted list items" {
   manifest_file="${BATS_TEST_TMPDIR}/empty-list-item.env"
-  printf '%s\n' 'WORKAROUNDS=("" ENABLE_IOMMU)' >"$manifest_file"
+  printf '%s\n' 'REQUIRED_REPOS=("" ppa:tenstorrent/ppa)' >"$manifest_file"
 
   run bash -c '
     source "$1"
     parse_env_manifest "$2"
-    printf "<%s>\n" "${TT_MANIFEST_LIST_WORKAROUNDS[0]}"
-    printf "%s\n" "${TT_MANIFEST_LIST_WORKAROUNDS[1]}"
+    printf "<%s>\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
+    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[1]}"
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "<>" ]
-  [ "${lines[1]}" = "ENABLE_IOMMU" ]
+  [ "${lines[1]}" = "ppa:tenstorrent/ppa" ]
 }
