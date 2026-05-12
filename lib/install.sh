@@ -14,9 +14,9 @@ INSTALL_ROOT="$(cd "${INSTALL_LIB_DIR}/.." && pwd)"
 # shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
-source "${INSTALL_LIB_DIR}/manifest_parser.sh"
-# shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/security.sh"
+# shellcheck disable=SC1091
+source "${INSTALL_LIB_DIR}/manifest_parser.sh"
 # shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/shims.sh"
 
