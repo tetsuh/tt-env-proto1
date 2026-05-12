@@ -68,7 +68,7 @@ workaround_handler_for() {
     local handler
 
     [[ -n "$workaround_key" ]] || fail "Unsupported WORKAROUNDS entry: <empty>"
-    if [[ ! "$workaround_key" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+    if [[ ! "$workaround_key" =~ ^[A-Z_][A-Z0-9_]*$ ]]; then
         fail "Unsupported WORKAROUNDS entry: ${workaround_key}"
     fi
 
