@@ -118,14 +118,8 @@ _kmd_report_holders() {
 
 _kmd_module_loaded() {
     local module="$1"
-    local loaded_module
-    local rest
 
-    while read -r loaded_module rest; do
-        [[ "$loaded_module" == "$module" ]] && return 0
-    done < <(lsmod)
-
-    return 1
+    lsmod | grep -Eq "^${module}[[:space:]]"
 }
 
 kmd_preflight() {
@@ -200,7 +194,7 @@ kmd_swap() {
     _kmd_require_command rmmod "rmmod is required to unload the Tenstorrent KMD."
     _kmd_require_command modprobe "modprobe is required to load the Tenstorrent KMD."
 
-    kmd_preflight || return 1
+    kmd_preflight || fail "KMD preflight failed."
 
     if _kmd_module_loaded "$module"; then
         was_loaded=1
@@ -220,7 +214,8 @@ kmd_swap() {
         log_error "Failed to load ${module} KMD module; attempting rollback."
         _kmd_run_privileged modprobe "$module" || \
             fail "Failed to load ${module} KMD module and rollback also failed."
-        fail "Failed to load ${module} KMD module; rolled back to previous module."
+        log_error "Failed to load ${module} KMD module; rolled back to previous module."
+        return 1
     fi
 
     fail "Failed to load ${module} KMD module."

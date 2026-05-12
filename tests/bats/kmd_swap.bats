@@ -22,6 +22,7 @@ printf 'sudo %s\n' "$*" >>"$TT_KMD_LOG"
 EOF
   cat >"${fake_bin}/lsmod" <<'EOF'
 #!/usr/bin/env bash
+printf 'Module Size Used by\n'
 if [[ -f "$TT_KMD_LOADED_MARKER" ]]; then
   printf 'tenstorrent 12345 0\n'
 fi
@@ -110,5 +111,6 @@ EOF
   [ "$status" -eq 1 ]
   [ "$(cat "$TT_KMD_LOADED_MARKER")" = "tenstorrent" ]
   [[ "$output" == *"PID 1234 (python)"* ]]
+  [[ "$output" == *"KMD preflight failed"* ]]
   [ ! -f "$TT_KMD_LOG" ] || ! grep -q "rmmod" "$TT_KMD_LOG"
 }
