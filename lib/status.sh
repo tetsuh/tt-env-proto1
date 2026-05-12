@@ -26,10 +26,27 @@ _status_detect_hardware() {
     lspci -Dnn | grep -i "\\[${vendor_id}:" || true
 }
 
+_status_active_release() {
+    local current_link="${TT_HOME}/current"
+    local current_target
+
+    if [[ ! -L "$current_link" ]]; then
+        printf '(none)\n'
+        return 0
+    fi
+
+    current_target="$(readlink "$current_link")" || \
+        fail "Failed to read current symlink: ${current_link}"
+    current_target="${current_target%/}"
+
+    printf '%s\n' "${current_target##*/}"
+}
+
 status_show() {
     local arg
     local -a devices=()
     local device
+    local active_release
 
     while [[ "$#" -gt 0 ]]; do
         arg="$1"
@@ -50,9 +67,11 @@ status_show() {
     fi
 
     mapfile -t devices < <(_status_detect_hardware)
+    active_release="$(_status_active_release)" || return 1
 
     printf 'Status\n'
     printf 'Tenstorrent hardware: %d device(s)\n' "${#devices[@]}"
+    printf 'Active release: %s\n' "$active_release"
 
     for device in "${devices[@]}"; do
         printf '  %s\n' "$device"
