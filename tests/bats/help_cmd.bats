@@ -38,6 +38,14 @@ setup() {
   [[ "$output" == *"verification failure"* ]]
 }
 
+@test "tt-env help --help prints general usage" {
+  run "$TT_ENV" help --help
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"tt-env help [command]"* ]]
+}
+
 @test "tt-env help rejects unknown help topics" {
   run "$TT_ENV" help definitely-not-a-command
   [ "$status" -ne 0 ]
