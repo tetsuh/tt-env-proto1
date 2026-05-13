@@ -19,7 +19,7 @@ WORKAROUNDS=()
 EOF
   cat >"$dnf_manifest_file" <<'EOF'
 PKG_MANAGER="dnf"
-USE_PPA="true"
+USE_SYSTEM_PACKAGES="true"
 REQUIRED_REPOS=(
   "https://repo.example.invalid/tenstorrent.repo"
 )

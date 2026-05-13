@@ -194,7 +194,7 @@ _install_system_packages() {
     local detected_os_id
     local detected_os_version
     local pkg_manager
-    local use_ppa
+    local use_system_packages
 
     detect_os
     detected_os_id="${OS_ID:-}"
@@ -203,23 +203,23 @@ _install_system_packages() {
     parse_env_manifest "$os_manifest"
 
     pkg_manager="${TT_MANIFEST_SCALARS[PKG_MANAGER]:-}"
-    use_ppa="${TT_MANIFEST_SCALARS[USE_PPA]:-}"
+    use_system_packages="${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]:-${TT_MANIFEST_SCALARS[USE_PPA]:-}}"
 
     [[ -n "$pkg_manager" ]] || fail "OS manifest is missing PKG_MANAGER: ${os_manifest}"
-    [[ -n "$use_ppa" ]] || fail "OS manifest is missing USE_PPA: ${os_manifest}"
+    [[ -n "$use_system_packages" ]] || fail "OS manifest is missing USE_SYSTEM_PACKAGES or USE_PPA: ${os_manifest}"
 
     package_manager_require_supported "$pkg_manager"
 
-    case "$use_ppa" in
+    case "$use_system_packages" in
         true)
             package_manager_install_system_packages "$pkg_manager" "$dry_run"
             ;;
         false)
-            log_info "PPA install path is disabled by ${os_manifest}."
+            log_info "System package install path is disabled by ${os_manifest}."
             _install_download_components "$dry_run" "$target_dir"
             ;;
         *)
-            fail "Invalid USE_PPA value in ${os_manifest}: ${use_ppa}"
+            fail "Invalid USE_SYSTEM_PACKAGES or USE_PPA value in ${os_manifest}: ${use_system_packages}"
             ;;
     esac
 }
