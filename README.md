@@ -6,26 +6,26 @@ Prototype repository for **tt-env** — a next-generation environment manager fo
 software stack.
 
 This repository hosts the **proto1** iteration: the first end-to-end working prototype written in
-Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Development.
+Bash, targeting Ubuntu 22.04 and 24.04, and built incrementally via Ticket Driven Development.
 
 ## Status
 
 🚧 Work in progress. Development is tracked through the GitHub
 [Issues](https://github.com/tetsuh/tt-env-proto1/issues) and
 [Milestones](https://github.com/tetsuh/tt-env-proto1/milestones) of this repository
-(Phase 0 -> Phase 11).
+(Phase 0 -> Phase 13).
 
 ## Scope of proto1
 
 - **Language**: Bash (zero-dependency bootstrap)
-- **Target OS**: Ubuntu 22.04 only
+- **Target OS**: Ubuntu 22.04 and Ubuntu 24.04
 - **Install location**: `~/.tt-env/versions/<release>/` (KMD lives in the system module path)
 - **Distribution**: Falls back to GitHub Releases direct download when the official PPA is not
   available
 - **Stack manifests**: Sourced from the private repo `tt-env-manifests-proto1`
 - **Secure Boot**: Not supported in proto1 (the tool aborts when Secure Boot is enabled)
-- **CI**: GitHub Actions runs lint and Bats in Ubuntu 22.04; hardware E2E
-  verification remains manual on real Ubuntu 22.04 hardware
+- **CI**: GitHub Actions runs lint and Bats in Ubuntu 22.04 and 24.04
+  containers; hardware E2E verification remains manual on real Ubuntu hosts
 
 ## Install quickstart
 
@@ -35,7 +35,7 @@ See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
 See [docs/kmd-safety.md](./docs/kmd-safety.md) for KMD preflight, Secure Boot,
 swap, rollback, and recovery guidance.
-See [docs/e2e.md](./docs/e2e.md) for the full Ubuntu 22.04 manual
+See [docs/e2e.md](./docs/e2e.md) for the full Ubuntu manual
 install -> use -> status -> update -> self-update verification flow.
 
 ## Verification Flow
@@ -61,8 +61,8 @@ bash scripts/test.sh
 ### 3. Manual Verification
 
 Major changes (especially those touching KMD or system-level state) must still
-be verified on real Ubuntu 22.04 hardware. Detailed verification steps are
-documented in [docs/e2e.md](./docs/e2e.md).
+be verified on real Ubuntu hardware for the affected supported release.
+Detailed verification steps are documented in [docs/e2e.md](./docs/e2e.md).
 
 ## Contributing
 
