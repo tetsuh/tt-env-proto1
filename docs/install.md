@@ -92,7 +92,7 @@ new install has completed successfully.
 
 | Symptom | Fix |
 | --- | --- |
-| `sudo is required to install apt packages` | Install or enable `sudo`, or use a manifest with `USE_SYSTEM_PACKAGES="false"` and component download URLs. |
+| `sudo is required to install <manager> packages` | Install or enable `sudo`, or use a manifest with `USE_SYSTEM_PACKAGES="false"` and component download URLs. Applies to apt and dnf system package paths. |
 | `add-apt-repository is required to add repositories` | Install `software-properties-common`. |
 | `dnf config-manager is required to add repositories` | Install `dnf-plugins-core` before using a dnf manifest with repositories. |
 | `curl is required to download release artifacts` | Install `curl` before using the fallback path. |
