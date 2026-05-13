@@ -6,7 +6,7 @@
 - Updated the CI checkout action to a Node.js 24 runtime release.
 - Added an Ubuntu 24.04 OS manifest for multi-distro groundwork.
 - Added Ubuntu 24.04 OS detection and manifest lookup test coverage.
-- Added Ubuntu 24.04 to the hosted CI lint and Bats matrix.
+- Expanded the hosted CI lint and Bats matrix to Ubuntu 22.04 and 24.04 containers.
 
 ## 0.1.0
 
