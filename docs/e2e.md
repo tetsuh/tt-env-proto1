@@ -13,7 +13,7 @@ Use an Ubuntu 22.04 machine with Secure Boot disabled.
 ```bash
 cat /etc/os-release | grep -E '^(ID|VERSION_ID)='
 mokutil --sb-state
-command -v bash curl gpg sudo apt-get add-apt-repository lspci
+command -v bash curl gpg sudo apt-get add-apt-repository lspci >/dev/null
 ```
 
 Expected output:
@@ -131,7 +131,7 @@ If the release contains `tt-smi`, verify shim dispatch:
 
 ```bash
 command -v tt-smi
-tt-smi --version || true
+tt-smi --version
 ```
 
 Expected `command -v` output:
@@ -139,6 +139,10 @@ Expected `command -v` output:
 ```text
 /home/<user>/.tt-env/shims/tt-smi
 ```
+
+If `tt-smi --version` fails on a host without Tenstorrent hardware or runtime
+support, record stderr and continue. On a hardware-equipped verification host,
+treat the failure as a blocker.
 
 ## 6. Inspect status
 
