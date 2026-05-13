@@ -45,7 +45,7 @@ _package_manager_resolved_packages() {
 
     for virtual_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
         if ! resolved_package="$(resolve_package "$virtual_package")"; then
-            return 1
+            fail "Failed to resolve package from OS manifest: ${virtual_package}"
         fi
         # shellcheck disable=SC2034 # nameref output parameter
         packages_ref+=("$resolved_package")
@@ -81,9 +81,7 @@ _package_manager_apt_install_system_packages() {
     local repo
 
     _package_manager_required_repos repos
-    if ! _package_manager_resolved_packages packages; then
-        return 1
-    fi
+    _package_manager_resolved_packages packages
 
     if [[ "$dry_run" -eq 1 ]]; then
         for repo in "${repos[@]}"; do
