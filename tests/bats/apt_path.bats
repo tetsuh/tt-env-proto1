@@ -47,3 +47,27 @@ setup() {
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
+
+@test "tt-env install selects Ubuntu 24.04 OS manifest when overridden" {
+  mkdir -p "${TT_HOME}/manifests"
+  cat >"${TT_HOME}/manifests/ubuntu-24.04.env" <<'EOF'
+PKG_MANAGER="apt"
+USE_PPA="true"
+REQUIRED_REPOS=(
+  "ppa:tenstorrent/ppa"
+)
+VIRT_PKG_CMAKE="cmake-24"
+VIRT_PKG_NINJA="ninja-build-24"
+VIRT_PKG_ZLIB="zlib1g-dev-24"
+VIRT_PKG_KMD="tt-kmd-dkms-24"
+WORKAROUNDS=()
+EOF
+  bash_env="$(make_command_absent_env sudo)"
+
+  run env BASH_ENV="$bash_env" TT_OVERRIDE_OS_ID=ubuntu TT_OVERRIDE_OS_VERSION=24.04 \
+    "$TT_ENV" install --dry-run 2024.1
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Using override OS: ubuntu 24.04"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tt-kmd-dkms-24"* ]]
+  [ ! -e "${TT_HOME}/versions/2024.1" ]
+}

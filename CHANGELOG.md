@@ -5,6 +5,7 @@
 - Added GitHub Actions CI for lint and Bats on pull requests and `main`.
 - Updated the CI checkout action to a Node.js 24 runtime release.
 - Added an Ubuntu 24.04 OS manifest for multi-distro groundwork.
+- Added Ubuntu 24.04 OS detection and manifest lookup test coverage.
 
 ## 0.1.0
 
