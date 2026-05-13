@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  lint-and-test:
+    name: lint and bats
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+
+    steps:
+      - name: Install CI tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates \
+            git \
+            shellcheck
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run lint
+        run: bash scripts/lint.sh
+
+      - name: Run tests
+        run: bash scripts/test.sh

@@ -3,8 +3,8 @@
 This checklist verifies proto1 on a real Ubuntu 22.04 host. It covers
 `install`, `use`, `status`, `update`, and `update --self`.
 
-Proto1 has no hosted CI. Record the command transcript, host notes, and any
-deviations in the pull request that depends on this manual run.
+Hosted CI covers shellcheck and Bats only. Record the command transcript, host
+notes, and any deviations in the pull request that depends on this manual run.
 
 ## 1. Host prerequisites
 
