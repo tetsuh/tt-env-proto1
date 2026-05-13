@@ -395,17 +395,98 @@ _self_update_remote_version_url() {
     printf '%s\n' "$version_url"
 }
 
+_self_update_validate_https_url() {
+    local label="$1"
+    local url="$2"
+
+    [[ "$url" == https://* ]] || fail "Invalid ${label} URL: ${url}"
+    printf '%s\n' "$url"
+}
+
+_self_update_content_url() {
+    local path="$1"
+    local repo="${TT_SELF_UPDATE_REPO:-tetsuh/tt-env-proto1}"
+    local ref="${TT_SELF_UPDATE_REF:-main}"
+
+    _update_validate_source "$repo" "$ref"
+    printf 'https://api.github.com/repos/%s/contents/%s?ref=%s\n' "$repo" "$path" "$ref"
+}
+
+_self_update_binary_url() {
+    local binary_url
+
+    if [[ -n "${TT_SELF_UPDATE_BINARY_URL:-}" ]]; then
+        _self_update_validate_https_url "self-update binary" "$TT_SELF_UPDATE_BINARY_URL"
+        return 0
+    fi
+
+    _self_update_content_url "bin/tt-env"
+}
+
+_self_update_signature_url() {
+    local binary_url="$1"
+
+    if [[ -n "${TT_SELF_UPDATE_SIGNATURE_URL:-}" ]]; then
+        _self_update_validate_https_url "self-update signature" "$TT_SELF_UPDATE_SIGNATURE_URL"
+        return 0
+    fi
+
+    if [[ -n "${TT_SELF_UPDATE_BINARY_URL:-}" ]]; then
+        [[ "$binary_url" != *\?* ]] || \
+            fail "TT_SELF_UPDATE_SIGNATURE_URL is required when TT_SELF_UPDATE_BINARY_URL contains a query string."
+        _self_update_validate_https_url "self-update signature" "${binary_url}.asc"
+        return 0
+    fi
+
+    _self_update_content_url "bin/tt-env.asc"
+}
+
+_self_update_target_file() {
+    printf '%s\n' "${TT_SELF_UPDATE_TARGET_FILE:-${UPDATER_ROOT}/bin/tt-env}"
+}
+
+_self_update_fetch_url() {
+    local url="$1"
+    local output_file="$2"
+    local label="$3"
+    local http_code
+    local token=""
+    local -a curl_args=()
+
+    command_exists curl || fail "curl is required to ${label}."
+
+    curl_args=(
+        --location \
+        --silent \
+        --show-error \
+        --output "$output_file" \
+        --write-out "%{http_code}"
+    )
+
+    if [[ "$url" == https://api.github.com/* ]]; then
+        curl_args+=(--header "Accept: application/vnd.github.raw")
+        if token="$(_update_auth_token)"; then
+            curl_args+=(--header "Authorization: Bearer ${token}")
+        fi
+    fi
+    curl_args+=("$url")
+
+    if ! http_code="$(curl "${curl_args[@]}")"; then
+        fail "Failed to ${label} from ${url}."
+    fi
+
+    if [[ "$http_code" != "200" ]]; then
+        fail "Failed to ${label} from ${url} (HTTP ${http_code})."
+    fi
+}
+
 _self_update_fetch_remote_version() {
     local version_url="$1"
     local tmp_dir
     local work_dir
     local version_file
-    local http_code
-    local token=""
     local version
-    local -a curl_args=()
 
-    command_exists curl || fail "curl is required to check for self-updates."
     command_exists mktemp || fail "mktemp is required to check for self-updates."
 
     tmp_dir="${TT_HOME}/.tmp"
@@ -415,34 +496,57 @@ _self_update_fetch_remote_version() {
     _update_enable_cleanup "$work_dir"
     version_file="${work_dir}/VERSION"
 
-    curl_args=(
-        --location \
-        --silent \
-        --show-error \
-        --output "$version_file" \
-        --write-out "%{http_code}"
-    )
-
-    if [[ "$version_url" == https://api.github.com/* ]]; then
-        curl_args+=(--header "Accept: application/vnd.github.raw")
-        if token="$(_update_auth_token)"; then
-            curl_args+=(--header "Authorization: Bearer ${token}")
-        fi
-    fi
-    curl_args+=("$version_url")
-
-    if ! http_code="$(curl "${curl_args[@]}")"; then
-        fail "Failed to fetch remote VERSION from ${version_url}."
-    fi
-
-    if [[ "$http_code" != "200" ]]; then
-        fail "Failed to fetch remote VERSION from ${version_url} (HTTP ${http_code})."
-    fi
-
+    _self_update_fetch_url "$version_url" "$version_file" "fetch remote VERSION"
     version="$(<"$version_file")"
     _update_disable_cleanup
     rm -rf -- "$work_dir"
     _self_update_validate_semver "remote VERSION" "$version"
+}
+
+_self_update_apply_update() {
+    local target_file
+    local target_dir
+    local work_dir
+    local binary_tmp
+    local signature_tmp
+    local binary_url
+    local signature_url
+
+    command_exists mktemp || fail "mktemp is required to apply self-updates."
+    command_exists chmod || fail "chmod is required to apply self-updates."
+    command_exists mv || fail "mv is required to apply self-updates."
+
+    if ! target_file="$(_self_update_target_file)"; then
+        return 1
+    fi
+    [[ -f "$target_file" ]] || fail "Self-update target not found: ${target_file}"
+
+    target_dir="$(dirname "$target_file")"
+    [[ -d "$target_dir" ]] || fail "Self-update target directory not found: ${target_dir}"
+
+    if ! binary_url="$(_self_update_binary_url)"; then
+        return 1
+    fi
+    if ! signature_url="$(_self_update_signature_url "$binary_url")"; then
+        return 1
+    fi
+
+    # Stage under the target directory so the final rename stays atomic.
+    work_dir="$(mktemp -d "${target_dir}/.tt-env-self-update.XXXXXX")" || \
+        fail "Failed to create self-update staging directory."
+    _update_enable_cleanup "$work_dir"
+    binary_tmp="${work_dir}/tt-env.tmp"
+    signature_tmp="${work_dir}/tt-env.tmp.asc"
+
+    _self_update_fetch_url "$binary_url" "$binary_tmp" "download self-update binary"
+    _self_update_fetch_url "$signature_url" "$signature_tmp" "download self-update signature"
+    verify_gpg "$binary_tmp" "$signature_tmp"
+
+    chmod +x "$binary_tmp" || fail "Failed to mark self-update binary executable."
+    mv -f -- "$binary_tmp" "$target_file" || fail "Failed to replace tt-env binary atomically."
+
+    _update_disable_cleanup
+    rm -rf -- "$work_dir"
 }
 
 update_self() {
@@ -491,6 +595,8 @@ update_self() {
         -1)
             export TT_SELF_UPDATE_PROCEED=1
             log_info "Self-update available: ${local_version} -> ${remote_version}."
+            _self_update_apply_update
+            log_info "Updated tt-env to ${remote_version}."
             ;;
         0)
             log_info "tt-env is already up to date (${local_version})."
