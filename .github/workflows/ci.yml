@@ -19,10 +19,18 @@ defaults:
 
 jobs:
   lint-and-test:
-    name: lint and bats
+    name: lint and bats (${{ matrix.distro }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu-22.04
+            image: ubuntu:22.04
+          - distro: ubuntu-24.04
+            image: ubuntu:24.04
     container:
-      image: ubuntu:22.04
+      image: ${{ matrix.image }}
 
     steps:
       - name: Install CI tools
