@@ -4,17 +4,20 @@
 `${TT_HOME}/versions/<release>`. If `TT_HOME` is unset, `tt-env` uses
 `${HOME}/.tt-env`.
 
-Proto1 targets Ubuntu 22.04.
+Proto1 targets Ubuntu 22.04 and Ubuntu 24.04. Fedora-family manifests are
+fixture-only until manual validation exists.
 
 ## Prerequisites
 
 - Bash and coreutils.
-- `sudo`, `apt-get`, and `add-apt-repository` for the default PPA path.
+- `sudo`, `apt-get`, and `add-apt-repository` for Ubuntu system package installs.
   `add-apt-repository` is provided by `software-properties-common`.
+- `sudo`, `dnf`, and `dnf config-manager` for dnf fixture/adapter validation.
+  `config-manager` is provided by `dnf-plugins-core` on Fedora-family systems.
 - `curl` plus `sha256sum` or `shasum` for the GitHub Releases download fallback.
 - `gpg` for bootstrapping the proto1 trusted public key into `${TT_HOME}/keys`.
 - A stack manifest in `releases/<release>.json`.
-- An OS manifest in `manifests/ubuntu-22.04.env`.
+- An OS manifest for the detected host, such as `manifests/ubuntu-22.04.env`.
 
 Install `tt-env` itself with:
 
@@ -34,9 +37,9 @@ See [PATH setup](./path-setup.md) for bash, zsh, and fish snippets. The
 tt-env install 2024.1
 ```
 
-When the Ubuntu manifest has `USE_PPA="true"`, `tt-env` adds required
-repositories before installing resolved apt packages. A successful PPA-path run
-looks like:
+When the OS manifest has `USE_SYSTEM_PACKAGES="true"` (or legacy
+`USE_PPA="true"` for Ubuntu), `tt-env` adds required repositories before
+installing resolved packages. A successful Ubuntu apt-path run looks like:
 
 ```text
 [INFO] Adding apt repository: ppa:tenstorrent/ppa
@@ -45,10 +48,14 @@ looks like:
 [INFO] Installed release 2024.1 at /home/alice/.tt-env/versions/2024.1.
 ```
 
-When the manifest has `USE_PPA="false"`, `tt-env` downloads component artifacts
-from `components.<name>.download_url` in the stack manifest and verifies each
-artifact against `components.<name>.sha256` before finalizing the version
-directory.
+When the manifest has `USE_SYSTEM_PACKAGES="false"` (or legacy
+`USE_PPA="false"`), `tt-env` downloads component artifacts from
+`components.<name>.download_url` in the stack manifest and verifies each artifact
+against `components.<name>.sha256` before finalizing the version directory.
+
+See [package manager adapter contract](./package-manager-adapters.md) for
+manifest fields, adapter responsibilities, and validation requirements for new
+distros.
 
 ## Idempotency and force
 
@@ -85,8 +92,9 @@ new install has completed successfully.
 
 | Symptom | Fix |
 | --- | --- |
-| `sudo is required to install apt packages` | Install or enable `sudo`, or use a manifest with `USE_PPA="false"` and component download URLs. |
+| `sudo is required to install apt packages` | Install or enable `sudo`, or use a manifest with `USE_SYSTEM_PACKAGES="false"` and component download URLs. |
 | `add-apt-repository is required to add repositories` | Install `software-properties-common`. |
+| `dnf config-manager is required to add repositories` | Install `dnf-plugins-core` before using a dnf manifest with repositories. |
 | `curl is required to download release artifacts` | Install `curl` before using the fallback path. |
 | `sha256 mismatch` | Check the stack manifest `sha256` values and artifact URLs; the partial install is rolled back. |
 | `Version directory exists but is not marked installed` | Inspect the directory and rerun with `--force` if it is safe to recreate. |
