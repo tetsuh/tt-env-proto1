@@ -30,7 +30,11 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates \
+            curl \
             git \
+            gnupg \
+            pciutils \
+            sudo \
             shellcheck
 
       - name: Check out repository
@@ -38,8 +42,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Create non-root test user
+        run: |
+          useradd --create-home --shell /bin/bash ci
+          chown -R ci:ci "${GITHUB_WORKSPACE}"
+
       - name: Run lint
-        run: bash scripts/lint.sh
+        run: su ci -c "cd ${GITHUB_WORKSPACE} && bash scripts/lint.sh"
 
       - name: Run tests
-        run: bash scripts/test.sh
+        run: su ci -c "cd ${GITHUB_WORKSPACE} && bash scripts/test.sh"
