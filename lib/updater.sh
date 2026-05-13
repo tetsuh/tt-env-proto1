@@ -498,8 +498,8 @@ _self_update_fetch_remote_version() {
 
     _self_update_fetch_url "$version_url" "$version_file" "fetch remote VERSION"
     version="$(<"$version_file")"
-    _update_disable_cleanup
     rm -rf -- "$work_dir"
+    _update_disable_cleanup
     _self_update_validate_semver "remote VERSION" "$version"
 }
 
@@ -545,8 +545,8 @@ _self_update_apply_update() {
     chmod +x "$binary_tmp" || fail "Failed to mark self-update binary executable."
     mv -f -- "$binary_tmp" "$target_file" || fail "Failed to replace tt-env binary atomically."
 
-    _update_disable_cleanup
     rm -rf -- "$work_dir"
+    _update_disable_cleanup
 }
 
 update_self() {
@@ -595,8 +595,9 @@ update_self() {
         -1)
             export TT_SELF_UPDATE_PROCEED=1
             log_info "Self-update available: ${local_version} -> ${remote_version}."
-            _self_update_apply_update
-            log_info "Updated tt-env to ${remote_version}."
+            if _self_update_apply_update; then
+                log_info "Updated tt-env to ${remote_version}."
+            fi
             ;;
         0)
             log_info "tt-env is already up to date (${local_version})."
