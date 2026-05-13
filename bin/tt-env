@@ -112,7 +112,11 @@ main() {
         update)
             init_tt_home
             shift || true
-            update_manifests "$@"
+            if [[ "${1:-}" == "--self" ]]; then
+                update_self "$@"
+            else
+                update_manifests "$@"
+            fi
             ;;
         *)
             log_error "Unknown command: ${command}"

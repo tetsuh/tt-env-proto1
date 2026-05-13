@@ -4,6 +4,7 @@
 # Public symbols:
 #   - list_releases
 #   - maybe_update_manifests
+#   - update_self
 #   - update_manifests
 
 if [[ -n "${TT_UPDATER_LOADED:-}" ]]; then
@@ -12,6 +13,7 @@ fi
 TT_UPDATER_LOADED=1
 
 UPDATER_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UPDATER_ROOT="$(cd "${UPDATER_LIB_DIR}/.." && pwd)"
 # shellcheck disable=SC1091
 source "${UPDATER_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
@@ -21,6 +23,8 @@ source "${UPDATER_LIB_DIR}/manifest_parser.sh"
 
 declare -g TT_UPDATE_CLEANUP_DIR=""
 declare -g TT_UPDATE_SOURCE_USED=""
+export TT_SELF_UPDATE_PROCEED=0
+export TT_SELF_UPDATE_REMOTE_VERSION=""
 
 _list_usage() {
     cat <<'EOF'
@@ -33,6 +37,14 @@ _update_usage() {
     cat <<'EOF'
 Usage:
   tt-env update
+  tt-env update --self
+EOF
+}
+
+_update_self_usage() {
+    cat <<'EOF'
+Usage:
+  tt-env update --self
 EOF
 }
 
@@ -298,6 +310,195 @@ _update_fetch_archive() {
     done
 
     fail "Failed to fetch manifests from all configured sources. ${last_error}"
+}
+
+_self_update_trim_version() {
+    local version="$1"
+
+    version="${version//$'\r'/}"
+    version="${version//$'\n'/}"
+    version="${version#"${version%%[![:space:]]*}"}"
+    version="${version%"${version##*[![:space:]]}"}"
+    printf '%s\n' "$version"
+}
+
+_self_update_validate_semver() {
+    local label="$1"
+    local version
+
+    version="$(_self_update_trim_version "$2")"
+    [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || \
+        fail "Invalid semver in ${label}: ${version:-<empty>}"
+    printf '%s\n' "$version"
+}
+
+_self_update_semver_compare() {
+    local left
+    local right
+    local i
+    local -a left_parts=()
+    local -a right_parts=()
+
+    if ! left="$(_self_update_validate_semver "local VERSION" "$1")"; then
+        return 1
+    fi
+    if ! right="$(_self_update_validate_semver "remote VERSION" "$2")"; then
+        return 1
+    fi
+    IFS=. read -r -a left_parts <<<"$left"
+    IFS=. read -r -a right_parts <<<"$right"
+
+    for i in 0 1 2; do
+        if (( 10#${left_parts[$i]} < 10#${right_parts[$i]} )); then
+            printf '%s\n' "-1"
+            return 0
+        fi
+        if (( 10#${left_parts[$i]} > 10#${right_parts[$i]} )); then
+            printf '%s\n' "1"
+            return 0
+        fi
+    done
+
+    printf '%s\n' "0"
+}
+
+_self_update_local_version_file() {
+    printf '%s\n' "${TT_SELF_UPDATE_LOCAL_VERSION_FILE:-${UPDATER_ROOT}/VERSION}"
+}
+
+_self_update_read_local_version() {
+    local version_file
+    local version
+
+    if ! version_file="$(_self_update_local_version_file)"; then
+        return 1
+    fi
+    [[ -f "$version_file" ]] || fail "VERSION file not found at ${version_file}"
+    version="$(<"$version_file")"
+    _self_update_validate_semver "local VERSION" "$version"
+}
+
+_self_update_remote_version_url() {
+    local repo="${TT_SELF_UPDATE_REPO:-tetsuh/tt-env-proto1}"
+    local ref="${TT_SELF_UPDATE_REF:-main}"
+    local version_url
+
+    if [[ -n "${TT_SELF_UPDATE_VERSION_URL:-}" ]]; then
+        version_url="$TT_SELF_UPDATE_VERSION_URL"
+        [[ "$version_url" == https://* ]] || fail "Invalid self-update VERSION URL: ${version_url}"
+        printf '%s\n' "$version_url"
+        return 0
+    fi
+
+    _update_validate_source "$repo" "$ref"
+    version_url="https://api.github.com/repos/${repo}/contents/VERSION?ref=${ref}"
+    printf '%s\n' "$version_url"
+}
+
+_self_update_fetch_remote_version() {
+    local version_url="$1"
+    local tmp_dir
+    local work_dir
+    local version_file
+    local http_code
+    local token=""
+    local version
+    local -a curl_args=()
+
+    command_exists curl || fail "curl is required to check for self-updates."
+    command_exists mktemp || fail "mktemp is required to check for self-updates."
+
+    tmp_dir="${TT_HOME}/.tmp"
+    mkdir -p "$tmp_dir" || fail "Failed to create self-update temp directory: ${tmp_dir}"
+    work_dir="$(mktemp -d "${tmp_dir}/self-update.XXXXXX")" || \
+        fail "Failed to create self-update temp directory."
+    _update_enable_cleanup "$work_dir"
+    version_file="${work_dir}/VERSION"
+
+    curl_args=(
+        --location \
+        --silent \
+        --show-error \
+        --output "$version_file" \
+        --write-out "%{http_code}"
+    )
+
+    if [[ "$version_url" == https://api.github.com/* ]]; then
+        curl_args+=(--header "Accept: application/vnd.github.raw")
+        if token="$(_update_auth_token)"; then
+            curl_args+=(--header "Authorization: Bearer ${token}")
+        fi
+    fi
+    curl_args+=("$version_url")
+
+    if ! http_code="$(curl "${curl_args[@]}")"; then
+        fail "Failed to fetch remote VERSION from ${version_url}."
+    fi
+
+    if [[ "$http_code" != "200" ]]; then
+        fail "Failed to fetch remote VERSION from ${version_url} (HTTP ${http_code})."
+    fi
+
+    version="$(<"$version_file")"
+    _update_disable_cleanup
+    rm -rf -- "$work_dir"
+    _self_update_validate_semver "remote VERSION" "$version"
+}
+
+update_self() {
+    local arg
+    local local_version
+    local remote_version
+    local comparison
+    local version_url
+
+    export TT_SELF_UPDATE_PROCEED=0
+    export TT_SELF_UPDATE_REMOTE_VERSION=""
+
+    while [[ "$#" -gt 0 ]]; do
+        arg="$1"
+        case "$arg" in
+            --self)
+                ;;
+            --help|-h)
+                _update_self_usage
+                return 0
+                ;;
+            *)
+                fail "Unknown self-update option: ${arg}"
+                ;;
+        esac
+        shift
+    done
+
+    # These checks keep failures visible when callers source this library
+    # without set -e; fail may run inside command substitutions.
+    if ! local_version="$(_self_update_read_local_version)"; then
+        return 1
+    fi
+    if ! version_url="$(_self_update_remote_version_url)"; then
+        return 1
+    fi
+    if ! remote_version="$(_self_update_fetch_remote_version "$version_url")"; then
+        return 1
+    fi
+    export TT_SELF_UPDATE_REMOTE_VERSION="$remote_version"
+
+    if ! comparison="$(_self_update_semver_compare "$local_version" "$remote_version")"; then
+        return 1
+    fi
+    case "$comparison" in
+        -1)
+            export TT_SELF_UPDATE_PROCEED=1
+            log_info "Self-update available: ${local_version} -> ${remote_version}."
+            ;;
+        0)
+            log_info "tt-env is already up to date (${local_version})."
+            ;;
+        1)
+            log_info "Local tt-env (${local_version}) is newer than remote (${remote_version}); skipping self-update."
+            ;;
+    esac
 }
 
 _update_stage_manifests() {
