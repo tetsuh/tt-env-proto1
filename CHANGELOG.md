@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- No unreleased changes.
+- Added GitHub Actions CI for lint and Bats on pull requests and `main`.
 
 ## 0.1.0
 

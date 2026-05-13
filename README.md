@@ -1,5 +1,7 @@
 # tt-env-proto1
 
+[![CI](https://github.com/tetsuh/tt-env-proto1/actions/workflows/ci.yml/badge.svg)](https://github.com/tetsuh/tt-env-proto1/actions/workflows/ci.yml)
+
 Prototype repository for **tt-env** — a next-generation environment manager for the Tenstorrent
 software stack.
 
@@ -11,7 +13,7 @@ Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Developm
 🚧 Work in progress. Development is tracked through the GitHub
 [Issues](https://github.com/tetsuh/tt-env-proto1/issues) and
 [Milestones](https://github.com/tetsuh/tt-env-proto1/milestones) of this repository
-(Phase 0 → Phase 10).
+(Phase 0 -> Phase 11).
 
 ## Scope of proto1
 
@@ -22,7 +24,8 @@ Bash, targeting Ubuntu 22.04, and built incrementally via Ticket Driven Developm
   available
 - **Stack manifests**: Sourced from the private repo `tt-env-manifests-proto1`
 - **Secure Boot**: Not supported in proto1 (the tool aborts when Secure Boot is enabled)
-- **CI**: Not configured for proto1 — verification is manual on real Ubuntu 22.04 hardware
+- **CI**: GitHub Actions runs lint and Bats in Ubuntu 22.04; hardware E2E
+  verification remains manual on real Ubuntu 22.04 hardware
 
 ## Install quickstart
 
@@ -37,7 +40,9 @@ install -> use -> status -> update -> self-update verification flow.
 
 ## Verification Flow
 
-Since **proto1** has no automated CI, contributors must run verification scripts locally before opening a Pull Request.
+GitHub Actions runs lint and Bats on pull requests and pushes to `main`.
+Contributors should also run verification scripts locally before opening a pull
+request so failures can be fixed before review.
 
 ### 1. Linting
 
@@ -55,7 +60,9 @@ bash scripts/test.sh
 
 ### 3. Manual Verification
 
-Major changes (especially those touching KMD or system-level state) must be verified on real Ubuntu 22.04 hardware. Detailed verification steps are documented in [docs/e2e.md](./docs/e2e.md).
+Major changes (especially those touching KMD or system-level state) must still
+be verified on real Ubuntu 22.04 hardware. Detailed verification steps are
+documented in [docs/e2e.md](./docs/e2e.md).
 
 ## Contributing
 
