@@ -3,6 +3,7 @@
 setup() {
   REPO_DIR="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
   TT_ENV="${REPO_DIR}/bin/tt-env"
+  helper_pid=""
   export HOME="${BATS_TEST_TMPDIR}/home"
   export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
   export TT_SELF_UPDATE_VERSION_URL="https://example.invalid/VERSION"
@@ -10,6 +11,13 @@ setup() {
   unset TT_SELF_UPDATE_SIGNATURE_URL
   unset GITHUB_TOKEN
   unset GH_TOKEN
+}
+
+teardown() {
+  if [[ -n "${helper_pid:-}" ]]; then
+    kill "$helper_pid" 2>/dev/null || true
+    wait "$helper_pid" 2>/dev/null || true
+  fi
 }
 
 hash_file() {
@@ -130,5 +138,9 @@ EOF
 
   : >"$TT_RUNNING_HELPER_CONTINUE"
   wait "$helper_pid"
-  [ "$(cat "$TT_RUNNING_HELPER_LOG")" = $'old-started\nold-finished' ]
+  helper_pid=""
+  run cat "$TT_RUNNING_HELPER_LOG"
+  [ "$status" -eq 0 ]
+  [ "$output" = $'old-started\nold-finished' ]
+  [ "$(find "$(dirname "$target_file")" -name '.tt-env-self-update.*' | wc -l)" -eq 0 ]
 }
