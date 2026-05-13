@@ -16,6 +16,18 @@ setup() {
   [ "$output" = "ubuntu 22.04" ]
 }
 
+@test "detect_os reads ubuntu 24.04 from os-release" {
+  os_release="${BATS_TEST_TMPDIR}/os-release"
+  printf '%s\n' \
+    'NAME="Ubuntu"' \
+    'ID=ubuntu' \
+    'VERSION_ID="24.04"' >"$os_release"
+
+  run bash -c 'source "$1"; detect_os "$2"; printf "%s %s\n" "$OS_ID" "$OS_VERSION"' bash "$CORE_SH" "$os_release"
+  [ "$status" -eq 0 ]
+  [ "$output" = "ubuntu 24.04" ]
+}
+
 @test "detect_os honors TT_OVERRIDE_OS_ID and TT_OVERRIDE_OS_VERSION" {
   missing_os_release="${BATS_TEST_TMPDIR}/missing-os-release"
 
@@ -24,6 +36,16 @@ setup() {
     bash "$CORE_SH" "$missing_os_release"
   [ "$status" -eq 0 ]
   [[ "$output" == *"ubuntu 22.04"* ]]
+}
+
+@test "detect_os honors Ubuntu 24.04 override" {
+  missing_os_release="${BATS_TEST_TMPDIR}/missing-os-release"
+
+  run env TT_OVERRIDE_OS_ID=ubuntu TT_OVERRIDE_OS_VERSION=24.04 \
+    bash -c 'source "$1"; detect_os "$2"; printf "%s %s\n" "$OS_ID" "$OS_VERSION"' \
+    bash "$CORE_SH" "$missing_os_release"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ubuntu 24.04"* ]]
 }
 
 @test "detect_os fails when os-release is missing" {
