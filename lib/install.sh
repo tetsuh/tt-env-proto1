@@ -18,9 +18,9 @@ source "${INSTALL_LIB_DIR}/security.sh"
 # shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/manifest_parser.sh"
 # shellcheck disable=SC1091
+source "${INSTALL_LIB_DIR}/package_manager.sh"
+# shellcheck disable=SC1091
 source "${INSTALL_LIB_DIR}/shims.sh"
-
-declare -ga TT_INSTALL_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd")
 
 _install_usage() {
     cat <<'EOF'
@@ -73,24 +73,6 @@ _install_os_manifest_path() {
     fi
 }
 
-_install_require_sudo() {
-    if ! command_exists sudo; then
-        fail "sudo is required to install apt packages. Install sudo or run on a system where sudo is available."
-    fi
-}
-
-_install_require_apt_tools() {
-    local repo_count="$1"
-
-    if ! command_exists apt-get; then
-        fail "apt-get is required to install apt packages."
-    fi
-
-    if [[ "$repo_count" -gt 0 ]] && ! command_exists add-apt-repository; then
-        fail "add-apt-repository is required to add repositories. Install software-properties-common."
-    fi
-}
-
 _install_require_sha256_tool() {
     command_exists sha256sum || command_exists shasum
 }
@@ -124,60 +106,6 @@ _install_enable_partial_cleanup() {
 
 _install_disable_partial_cleanup() {
     unset TT_INSTALL_CLEANUP_PARTIAL
-}
-
-_install_required_repos() {
-    if declare -p TT_MANIFEST_LIST_REQUIRED_REPOS >/dev/null 2>&1; then
-        local -n manifest_repos=TT_MANIFEST_LIST_REQUIRED_REPOS
-        if [[ "${#manifest_repos[@]}" -gt 0 ]]; then
-            printf '%s\n' "${manifest_repos[@]}"
-        fi
-    fi
-}
-
-_install_resolved_packages() {
-    local virtual_package
-
-    for virtual_package in "${TT_INSTALL_VIRTUAL_PACKAGES[@]}"; do
-        resolve_package "$virtual_package"
-    done
-}
-
-_install_apt_packages() {
-    local dry_run="$1"
-    local -a repos=()
-    local -a packages=()
-    local repo
-
-    mapfile -t repos < <(_install_required_repos)
-    mapfile -t packages < <(_install_resolved_packages)
-
-    if [[ "${#packages[@]}" -eq 0 ]]; then
-        fail "No apt packages resolved from OS manifest."
-    fi
-
-    if [[ "$dry_run" -eq 1 ]]; then
-        for repo in "${repos[@]}"; do
-            log_info "[dry-run] Would add apt repository: ${repo}"
-        done
-        log_info "[dry-run] Would run apt-get update."
-        log_info "[dry-run] Would install apt packages: ${packages[*]}"
-        return 0
-    fi
-
-    _install_require_sudo
-    _install_require_apt_tools "${#repos[@]}"
-
-    for repo in "${repos[@]}"; do
-        log_info "Adding apt repository: ${repo}"
-        sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"
-    done
-
-    log_info "Updating apt package metadata."
-    sudo apt-get update || fail "Failed to update apt package metadata."
-
-    log_info "Installing apt packages: ${packages[*]}"
-    sudo apt-get install -y "${packages[@]}" || fail "Failed to install apt packages."
 }
 
 _install_component_names() {
@@ -286,7 +214,7 @@ _install_system_packages() {
 
     case "$use_ppa" in
         true)
-            _install_apt_packages "$dry_run"
+            package_manager_install_system_packages "$pkg_manager" "$dry_run"
             ;;
         false)
             log_info "PPA install path is disabled by ${os_manifest}."
