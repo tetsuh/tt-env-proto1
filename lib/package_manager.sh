@@ -123,8 +123,14 @@ _package_manager_apt_install_system_packages() {
 }
 
 _package_manager_require_dnf_tools() {
+    local repo_count="$1"
+
     if ! command_exists dnf; then
         fail "dnf is required to install dnf packages."
+    fi
+
+    if [[ "$repo_count" -gt 0 ]] && ! dnf config-manager --help >/dev/null 2>&1; then
+        fail "dnf config-manager is required to add repositories. Install dnf-plugins-core."
     fi
 }
 
@@ -147,7 +153,7 @@ _package_manager_dnf_install_system_packages() {
     fi
 
     _package_manager_require_sudo dnf
-    _package_manager_require_dnf_tools
+    _package_manager_require_dnf_tools "${#repos[@]}"
 
     for repo in "${repos[@]}"; do
         log_info "Adding dnf repository: ${repo}"
