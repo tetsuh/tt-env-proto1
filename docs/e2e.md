@@ -13,8 +13,9 @@ Supported Ubuntu releases for proto1:
 | Ubuntu 22.04 | `ubuntu-22.04.env` | Yes | Required for hardware/system changes affecting 22.04 |
 | Ubuntu 24.04 | `ubuntu-24.04.env` | Yes | Required for hardware/system changes affecting 24.04 |
 
-Other distributions are out of scope for proto1 until package-manager adapters
-and distro-specific manifests are added.
+Fedora-family manifests are currently test fixtures only. They exercise the dnf
+adapter in automated tests, but Fedora is not a supported manual E2E target
+until real Fedora hardware/system validation is completed.
 
 ## 1. Host prerequisites
 

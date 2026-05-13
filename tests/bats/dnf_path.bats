@@ -8,7 +8,7 @@ setup() {
   mkdir -p "${TT_HOME}/manifests"
   cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
 PKG_MANAGER="dnf"
-USE_PPA="true"
+USE_SYSTEM_PACKAGES="true"
 REQUIRED_REPOS=(
   "https://repo.example.invalid/tenstorrent.repo"
 )
