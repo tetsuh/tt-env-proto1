@@ -12,6 +12,7 @@
 - Added a dnf package manager adapter for future Fedora manifests.
 - Added an experimental Fedora 40 dnf manifest fixture for adapter coverage.
 - Added `USE_SYSTEM_PACKAGES` as a neutral install-manifest flag while preserving `USE_PPA`.
+- Documented package manager adapter and distro manifest contracts.
 
 ## 0.1.0
 

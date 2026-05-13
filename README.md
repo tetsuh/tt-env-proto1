@@ -35,6 +35,9 @@ verification is completed.
 
 See [docs/install.md](./docs/install.md) for `tt-env install <release>` usage,
 prerequisites, sudo behavior, fallback downloads, and troubleshooting.
+See [docs/package-manager-adapters.md](./docs/package-manager-adapters.md)
+for OS manifest fields, package manager adapter responsibilities, and distro
+fixture expectations.
 See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
 See [docs/kmd-safety.md](./docs/kmd-safety.md) for KMD preflight, Secure Boot,
