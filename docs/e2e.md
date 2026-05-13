@@ -48,7 +48,7 @@ tt-env --version
 Expected output:
 
 ```text
-0.0.0
+0.1.0
 ```
 
 Verify the trusted proto1 signing key was bootstrapped:
@@ -175,7 +175,7 @@ tt-env update --self
 Expected output when the remote version equals the local version:
 
 ```text
-[INFO] tt-env is already up to date (0.0.0).
+[INFO] tt-env is already up to date (0.1.0).
 ```
 
 For a replacement-path smoke test, use an isolated copy as the self-update target
@@ -200,7 +200,7 @@ If a newer signed `bin/tt-env` exists at the configured remote ref, expected
 output includes:
 
 ```text
-[INFO] Self-update available: 0.0.0 -> <remote-version>.
+[INFO] Self-update available: 0.1.0 -> <remote-version>.
 [INFO] Updated tt-env to <remote-version>.
 ```
 
