@@ -24,7 +24,7 @@ required fields.
 - [ ] Manual scenario(s): <list>
 
   - [ ] Install: `tt-env install <release>`
-  - [ ] Use: `tt-env use <release>`
+  - [ ] Use: `tt-env use <release>` (verify with `readlink ~/.tt-env/current`)
   - [ ] Status: `tt-env status`
   - [ ] Update: `tt-env update`
   - [ ] Self-update: `tt-env update --self`
@@ -34,7 +34,7 @@ required fields.
   - OS: <contents of `/etc/os-release` ID and VERSION_ID>
   - Kernel: <output of `uname -r`>
   - Secure Boot: <output of `mokutil --sb-state`, or "not available">
-  - Tenstorrent hardware: <yes/no; include `lspci` summary if yes>
+  - Tenstorrent hardware: <yes/no; include `lspci -d 1e52:` summary if yes>
   - Manifest source: <default / override URL / private repo>
   - Simulated steps: <none, or list steps not run on real hardware>
   - Deviations: <none, or describe>
