@@ -32,6 +32,8 @@ See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
 See [docs/kmd-safety.md](./docs/kmd-safety.md) for KMD preflight, Secure Boot,
 swap, rollback, and recovery guidance.
+See [docs/e2e.md](./docs/e2e.md) for the full Ubuntu 22.04 manual
+install -> use -> status -> update -> self-update verification flow.
 
 ## Verification Flow
 
@@ -53,7 +55,7 @@ bash scripts/test.sh
 
 ### 3. Manual Verification
 
-Major changes (especially those touching KMD or system-level state) must be verified on real Ubuntu 22.04 hardware. Detailed verification steps are documented in [docs/e2e.md](./docs/e2e.md) (Phase 10).
+Major changes (especially those touching KMD or system-level state) must be verified on real Ubuntu 22.04 hardware. Detailed verification steps are documented in [docs/e2e.md](./docs/e2e.md).
 
 ## Contributing
 
