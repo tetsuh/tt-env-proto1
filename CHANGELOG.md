@@ -9,6 +9,7 @@
 - Expanded the hosted CI lint and Bats matrix to Ubuntu 22.04 and 24.04 containers.
 - Documented Ubuntu 22.04 and 24.04 support boundaries.
 - Extracted install package manager operations behind an adapter dispatcher.
+- Added a dnf package manager adapter for future Fedora manifests.
 
 ## 0.1.0
 
