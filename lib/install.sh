@@ -208,9 +208,7 @@ _install_system_packages() {
     [[ -n "$pkg_manager" ]] || fail "OS manifest is missing PKG_MANAGER: ${os_manifest}"
     [[ -n "$use_ppa" ]] || fail "OS manifest is missing USE_PPA: ${os_manifest}"
 
-    if [[ "$pkg_manager" != "apt" ]]; then
-        fail "Unsupported package manager for install: ${pkg_manager}"
-    fi
+    package_manager_require_supported "$pkg_manager"
 
     case "$use_ppa" in
         true)
