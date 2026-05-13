@@ -10,6 +10,7 @@
 - Documented Ubuntu 22.04 and 24.04 support boundaries.
 - Extracted install package manager operations behind an adapter dispatcher.
 - Added a dnf package manager adapter for future Fedora manifests.
+- Added an experimental Fedora 40 dnf manifest fixture for adapter coverage.
 
 ## 0.1.0
 

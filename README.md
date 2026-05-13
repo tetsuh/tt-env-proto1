@@ -27,6 +27,10 @@ Bash, targeting Ubuntu 22.04 and 24.04, and built incrementally via Ticket Drive
 - **CI**: GitHub Actions runs lint and Bats in Ubuntu 22.04 and 24.04
   containers; hardware E2E verification remains manual on real Ubuntu hosts
 
+Fedora-family manifests are currently fixtures for dnf adapter development
+only. They are not included in the supported OS list until real Fedora manual
+verification is completed.
+
 ## Install quickstart
 
 See [docs/install.md](./docs/install.md) for `tt-env install <release>` usage,
