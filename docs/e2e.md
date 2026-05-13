@@ -1,14 +1,24 @@
-# Ubuntu 22.04 end-to-end verification
+# Ubuntu end-to-end verification
 
-This checklist verifies proto1 on a real Ubuntu 22.04 host. It covers
+This checklist verifies proto1 on a real supported Ubuntu host. It covers
 `install`, `use`, `status`, `update`, and `update --self`.
 
 Hosted CI covers shellcheck and Bats only. Record the command transcript, host
 notes, and any deviations in the pull request that depends on this manual run.
 
+Supported Ubuntu releases for proto1:
+
+| Release | Manifest | Hosted CI | Manual E2E |
+| --- | --- | --- | --- |
+| Ubuntu 22.04 | `ubuntu-22.04.env` | Yes | Required for hardware/system changes affecting 22.04 |
+| Ubuntu 24.04 | `ubuntu-24.04.env` | Yes | Required for hardware/system changes affecting 24.04 |
+
+Other distributions are out of scope for proto1 until package-manager adapters
+and distro-specific manifests are added.
+
 ## 1. Host prerequisites
 
-Use an Ubuntu 22.04 machine with Secure Boot disabled.
+Use an Ubuntu 22.04 or Ubuntu 24.04 machine with Secure Boot disabled.
 
 ```bash
 cat /etc/os-release | grep -E '^(ID|VERSION_ID)='
@@ -20,7 +30,7 @@ Expected output:
 
 ```text
 ID=ubuntu
-VERSION_ID="22.04"
+VERSION_ID="<22.04 or 24.04>"
 SecureBoot disabled
 ```
 
@@ -79,8 +89,9 @@ Expected output:
 Confirm local manifest cache files exist:
 
 ```bash
+os_version="$(. /etc/os-release && printf '%s' "${VERSION_ID}")"
 test -f "${HOME}/.tt-env/releases/2024.1.json"
-test -f "${HOME}/.tt-env/manifests/ubuntu-22.04.env"
+test -f "${HOME}/.tt-env/manifests/ubuntu-${os_version}.env"
 test -f "${HOME}/.tt-env/manifests/last_update"
 ```
 
