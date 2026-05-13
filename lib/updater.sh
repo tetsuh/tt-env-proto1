@@ -398,6 +398,7 @@ _self_update_remote_version_url() {
 _self_update_fetch_remote_version() {
     local version_url="$1"
     local tmp_dir
+    local work_dir
     local version_file
     local http_code
     local token=""
@@ -409,8 +410,10 @@ _self_update_fetch_remote_version() {
 
     tmp_dir="${TT_HOME}/.tmp"
     mkdir -p "$tmp_dir" || fail "Failed to create self-update temp directory: ${tmp_dir}"
-    version_file="$(mktemp "${tmp_dir}/self-update-version.XXXXXX")" || \
-        fail "Failed to create self-update temp file."
+    work_dir="$(mktemp -d "${tmp_dir}/self-update.XXXXXX")" || \
+        fail "Failed to create self-update temp directory."
+    _update_enable_cleanup "$work_dir"
+    version_file="${work_dir}/VERSION"
 
     curl_args=(
         --location \
@@ -429,17 +432,16 @@ _self_update_fetch_remote_version() {
     curl_args+=("$version_url")
 
     if ! http_code="$(curl "${curl_args[@]}")"; then
-        rm -f -- "$version_file"
         fail "Failed to fetch remote VERSION from ${version_url}."
     fi
 
     if [[ "$http_code" != "200" ]]; then
-        rm -f -- "$version_file"
         fail "Failed to fetch remote VERSION from ${version_url} (HTTP ${http_code})."
     fi
 
     version="$(<"$version_file")"
-    rm -f -- "$version_file"
+    _update_disable_cleanup
+    rm -rf -- "$work_dir"
     _self_update_validate_semver "remote VERSION" "$version"
 }
 
@@ -469,6 +471,8 @@ update_self() {
         shift
     done
 
+    # These checks keep failures visible when callers source this library
+    # without set -e; fail may run inside command substitutions.
     if ! local_version="$(_self_update_read_local_version)"; then
         return 1
     fi

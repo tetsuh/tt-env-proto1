@@ -66,6 +66,7 @@ EOF
   [[ "$output" == *"tt-env is already up to date (0.0.0)."* ]]
   [ "$(cat "$TT_SELF_UPDATE_URL_LOG")" = "$TT_SELF_UPDATE_VERSION_URL" ]
   [ ! -s "$TT_SELF_UPDATE_HEADER_LOG" ]
+  [ "$(find "${TT_HOME}/.tmp" -mindepth 1 -maxdepth 1 | wc -l)" -eq 0 ]
   [ ! -e "${TT_HOME}/manifests/last_update" ]
 }
 
