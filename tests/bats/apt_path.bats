@@ -72,9 +72,9 @@ EOF
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
-@test "tt-env install selects Linux Mint 22.2 OS manifest when overridden" {
+@test "tt-env install selects Linux Mint 22.1 OS manifest when overridden" {
   mkdir -p "${TT_HOME}/manifests"
-  cat >"${TT_HOME}/manifests/linuxmint-22.2.env" <<'EOF'
+  cat >"${TT_HOME}/manifests/linuxmint-22.1.env" <<'EOF'
 PKG_MANAGER="apt"
 USE_SYSTEM_PACKAGES="true"
 REQUIRED_REPOS=(
@@ -88,10 +88,10 @@ WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
 
-  run env BASH_ENV="$bash_env" TT_OVERRIDE_OS_ID=linuxmint TT_OVERRIDE_OS_VERSION=22.2 \
+  run env BASH_ENV="$bash_env" TT_OVERRIDE_OS_ID=linuxmint TT_OVERRIDE_OS_VERSION=22.1 \
     "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Using override OS: linuxmint 22.2"* ]]
+  [[ "$output" == *"Using override OS: linuxmint 22.1"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }

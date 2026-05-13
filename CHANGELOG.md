@@ -13,7 +13,7 @@
 - Added an experimental Fedora 40 dnf manifest fixture for adapter coverage.
 - Added `USE_SYSTEM_PACKAGES` as a neutral install-manifest flag while preserving `USE_PPA`.
 - Documented package manager adapter and distro manifest contracts.
-- Added an unofficial Linux Mint 22.2 compatibility manifest with detection and lookup coverage.
+- Added an unofficial Linux Mint 22.1 compatibility manifest with detection and lookup coverage.
 
 ## 0.1.0
 

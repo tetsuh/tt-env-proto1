@@ -21,7 +21,7 @@ assert_installed_layout() {
   [ -f "${TT_HOME}/lib/version_manager.sh" ]
   [ -f "${TT_HOME}/manifests/ubuntu-22.04.env" ]
   [ -f "${TT_HOME}/manifests/ubuntu-24.04.env" ]
-  [ -f "${TT_HOME}/manifests/linuxmint-22.2.env" ]
+  [ -f "${TT_HOME}/manifests/linuxmint-22.1.env" ]
   [ -f "${TT_HOME}/releases/2024.1.json" ]
   [ -f "${TT_HOME}/VERSION" ]
   [ -x "${TT_HOME}/shims/tt-smi" ]

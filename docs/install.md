@@ -4,7 +4,7 @@
 `${TT_HOME}/versions/<release>`. If `TT_HOME` is unset, `tt-env` uses
 `${HOME}/.tt-env`.
 
-Proto1 targets Ubuntu 22.04 and Ubuntu 24.04. Linux Mint 22.2 is included as an
+Proto1 targets Ubuntu 22.04 and Ubuntu 24.04. Linux Mint 22.1 is included as an
 unofficial Ubuntu 24.04-compatible target and still needs real-host validation
 before relying on KMD or hardware-level behavior. Fedora-family manifests are
 fixture-only until manual validation exists.

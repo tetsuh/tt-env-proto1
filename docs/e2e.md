@@ -17,7 +17,7 @@ Unofficial compatibility targets:
 
 | Release | Manifest | Hosted CI | Manual E2E |
 | --- | --- | --- | --- |
-| Linux Mint 22.2 | `linuxmint-22.2.env` | Parser and Bats coverage only | Required before relying on KMD or hardware/system behavior |
+| Linux Mint 22.1 | `linuxmint-22.1.env` | Parser and Bats coverage only | Required before relying on KMD or hardware/system behavior |
 
 Fedora-family manifests are currently test fixtures only. They exercise the dnf
 adapter in automated tests, but Fedora is not a supported manual E2E target
@@ -25,7 +25,7 @@ until real Fedora hardware/system validation is completed.
 
 ## 1. Host prerequisites
 
-Use an Ubuntu 22.04, Ubuntu 24.04, or Linux Mint 22.2 machine with Secure Boot disabled.
+Use an Ubuntu 22.04, Ubuntu 24.04, or Linux Mint 22.1 machine with Secure Boot disabled.
 
 ```bash
 cat /etc/os-release | grep -E '^(ID|VERSION_ID)='
@@ -37,7 +37,7 @@ Expected output:
 
 ```text
 ID=<ubuntu or linuxmint>
-VERSION_ID="<22.04, 24.04, or 22.2>"
+VERSION_ID="<22.04, 24.04, or 22.1>"
 SecureBoot disabled
 ```
 
