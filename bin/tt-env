@@ -25,6 +25,7 @@ tt-env - Tenstorrent Environment Manager
 
 Usage:
   tt-env <command> [options]
+  tt-env help [command]
 
 Commands:
   install    Install a Tenstorrent stack release
@@ -38,6 +39,147 @@ Options:
   --help     Show this help message
   --version  Print tt-env version
 EOF
+}
+
+help_install() {
+    cat <<'EOF'
+tt-env install - install a Tenstorrent stack release
+
+Synopsis:
+  tt-env install [--dry-run] [--force] <release>
+
+Options:
+  --dry-run  Show install actions without writing the version directory
+  --force    Recreate an existing or partially installed version directory
+  -h, --help Show this help message
+
+Examples:
+  tt-env install 2024.1
+  tt-env install --dry-run 2024.1
+  tt-env install --force 2024.1
+
+Exit codes:
+  0  Release is installed or the requested dry run completed
+  1  Invalid arguments, missing manifests, failed package install, or verification failure
+EOF
+}
+
+help_use() {
+    cat <<'EOF'
+tt-env use - switch the active Tenstorrent stack release
+
+Synopsis:
+  tt-env use <release>
+
+Options:
+  -h, --help Show this help message
+
+Examples:
+  tt-env use 2024.1
+  readlink ~/.tt-env/current
+
+Exit codes:
+  0  Active release symlink was updated
+  1  Invalid arguments, release is not installed, or symlink update failed
+EOF
+}
+
+help_list() {
+    cat <<'EOF'
+tt-env list - list available and installed stack releases
+
+Synopsis:
+  tt-env list
+
+Options:
+  -h, --help Show this help message
+
+Examples:
+  tt-env list
+
+Exit codes:
+  0  Releases were listed
+  1  Invalid arguments or manifest parsing failed
+EOF
+}
+
+help_status() {
+    cat <<'EOF'
+tt-env status - show hardware and environment status
+
+Synopsis:
+  tt-env status
+
+Options:
+  -h, --help Show this help message
+
+Examples:
+  tt-env status
+  lspci -d 1e52:
+
+Exit codes:
+  0  Status was printed
+  1  Invalid arguments or required hardware detection tools are missing
+EOF
+}
+
+help_update() {
+    cat <<'EOF'
+tt-env update - sync manifests and metadata
+
+Synopsis:
+  tt-env update
+  tt-env update --self
+
+Options:
+  --self     Check for and apply a signed tt-env binary update
+  -h, --help Show this help message
+
+Examples:
+  tt-env update
+  tt-env update --self
+
+Exit codes:
+  0  Manifests were updated, or self-update completed or was not needed
+  1  Invalid arguments, authentication failure, download failure, or verification failure
+EOF
+}
+
+help_command() {
+    local topic="${1:-}"
+
+    if [[ "$#" -gt 1 ]]; then
+        fail "help accepts at most one command."
+    fi
+
+    case "$topic" in
+        ""|--help|-h)
+            usage
+            ;;
+        install)
+            help_install
+            ;;
+        use)
+            help_use
+            ;;
+        list)
+            help_list
+            ;;
+        status)
+            help_status
+            ;;
+        update)
+            help_update
+            ;;
+        help)
+            usage
+            ;;
+        *)
+            log_error "Unknown help topic: ${topic}"
+            usage >&2
+            return 1
+            ;;
+    esac
 }
 
 print_version() {
@@ -76,42 +218,61 @@ main() {
         --version)
             print_version
             ;;
-        --help|-h|help)
+        --help|-h)
             init_tt_home
             usage
+            ;;
+        help)
+            init_tt_home
+            shift || true
+            help_command "$@"
             ;;
         install)
             init_tt_home
             shift || true
-            if ! args_request_help "$@"; then
-                maybe_update_manifests
+            if args_request_help "$@"; then
+                help_install
+                return 0
             fi
+            maybe_update_manifests
             install_release "$@"
             ;;
         use)
             init_tt_home
             shift || true
+            if args_request_help "$@"; then
+                help_use
+                return 0
+            fi
             use_release "$@"
             ;;
         status)
             init_tt_home
             shift || true
-            if ! args_request_help "$@"; then
-                maybe_update_manifests
+            if args_request_help "$@"; then
+                help_status
+                return 0
             fi
+            maybe_update_manifests
             status_show "$@"
             ;;
         list)
             init_tt_home
             shift || true
-            if ! args_request_help "$@"; then
-                maybe_update_manifests
+            if args_request_help "$@"; then
+                help_list
+                return 0
             fi
+            maybe_update_manifests
             list_releases "$@"
             ;;
         update)
             init_tt_home
             shift || true
+            if args_request_help "$@"; then
+                help_update
+                return 0
+            fi
             if [[ "${1:-}" == "--self" ]]; then
                 update_self "$@"
             else
