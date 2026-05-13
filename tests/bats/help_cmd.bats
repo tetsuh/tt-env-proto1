@@ -1,0 +1,47 @@
+#!/usr/bin/env bats
+
+setup() {
+  TT_ENV="${BATS_TEST_DIRNAME}/../../bin/tt-env"
+  export HOME="${BATS_TEST_TMPDIR}/home"
+  export TT_HOME="${BATS_TEST_TMPDIR}/tt-home"
+}
+
+@test "tt-env help install lists synopsis options examples and exit codes" {
+  run "$TT_ENV" help install
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"tt-env install - install a Tenstorrent stack release"* ]]
+  [[ "$output" == *"Synopsis:"* ]]
+  [[ "$output" == *"tt-env install [--dry-run] [--force] <release>"* ]]
+  [[ "$output" == *"--dry-run"* ]]
+  [[ "$output" == *"--force"* ]]
+  [[ "$output" == *"Examples:"* ]]
+  [[ "$output" == *"tt-env install --dry-run 2024.1"* ]]
+  [[ "$output" == *"Exit codes:"* ]]
+}
+
+@test "tt-env install --help prints detailed install help" {
+  run "$TT_ENV" install --help
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"Examples:"* ]]
+  [[ "$output" == *"tt-env install --force 2024.1"* ]]
+  [[ "$output" == *"Exit codes:"* ]]
+}
+
+@test "tt-env help update documents self-update" {
+  run "$TT_ENV" help update
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"tt-env update --self"* ]]
+  [[ "$output" == *"--self"* ]]
+  [[ "$output" == *"verification failure"* ]]
+}
+
+@test "tt-env help rejects unknown help topics" {
+  run "$TT_ENV" help definitely-not-a-command
+  [ "$status" -ne 0 ]
+
+  [[ "$output" == *"Unknown help topic: definitely-not-a-command"* ]]
+  [[ "$output" == *"Usage:"* ]]
+}
