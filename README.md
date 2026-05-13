@@ -18,7 +18,7 @@ Bash, targeting Ubuntu 22.04 and 24.04, and built incrementally via Ticket Drive
 ## Scope of proto1
 
 - **Language**: Bash (zero-dependency bootstrap)
-- **Target OS**: Ubuntu 22.04 and Ubuntu 24.04
+- **Target OS**: Ubuntu 22.04 and Ubuntu 24.04; unofficial Linux Mint 22.2 compatibility
 - **Install location**: `~/.tt-env/versions/<release>/` (KMD lives in the system module path)
 - **Distribution**: Falls back to GitHub Releases direct download when the official PPA is not
   available
@@ -30,6 +30,9 @@ Bash, targeting Ubuntu 22.04 and 24.04, and built incrementally via Ticket Drive
 Fedora-family manifests are currently fixtures for dnf adapter development
 only. They are not included in the supported OS list until real Fedora manual
 verification is completed.
+Linux Mint 22.2 is included as an unofficial Ubuntu 24.04-compatible target; it
+still requires manual validation on real Linux Mint hosts before relying on KMD
+or hardware-level behavior.
 
 ## Install quickstart
 

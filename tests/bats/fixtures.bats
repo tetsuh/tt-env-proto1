@@ -35,6 +35,23 @@ setup() {
   [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
 }
 
+@test "OS parser accepts repository Linux Mint 22.2 manifest" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[PKG_MANAGER]}"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
+    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
+  ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/linuxmint-22.2.env"
+
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "apt" ]
+  [ "${lines[1]}" = "true" ]
+  [ "${lines[2]}" = "tt-kmd-dkms" ]
+  [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
+}
+
 @test "OS parser accepts Fedora dnf fixture" {
   run bash -c '
     source "$1"
@@ -68,6 +85,9 @@ setup() {
   [ "$status" -eq 0 ]
 
   run cmp -s "${REPO_DIR}/manifests/ubuntu-24.04.env" "${REPO_DIR}/tests/fixtures/manifests/ubuntu-24.04.env"
+  [ "$status" -eq 0 ]
+
+  run cmp -s "${REPO_DIR}/manifests/linuxmint-22.2.env" "${REPO_DIR}/tests/fixtures/manifests/linuxmint-22.2.env"
   [ "$status" -eq 0 ]
 
   run cmp -s "${REPO_DIR}/releases/2024.1.json" "${REPO_DIR}/tests/fixtures/releases/2024.1.json"
