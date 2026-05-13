@@ -47,10 +47,36 @@ printf '%s\n' "$url" >"$TT_SELF_UPDATE_URL_LOG"
 if [ -n "${TT_FAKE_SELF_UPDATE_CURL_EXIT:-}" ]; then
   exit "$TT_FAKE_SELF_UPDATE_CURL_EXIT"
 fi
-printf '%s\n' "${TT_FAKE_SELF_UPDATE_REMOTE_VERSION:-0.0.0}" >"$output"
+case "$url" in
+  *VERSION*)
+    printf '%s\n' "${TT_FAKE_SELF_UPDATE_REMOTE_VERSION:-0.0.0}" >"$output"
+    ;;
+  *.asc)
+    printf 'signature\n' >"$output"
+    ;;
+  *)
+    printf '%s\n' "${TT_FAKE_SELF_UPDATE_BINARY:-#!/usr/bin/env bash}" >"$output"
+    ;;
+esac
 printf '%s' "${TT_FAKE_SELF_UPDATE_HTTP_CODE:-200}"
 EOF
-  chmod +x "${fake_bin}/curl"
+  cat >"${fake_bin}/gpg" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"--with-colons"* && "$*" == *"--fingerprint"* ]]; then
+  printf 'pub:::::::::\n'
+  printf 'fpr:::::::::C55FEB196FB67D83F63FE18CBEF418235C011DF8:\n'
+  exit 0
+fi
+if [[ "$*" == *"--import"* ]]; then
+  exit 0
+fi
+if [[ "$*" == *"--verify"* ]]; then
+  printf '[GNUPG:] VALIDSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 0 0 0 0 0 0 0 0 C55FEB196FB67D83F63FE18CBEF418235C011DF8\n'
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${fake_bin}/curl" "${fake_bin}/gpg"
   printf '%s\n' "$fake_bin"
 }
 
@@ -86,6 +112,13 @@ EOF
 
 @test "update_self sets proceed flag when remote version is newer" {
   fake_bin="$(make_fake_self_update_tools)"
+  target_file="${BATS_TEST_TMPDIR}/tt-env"
+  printf '%s\n' "old" >"$target_file"
+  chmod +x "$target_file"
+  export TT_SELF_UPDATE_TARGET_FILE="$target_file"
+  export TT_SELF_UPDATE_BINARY_URL="https://example.invalid/bin/tt-env"
+  export TT_FAKE_SELF_UPDATE_BINARY='#!/usr/bin/env bash
+printf "%s\n" new'
   export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.0.1"
 
   PATH="${fake_bin}:${PATH}" run bash -c '
@@ -96,7 +129,9 @@ EOF
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"Self-update available: 0.0.0 -> 0.0.1."* ]]
+  [[ "$output" == *"Updated tt-env to 0.0.1."* ]]
   [[ "$output" == *"proceed=1 remote=0.0.1"* ]]
+  [[ "$(cat "$target_file")" == *"new"* ]]
 }
 
 @test "update_self does not proceed when local version is newer" {
