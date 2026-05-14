@@ -2,18 +2,30 @@
 
 ## Unreleased
 
+### Phase 11 - CI & Release Hygiene
+
 - Added GitHub Actions CI for lint and Bats on pull requests and `main`.
 - Updated the CI checkout action to a Node.js 24 runtime release.
+
+### Phase 12 - Multi-distro Groundwork
+
 - Added an Ubuntu 24.04 OS manifest for multi-distro groundwork.
 - Added Ubuntu 24.04 OS detection and manifest lookup test coverage.
 - Expanded the hosted CI lint and Bats matrix to Ubuntu 22.04 and 24.04 containers.
 - Documented Ubuntu 22.04 and 24.04 support boundaries.
+
+### Phase 13 - Package Manager Abstraction
+
 - Extracted install package manager operations behind an adapter dispatcher.
 - Added a dnf package manager adapter for future Fedora manifests.
 - Added an experimental Fedora 40 dnf manifest fixture for adapter coverage.
 - Added `USE_SYSTEM_PACKAGES` as a neutral install-manifest flag while preserving `USE_PPA`.
 - Documented package manager adapter and distro manifest contracts.
+
+### Phase 14 - Linux Mint Compatibility
+
 - Added an unofficial Linux Mint 22.1 compatibility manifest with detection and lookup coverage.
+- Documented Linux Mint 22.1 as an Ubuntu 24.04-compatible target that still requires manual real-host validation before relying on KMD or hardware behavior.
 
 ## 0.1.0
 
