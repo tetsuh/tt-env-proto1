@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Changes below have landed after `v0.1.0` and are not part of a tagged release yet.
+
 ### Phase 11 - CI & Release Hygiene
 
 - Added GitHub Actions CI for lint and Bats on pull requests and `main`.
