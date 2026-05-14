@@ -13,7 +13,7 @@ Bash, targeting Ubuntu 22.04 and 24.04, and built incrementally via Ticket Drive
 🚧 Work in progress. Development is tracked through the GitHub
 [Issues](https://github.com/tetsuh/tt-env-proto1/issues) and
 [Milestones](https://github.com/tetsuh/tt-env-proto1/milestones) of this repository
-(Phase 0 -> Phase 13).
+(Phase 0 -> Phase 14).
 
 ## Scope of proto1
 

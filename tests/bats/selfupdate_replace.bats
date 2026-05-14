@@ -55,7 +55,7 @@ while [ "$#" -gt 0 ]; do
 done
 case "$url" in
   *VERSION)
-    printf '%s\n' "0.1.1" >"$output"
+    printf '%s\n' "0.2.1" >"$output"
     ;;
   *.asc)
     printf '%s\n' "signature" >"$output"
@@ -101,7 +101,7 @@ EOF
   PATH="${fake_bin}:${PATH}" run "$TT_ENV" update --self
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Updated tt-env to 0.1.1."* ]]
+  [[ "$output" == *"Updated tt-env to 0.2.1."* ]]
   [ "$("$target_file")" = "new-version" ]
   [ -x "$target_file" ]
   [ "$(find "$(dirname "$target_file")" -name '.tt-env-self-update.*' | wc -l)" -eq 0 ]
