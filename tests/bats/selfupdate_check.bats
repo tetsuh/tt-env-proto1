@@ -82,14 +82,14 @@ EOF
 
 @test "tt-env update --self exits cleanly when remote version is equal" {
   fake_bin="$(make_fake_self_update_tools)"
-  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.1.0"
+  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.2.0"
   export GITHUB_TOKEN="must-not-be-used"
   export GH_TOKEN="must-not-be-used"
 
   PATH="${fake_bin}:${PATH}" run "$TT_ENV" update --self
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"tt-env is already up to date (0.1.0)."* ]]
+  [[ "$output" == *"tt-env is already up to date (0.2.0)."* ]]
   [ "$(cat "$TT_SELF_UPDATE_URL_LOG")" = "$TT_SELF_UPDATE_VERSION_URL" ]
   [ ! -s "$TT_SELF_UPDATE_HEADER_LOG" ]
   [ "$(find "${TT_HOME}/.tmp" -mindepth 1 -maxdepth 1 | wc -l)" -eq 0 ]
@@ -98,7 +98,7 @@ EOF
 
 @test "tt-env update --self defaults to GitHub API with authentication when available" {
   fake_bin="$(make_fake_self_update_tools)"
-  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.1.0"
+  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.2.0"
   export GITHUB_TOKEN="self-update-token"
   unset TT_SELF_UPDATE_VERSION_URL
 
@@ -119,7 +119,7 @@ EOF
   export TT_SELF_UPDATE_BINARY_URL="https://example.invalid/bin/tt-env"
   export TT_FAKE_SELF_UPDATE_BINARY='#!/usr/bin/env bash
 printf "%s\n" new'
-  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.1.1"
+  export TT_FAKE_SELF_UPDATE_REMOTE_VERSION="0.2.1"
 
   PATH="${fake_bin}:${PATH}" run bash -c '
     source "$1/lib/updater.sh"
@@ -128,9 +128,9 @@ printf "%s\n" new'
   ' bash "$REPO_DIR"
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"Self-update available: 0.1.0 -> 0.1.1."* ]]
-  [[ "$output" == *"Updated tt-env to 0.1.1."* ]]
-  [[ "$output" == *"proceed=1 remote=0.1.1"* ]]
+  [[ "$output" == *"Self-update available: 0.2.0 -> 0.2.1."* ]]
+  [[ "$output" == *"Updated tt-env to 0.2.1."* ]]
+  [[ "$output" == *"proceed=1 remote=0.2.1"* ]]
   [[ "$(cat "$target_file")" == *"new"* ]]
 }
 

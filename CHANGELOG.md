@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-Changes below have landed after `v0.1.0` and are not part of a tagged release yet.
+No changes yet.
+
+## 0.2.0
+
+Proto1 v0.2.0 expands the post-v0.1.0 prototype with hosted CI, Ubuntu
+24.04 coverage, package-manager adapters, and unofficial Linux Mint 22.1
+compatibility.
 
 ### Phase 11 - CI & Release Hygiene
 
