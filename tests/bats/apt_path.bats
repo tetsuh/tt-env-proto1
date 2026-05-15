@@ -95,3 +95,35 @@ EOF
   [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
+
+@test "tt-env install on Linux Mint bypasses mintSources.py for ppa: repos" {
+  mkdir -p "${TT_HOME}/manifests"
+  cat >"${TT_HOME}/manifests/linuxmint-22.1.env" <<'EOF'
+PKG_MANAGER="apt"
+USE_SYSTEM_PACKAGES="true"
+REQUIRED_REPOS=(
+  "ppa:tenstorrent/ppa"
+)
+VIRT_PKG_CMAKE="cmake-mint"
+VIRT_PKG_NINJA="ninja-build-mint"
+VIRT_PKG_ZLIB="zlib1g-dev-mint"
+VIRT_PKG_KMD="tt-kmd-dkms-mint"
+WORKAROUNDS=()
+EOF
+
+  fake_bin="$(make_fake_sudo)"
+  curl_fail_bin="$(make_fake_curl_fail)"
+
+  run env PATH="${curl_fail_bin}:${fake_bin}:${PATH}" \
+    TT_OVERRIDE_OS_ID=linuxmint TT_OVERRIDE_OS_VERSION=22.1 \
+    "$TT_ENV" install 2024.1
+
+  [ "$status" -eq 0 ]
+  [ -d "${TT_HOME}/versions/2024.1" ]
+
+  mapfile -t apt_calls <"$TT_APT_LOG"
+  # Mint path writes the apt source directly via tee, not via add-apt-repository
+  [[ "${apt_calls[0]}" == "tee /etc/apt/sources.list.d/tenstorrent-ppa-"* ]]
+  [ "${apt_calls[1]}" = "apt-get update" ]
+  [ "${apt_calls[2]}" = "apt-get install -y cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint" ]
+}

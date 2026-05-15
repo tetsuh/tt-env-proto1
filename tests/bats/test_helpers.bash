@@ -40,6 +40,20 @@ EOF
   printf '%s\n' "$fake_bin"
 }
 
+# Creates a fake curl that always fails (exit 1). Useful for tests that want to
+# suppress network access without hiding curl from command_exists.
+make_fake_curl_fail() {
+  local fake_bin="${BATS_TEST_TMPDIR}/fake-curl-fail-bin"
+
+  mkdir -p "$fake_bin"
+  cat >"${fake_bin}/curl" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+  chmod +x "${fake_bin}/curl"
+  printf '%s\n' "$fake_bin"
+}
+
 make_command_absent_env() {
   local command_name="$1"
   local bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"

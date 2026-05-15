@@ -89,6 +89,78 @@ _package_manager_require_apt_tools() {
     fi
 }
 
+_package_manager_os_release_field() {
+    local field="$1"
+    local value="" line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        case "$line" in
+            "${field}"=*)
+                value="${line#"${field}"=}"
+                value="${value%$'\r'}"
+                value="${value%\"}"
+                value="${value#\"}"
+                ;;
+        esac
+    done </etc/os-release
+    printf '%s' "$value"
+}
+
+# On Linux Mint, /usr/bin/add-apt-repository is Mint's mintSources.py wrapper,
+# which validates ppa: repos against the Launchpad API before adding them. This
+# fails when the PPA is not yet published on Launchpad. Work around this by
+# directly constructing the deb source line using UBUNTU_CODENAME from
+# /etc/os-release, bypassing the mintSources.py Launchpad check.
+_package_manager_apt_add_repo_mint() {
+    local repo="$1"
+    local ubuntu_codename ppa_path ppa_owner ppa_name
+    local deb_url source_file key_file fingerprint deb_line
+
+    if [[ "$repo" != ppa:* ]]; then
+        sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"
+        return
+    fi
+
+    ubuntu_codename="$(_package_manager_os_release_field UBUNTU_CODENAME)"
+    [[ -n "$ubuntu_codename" ]] || \
+        fail "UBUNTU_CODENAME not set in /etc/os-release; cannot add PPA on Linux Mint."
+
+    ppa_path="${repo#ppa:}"
+    ppa_owner="${ppa_path%%/*}"
+    ppa_name="${ppa_path#*/}"
+    [[ "$ppa_name" != "$ppa_owner" && -n "$ppa_name" ]] || ppa_name="ppa"
+
+    deb_url="https://ppa.launchpadcontent.net/${ppa_owner}/${ppa_name}/ubuntu"
+    source_file="/etc/apt/sources.list.d/${ppa_owner}-${ppa_name}-${ubuntu_codename}.list"
+    key_file="/etc/apt/keyrings/${ppa_owner}-${ppa_name}-${ubuntu_codename}.gpg"
+
+    fingerprint=""
+    if command_exists curl && command_exists python3; then
+        fingerprint="$(curl -sf \
+            "https://launchpad.net/api/1.0/~${ppa_owner}/+archive/${ppa_name}" \
+            | python3 -c \
+            "import json,sys; print(json.load(sys.stdin).get('signing_key_fingerprint',''))" \
+            2>/dev/null)" || fingerprint=""
+    fi
+
+    if [[ -n "${fingerprint:-}" ]]; then
+        sudo mkdir -p /etc/apt/keyrings
+        if sudo gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$fingerprint" 2>/dev/null \
+                && sudo gpg --export "$fingerprint" | sudo tee "$key_file" >/dev/null; then
+            deb_line="deb [signed-by=${key_file}] ${deb_url} ${ubuntu_codename} main"
+        else
+            log_info "Warning: could not import GPG key for ${repo}; repository will be unsigned."
+            deb_line="deb ${deb_url} ${ubuntu_codename} main"
+        fi
+    else
+        log_info "Warning: could not retrieve GPG key for ${repo} from Launchpad; repository will be unsigned."
+        deb_line="deb ${deb_url} ${ubuntu_codename} main"
+    fi
+
+    printf '%s\n' "$deb_line" | sudo tee "$source_file" >/dev/null \
+        || fail "Failed to add repository: ${repo}"
+    log_info "Added apt repository source: ${deb_line}"
+}
+
 _package_manager_apt_install_system_packages() {
     local dry_run="$1"
     local -a repos=()
@@ -112,7 +184,11 @@ _package_manager_apt_install_system_packages() {
 
     for repo in "${repos[@]}"; do
         log_info "Adding apt repository: ${repo}"
-        sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"
+        if [[ "${OS_ID:-}" == "linuxmint" ]]; then
+            _package_manager_apt_add_repo_mint "$repo"
+        else
+            sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"
+        fi
     done
 
     log_info "Updating apt package metadata."
