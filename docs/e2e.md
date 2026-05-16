@@ -108,17 +108,19 @@ test -f "${HOME}/.tt-env/manifests/last_update"
 tt-env install proto-stack-2026.05.16
 ```
 
-Expected PPA-path output includes:
+The repository Ubuntu and Linux Mint manifests do not configure
+`ppa:tenstorrent/ppa`; no public Tenstorrent apt repository is currently
+verified for proto1. With the sample stack manifest, the current expected output
+is a fail-closed message before any apt source is mutated:
 
 ```text
-[INFO] Adding apt repository: ppa:tenstorrent/ppa
-[INFO] Updating apt package metadata.
-[INFO] Installing apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms
-[INFO] Installed release proto-stack-2026.05.16 at /home/<user>/.tt-env/versions/proto-stack-2026.05.16.
+[INFO] System package install path is disabled by /home/<user>/.tt-env/manifests/<os>.env.
+[ERROR] Stack component tt-kmd requires download_url and sha256 when system package installation is disabled.
 ```
 
-If the manifest uses the fallback download path instead of PPA, expected output
-includes signed artifact downloads and final install success:
+If a validation run provides a stack manifest with signed component download
+metadata, expected output includes signed artifact downloads and final install
+success:
 
 ```text
 [INFO] Downloading <component> from <url>

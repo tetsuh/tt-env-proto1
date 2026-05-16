@@ -53,7 +53,7 @@ EOF
   printf '%s\n' "$fake_bin"
 }
 
-@test "kmd_install installs tt-kmd-dkms and loads tenstorrent module" {
+@test "kmd_install installs tenstorrent-dkms and loads tenstorrent module" {
   fake_bin="$(make_fake_kmd_tools)"
 
   PATH="${fake_bin}:${PATH}" run kmd_install
@@ -61,8 +61,8 @@ EOF
   [ "$status" -eq 0 ]
   [ -f "$TT_MODPROBE_MARKER" ]
   mapfile -t calls <"$TT_KMD_LOG"
-  [ "${calls[0]}" = "sudo apt-get install -y tt-kmd-dkms" ]
-  [ "${calls[1]}" = "apt-get install -y tt-kmd-dkms" ]
+  [ "${calls[0]}" = "sudo apt-get install -y tenstorrent-dkms" ]
+  [ "${calls[1]}" = "apt-get install -y tenstorrent-dkms" ]
   [ "${calls[2]}" = "sudo modprobe tenstorrent" ]
   [ "${calls[3]}" = "modprobe tenstorrent" ]
   [[ "$output" == *"tenstorrent KMD module is loaded"* ]]

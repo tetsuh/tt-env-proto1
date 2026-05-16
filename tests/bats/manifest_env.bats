@@ -15,14 +15,14 @@ USE_PPA="true"
 
 # Required Repositories (e.g., PPA)
 REQUIRED_REPOS=(
-    "ppa:tenstorrent/ppa"
+    "ppa:example/ppa"
 )
 
 # Virtual Package Mappings
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 
 # OS Specific Workarounds
 WORKAROUNDS=()
@@ -46,8 +46,8 @@ EOF
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
   [ "${lines[1]}" = "true" ]
-  [ "${lines[2]}" = "tt-kmd-dkms" ]
-  [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
+  [ "${lines[3]}" = "ppa:example/ppa" ]
   [ "${lines[4]}" = "0" ]
 }
 
@@ -107,7 +107,7 @@ EOF
 
 @test "parse_env_manifest allows empty quoted list items" {
   manifest_file="${BATS_TEST_TMPDIR}/empty-list-item.env"
-  printf '%s\n' 'REQUIRED_REPOS=("" ppa:tenstorrent/ppa)' >"$manifest_file"
+  printf '%s\n' 'REQUIRED_REPOS=("" ppa:example/ppa)' >"$manifest_file"
 
   run bash -c '
     source "$1"
@@ -118,5 +118,5 @@ EOF
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "<>" ]
-  [ "${lines[1]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "ppa:example/ppa" ]
 }

@@ -9,19 +9,24 @@ install_test_setup_common() {
 }
 
 write_install_os_manifest() {
-  local use_ppa="$1"
+  local use_system_packages="$1"
+  local required_repo="${2:-}"
 
   mkdir -p "${TT_HOME}/manifests"
   cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<EOF
 PKG_MANAGER="apt"
-USE_PPA="${use_ppa}"
+USE_SYSTEM_PACKAGES="${use_system_packages}"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+EOF
+  if [[ -n "$required_repo" ]]; then
+    printf '  "%s"\n' "$required_repo" >>"${TT_HOME}/manifests/ubuntu-22.04.env"
+  fi
+  cat >>"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
 )
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 WORKAROUNDS=()
 EOF
 }

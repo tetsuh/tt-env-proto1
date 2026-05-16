@@ -137,7 +137,7 @@ _install_download_components() {
         expected_sha256="${TT_STACK_COMPONENT_SHA256S[$component]:-}"
 
         if [[ -z "$download_url" || -z "$expected_sha256" ]]; then
-            fail "Stack component ${component} requires download_url and sha256 when USE_PPA=false."
+            fail "Stack component ${component} requires download_url and sha256 when system package installation is disabled."
         fi
 
         if [[ "$dry_run" -eq 1 ]]; then

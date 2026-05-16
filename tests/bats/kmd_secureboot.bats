@@ -72,7 +72,7 @@ EOF
 
   [ "$status" -eq 0 ]
   grep -q "mokutil --sb-state" "$TT_KMD_LOG"
-  grep -q "apt-get install -y tt-kmd-dkms" "$TT_KMD_LOG"
+  grep -q "apt-get install -y tenstorrent-dkms" "$TT_KMD_LOG"
   [ "$(cat "$TT_MODPROBE_MARKER")" = "tenstorrent" ]
 }
 
@@ -108,6 +108,6 @@ EOF
 
   [ "$status" -eq 0 ]
   ! grep -q "mokutil --sb-state" "$TT_KMD_LOG"
-  grep -q "apt-get install -y tt-kmd-dkms" "$TT_KMD_LOG"
+  grep -q "apt-get install -y tenstorrent-dkms" "$TT_KMD_LOG"
   [ "$(cat "$TT_MODPROBE_MARKER")" = "tenstorrent" ]
 }

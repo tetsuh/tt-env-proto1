@@ -10,14 +10,16 @@ setup() {
     source "$1"
     parse_env_manifest "$2"
     printf "%s\n" "${TT_MANIFEST_SCALARS[PKG_MANAGER]}"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
-    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
+    printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/ubuntu-22.04.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "tt-kmd-dkms" ]
-  [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "false" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
+  [ "${lines[3]}" = "0" ]
 }
 
 @test "OS parser accepts repository ubuntu 24.04 manifest" {
@@ -25,14 +27,16 @@ setup() {
     source "$1"
     parse_env_manifest "$2"
     printf "%s\n" "${TT_MANIFEST_SCALARS[PKG_MANAGER]}"
+    printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
-    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
+    printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/ubuntu-24.04.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "tt-kmd-dkms" ]
-  [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "false" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
+  [ "${lines[3]}" = "0" ]
 }
 
 @test "OS parser accepts repository Linux Mint 22.1 manifest" {
@@ -42,14 +46,14 @@ setup() {
     printf "%s\n" "${TT_MANIFEST_SCALARS[PKG_MANAGER]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
-    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
+    printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/linuxmint-22.1.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "true" ]
-  [ "${lines[2]}" = "tt-kmd-dkms" ]
-  [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "false" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
+  [ "${lines[3]}" = "0" ]
 }
 
 @test "OS parser accepts Fedora dnf fixture" {
