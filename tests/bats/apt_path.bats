@@ -9,9 +9,9 @@ setup() {
 @test "tt-env install adds required repos before apt install" {
   fake_bin="$(make_fake_sudo)"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
-  [ -d "${TT_HOME}/versions/2024.1" ]
+  [ -d "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 
   mapfile -t apt_calls <"$TT_APT_LOG"
   [ "${apt_calls[0]}" = "add-apt-repository -y ppa:tenstorrent/ppa" ]
@@ -22,30 +22,30 @@ setup() {
 @test "tt-env install fails clearly when sudo is missing" {
   bash_env="$(make_command_absent_env sudo)"
 
-  run env BASH_ENV="$bash_env" "$TT_ENV" install 2024.1
+  run env BASH_ENV="$bash_env" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 1 ]
   [[ "$output" == *"sudo is required to install apt packages"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 
 @test "tt-env install fails clearly when add-apt-repository is missing" {
   fake_bin="$(make_fake_sudo)"
   bash_env="$(make_command_absent_env add-apt-repository)"
 
-  run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 1 ]
   [[ "$output" == *"add-apt-repository is required to add repositories"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 
 @test "tt-env install --dry-run reports apt actions without sudo" {
   bash_env="$(make_command_absent_env sudo)"
 
-  run env BASH_ENV="$bash_env" "$TT_ENV" install --dry-run 2024.1
+  run env BASH_ENV="$bash_env" "$TT_ENV" install --dry-run proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add apt repository: ppa:tenstorrent/ppa"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 
 @test "tt-env install selects Ubuntu 24.04 OS manifest when overridden" {
@@ -65,11 +65,11 @@ EOF
   bash_env="$(make_command_absent_env sudo)"
 
   run env BASH_ENV="$bash_env" TT_OVERRIDE_OS_ID=ubuntu TT_OVERRIDE_OS_VERSION=24.04 \
-    "$TT_ENV" install --dry-run 2024.1
+    "$TT_ENV" install --dry-run proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: ubuntu 24.04"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tt-kmd-dkms-24"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 
 @test "tt-env install selects Linux Mint 22.1 OS manifest when overridden" {
@@ -89,9 +89,9 @@ EOF
   bash_env="$(make_command_absent_env sudo)"
 
   run env BASH_ENV="$bash_env" TT_OVERRIDE_OS_ID=linuxmint TT_OVERRIDE_OS_VERSION=22.1 \
-    "$TT_ENV" install --dry-run 2024.1
+    "$TT_ENV" install --dry-run proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: linuxmint 22.1"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }

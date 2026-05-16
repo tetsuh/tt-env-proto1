@@ -15,11 +15,11 @@ write_download_manifest() {
   fake_bin="$(make_fake_curl)"
   write_download_manifest
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$TT_CURL_LOG")" -eq 8 ]
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"already installed"* ]]
   [ "$(wc -l <"$TT_CURL_LOG")" -eq 8 ]
@@ -29,14 +29,14 @@ write_download_manifest() {
   fake_bin="$(make_fake_sudo)"
   write_install_os_manifest "true"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"already installed"* ]]
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$TT_APT_LOG")" -eq 6 ]
 }
@@ -45,14 +45,14 @@ write_download_manifest() {
   fake_bin="$(make_fake_curl)"
   write_download_manifest
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"already installed"* ]]
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [ "$(wc -l <"$TT_CURL_LOG")" -eq 16 ]
 }

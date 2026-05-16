@@ -30,9 +30,9 @@ write_stack_manifest() {
   {
     printf '{\n'
     if [[ "$omitted_key" != "release" ]]; then
-      printf '  "release": "2024.1",\n'
+      printf '  "release": "proto-stack-2026.05.16",\n'
     fi
-    printf '  "description": "Tenstorrent Stable Stack 2024.1",\n'
+    printf '  "description": "Tenstorrent proto sample stack 2026.05.16",\n'
     printf '  "components": {\n'
 
     local first=1
@@ -49,16 +49,16 @@ write_stack_manifest() {
 
       case "$key" in
         tt-kmd)
-          printf '    "tt-kmd": "v2.5.0"'
+          printf '    "tt-kmd": "ttkmd-2.8.0"'
           ;;
         tt-smi)
-          printf '    "tt-smi": "v3.0.38"'
+          printf '    "tt-smi": "v5.2.0"'
           ;;
         firmware)
-          printf '    "firmware": "19.2.0"'
+          printf '    "firmware": "v19.6.0"'
           ;;
         tt-metal)
-          printf '    "tt-metal": "v0.65.0"'
+          printf '    "tt-metal": "v0.70.1"'
           ;;
         *)
           printf '    "%s": "v1.0.0"' "$key"

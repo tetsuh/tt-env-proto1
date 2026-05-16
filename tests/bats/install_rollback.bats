@@ -59,11 +59,11 @@ EOF
   fake_bin="$(make_failing_sudo)"
   write_install_os_manifest "true"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 1 ]
   [[ "$output" == *"Failed to install apt packages"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
-  [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [ ! -e "${TT_HOME}/versions/.proto-stack-2026.05.16.partial" ]
 }
 
 @test "forced download failure removes the partial version directory" {
@@ -72,9 +72,9 @@ EOF
   write_download_assets "rollback"
   write_download_release_manifest
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 1 ]
   [[ "$output" == *"Failed to download firmware"* ]]
-  [ ! -e "${TT_HOME}/versions/2024.1" ]
-  [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]
+  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [ ! -e "${TT_HOME}/versions/.proto-stack-2026.05.16.partial" ]
 }

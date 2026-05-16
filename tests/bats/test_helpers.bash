@@ -77,27 +77,27 @@ write_download_release_manifest() {
   local firmware_sha="${1:-$(sha_for_asset firmware)}"
 
   mkdir -p "${TT_HOME}/releases"
-  cat >"${TT_HOME}/releases/2024.1.json" <<EOF
+  cat >"${TT_HOME}/releases/proto-stack-2026.05.16.json" <<EOF
 {
-  "release": "2024.1",
+  "release": "proto-stack-2026.05.16",
   "components": {
     "tt-kmd": {
-      "version": "v2.5.0",
+      "version": "ttkmd-2.8.0",
       "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-kmd",
       "sha256": "$(sha_for_asset tt-kmd)"
     },
     "tt-smi": {
-      "version": "v3.0.38",
+      "version": "v5.2.0",
       "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-smi",
       "sha256": "$(sha_for_asset tt-smi)"
     },
     "firmware": {
-      "version": "19.2.0",
+      "version": "v19.6.0",
       "download_url": "file://${BATS_TEST_TMPDIR}/assets/firmware",
       "sha256": "${firmware_sha}"
     },
     "tt-metal": {
-      "version": "v0.65.0",
+      "version": "v0.70.1",
       "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-metal",
       "sha256": "$(sha_for_asset tt-metal)"
     }

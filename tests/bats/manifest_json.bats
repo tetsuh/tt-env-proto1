@@ -8,13 +8,13 @@ write_stack_manifest() {
   local manifest_file="$1"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "2024.1",
-  "description": "Tenstorrent Stable Stack 2024.1",
+  "release": "proto-stack-2026.05.16",
+  "description": "Tenstorrent proto sample stack 2026.05.16",
   "components": {
-    "tt-kmd": "v2.5.0",
-    "tt-smi": "v3.0.38",
-    "firmware": "19.2.0",
-    "tt-metal": "v0.65.0"
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
   }
 }
 EOF
@@ -24,26 +24,26 @@ write_download_stack_manifest() {
   local manifest_file="$1"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "2024.1",
-  "description": "Tenstorrent Stable Stack 2024.1",
+  "release": "proto-stack-2026.05.16",
+  "description": "Tenstorrent proto sample stack 2026.05.16",
   "components": {
     "tt-kmd": {
-      "version": "v2.5.0",
+      "version": "ttkmd-2.8.0",
       "download_url": "https://example.invalid/tt-kmd",
       "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
     },
     "tt-smi": {
-      "version": "v3.0.38",
+      "version": "v5.2.0",
       "download_url": "https://example.invalid/tt-smi",
       "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
     },
     "firmware": {
-      "version": "19.2.0",
+      "version": "v19.6.0",
       "download_url": "https://example.invalid/firmware",
       "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
     },
     "tt-metal": {
-      "version": "v0.65.0",
+      "version": "v0.70.1",
       "download_url": "https://example.invalid/tt-metal",
       "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
     }
@@ -53,7 +53,7 @@ EOF
 }
 
 @test "parse_stack_manifest fallback extracts release metadata and components" {
-  manifest_file="${BATS_TEST_TMPDIR}/2024.1.json"
+  manifest_file="${BATS_TEST_TMPDIR}/proto-stack-2026.05.16.json"
   write_stack_manifest "$manifest_file"
 
   run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
@@ -66,16 +66,16 @@ EOF
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "2024.1" ]
-  [ "${lines[1]}" = "Tenstorrent Stable Stack 2024.1" ]
-  [ "${lines[2]}" = "v2.5.0" ]
-  [ "${lines[3]}" = "v0.65.0" ]
+  [ "${lines[0]}" = "proto-stack-2026.05.16" ]
+  [ "${lines[1]}" = "Tenstorrent proto sample stack 2026.05.16" ]
+  [ "${lines[2]}" = "ttkmd-2.8.0" ]
+  [ "${lines[3]}" = "v0.70.1" ]
 }
 
 @test "parse_stack_manifest jq and fallback paths return identical results" {
   command -v jq >/dev/null 2>&1 || skip "jq not available"
 
-  manifest_file="${BATS_TEST_TMPDIR}/2024.1.json"
+  manifest_file="${BATS_TEST_TMPDIR}/proto-stack-2026.05.16.json"
   write_stack_manifest "$manifest_file"
 
   run bash -c '
@@ -120,7 +120,7 @@ EOF
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "v2.5.0" ]
+  [ "${lines[0]}" = "ttkmd-2.8.0" ]
   [ "${lines[1]}" = "https://example.invalid/tt-kmd" ]
   [ "${lines[2]}" = "1111111111111111111111111111111111111111111111111111111111111111" ]
 }
@@ -168,17 +168,17 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/unknown-field.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "2024.1",
+  "release": "proto-stack-2026.05.16",
   "components": {
     "tt-kmd": {
-      "version": "v2.5.0",
+      "version": "ttkmd-2.8.0",
       "download_url": "https://example.invalid/tt-kmd",
       "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
       "unexpected": "value"
     },
-    "tt-smi": "v3.0.38",
-    "firmware": "19.2.0",
-    "tt-metal": "v0.65.0"
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
   }
 }
 EOF
@@ -192,7 +192,7 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/bad.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "2024.1",
+  "release": "proto-stack-2026.05.16",
   "components": []
 }
 EOF
@@ -206,13 +206,13 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/metadata.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "2024.1 beta",
+  "release": "proto-stack-2026.05.16 beta",
   "description": "[preview] Tenstorrent Stable Stack",
   "components": {
-    "tt-kmd": "v2.5.0",
-    "tt-smi": "v3.0.38",
-    "firmware": "[19.2.0 beta]",
-    "tt-metal": "v0.65.0"
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "[v19.6.0 beta]",
+    "tt-metal": "v0.70.1"
   }
 }
 EOF
@@ -226,7 +226,7 @@ EOF
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "2024.1 beta" ]
+  [ "${lines[0]}" = "proto-stack-2026.05.16 beta" ]
   [ "${lines[1]}" = "[preview] Tenstorrent Stable Stack" ]
-  [ "${lines[2]}" = "[19.2.0 beta]" ]
+  [ "${lines[2]}" = "[v19.6.0 beta]" ]
 }
