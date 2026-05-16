@@ -97,7 +97,7 @@ Confirm local manifest cache files exist:
 
 ```bash
 os_version="$(. /etc/os-release && printf '%s' "${VERSION_ID}")"
-test -f "${HOME}/.tt-env/releases/2024.1.json"
+test -f "${HOME}/.tt-env/releases/proto-stack-2026.05.16.json"
 test -f "${HOME}/.tt-env/manifests/ubuntu-${os_version}.env"
 test -f "${HOME}/.tt-env/manifests/last_update"
 ```
@@ -105,7 +105,7 @@ test -f "${HOME}/.tt-env/manifests/last_update"
 ## 4. Install a stack release
 
 ```bash
-tt-env install 2024.1
+tt-env install proto-stack-2026.05.16
 ```
 
 Expected PPA-path output includes:
@@ -114,7 +114,7 @@ Expected PPA-path output includes:
 [INFO] Adding apt repository: ppa:tenstorrent/ppa
 [INFO] Updating apt package metadata.
 [INFO] Installing apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms
-[INFO] Installed release 2024.1 at /home/<user>/.tt-env/versions/2024.1.
+[INFO] Installed release proto-stack-2026.05.16 at /home/<user>/.tt-env/versions/proto-stack-2026.05.16.
 ```
 
 If the manifest uses the fallback download path instead of PPA, expected output
@@ -122,27 +122,27 @@ includes signed artifact downloads and final install success:
 
 ```text
 [INFO] Downloading <component> from <url>
-[INFO] Installed release 2024.1 at /home/<user>/.tt-env/versions/2024.1.
+[INFO] Installed release proto-stack-2026.05.16 at /home/<user>/.tt-env/versions/proto-stack-2026.05.16.
 ```
 
 Verify the install marker:
 
 ```bash
-test -f "${HOME}/.tt-env/versions/2024.1/.tt-env-installed"
+test -f "${HOME}/.tt-env/versions/proto-stack-2026.05.16/.tt-env-installed"
 ```
 
 ## 5. Activate the release
 
 ```bash
-tt-env use 2024.1
+tt-env use proto-stack-2026.05.16
 readlink "${HOME}/.tt-env/current"
 ```
 
 Expected output:
 
 ```text
-[INFO] Using release 2024.1 at /home/<user>/.tt-env/versions/2024.1.
-/home/<user>/.tt-env/versions/2024.1
+[INFO] Using release proto-stack-2026.05.16 at /home/<user>/.tt-env/versions/proto-stack-2026.05.16.
+/home/<user>/.tt-env/versions/proto-stack-2026.05.16
 ```
 
 If the release contains `tt-smi`, verify shim dispatch:
@@ -173,7 +173,7 @@ Expected output shape:
 ```text
 Status
 Tenstorrent hardware: <n> device(s)
-Active release: 2024.1
+Active release: proto-stack-2026.05.16
 KMD module version: <version or (not loaded)>
 Manifest freshness: <freshness>
 ```
@@ -232,7 +232,7 @@ Attach these to the PR manual verification log:
 2. `tt-env --version`.
 3. Trusted key fingerprint.
 4. `tt-env update` result.
-5. `tt-env install 2024.1` result.
-6. `tt-env use 2024.1` and `readlink ~/.tt-env/current`.
+5. `tt-env install proto-stack-2026.05.16` result.
+6. `tt-env use proto-stack-2026.05.16` and `readlink ~/.tt-env/current`.
 7. `tt-env status` output.
 8. `tt-env update --self` output.

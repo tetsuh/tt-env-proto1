@@ -53,14 +53,14 @@ EOF
 
 @test "tt-env use switches current symlink between installed releases" {
   symlinks_supported || skip "POSIX symlinks are not supported in this environment"
-  make_installed_release "2024.1"
+  make_installed_release "proto-stack-2026.05.16"
   make_installed_release "2024.2"
 
-  run "$TT_ENV" use 2024.1
+  run "$TT_ENV" use proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [ -L "${TT_HOME}/current" ]
-  [ "$(readlink "${TT_HOME}/current")" = "${TT_HOME}/versions/2024.1" ]
-  [[ "$output" == *"Using release 2024.1"* ]]
+  [ "$(readlink "${TT_HOME}/current")" = "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [[ "$output" == *"Using release proto-stack-2026.05.16"* ]]
 
   run "$TT_ENV" use 2024.2
   [ "$status" -eq 0 ]
@@ -70,10 +70,10 @@ EOF
 }
 
 @test "tt-env use fails clearly when ln does not create a symlink" {
-  make_installed_release "2024.1"
+  make_installed_release "proto-stack-2026.05.16"
   fake_bin="$(make_fake_non_symlink_ln)"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" use 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" use proto-stack-2026.05.16
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"ln -sfn did not create a symlink"* ]]
@@ -82,12 +82,12 @@ EOF
 
 @test "tt-env use verifies the current symlink target" {
   symlinks_supported || skip "POSIX symlinks are not supported in this environment"
-  make_installed_release "2024.1"
+  make_installed_release "proto-stack-2026.05.16"
   make_installed_release "2024.2"
   ln -sfn "${TT_HOME}/versions/2024.2" "${TT_HOME}/current"
   fake_bin="$(make_fake_noop_ln)"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" use 2024.1
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" use proto-stack-2026.05.16
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"ln -sfn did not create the expected symlink"* ]]
@@ -103,20 +103,20 @@ EOF
 }
 
 @test "tt-env use refuses an unmarked version directory" {
-  mkdir -p "${TT_HOME}/versions/2024.1"
+  mkdir -p "${TT_HOME}/versions/proto-stack-2026.05.16"
 
-  run "$TT_ENV" use 2024.1
+  run "$TT_ENV" use proto-stack-2026.05.16
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Release 2024.1 is not installed"* ]]
+  [[ "$output" == *"Release proto-stack-2026.05.16 is not installed"* ]]
   [ ! -e "${TT_HOME}/current" ]
 }
 
 @test "tt-env use refuses to replace a non-symlink current path" {
-  make_installed_release "2024.1"
+  make_installed_release "proto-stack-2026.05.16"
   mkdir -p "${TT_HOME}/current"
 
-  run "$TT_ENV" use 2024.1
+  run "$TT_ENV" use proto-stack-2026.05.16
 
   [ "$status" -eq 1 ]
   [[ "$output" == *"Refusing to replace non-symlink current path"* ]]

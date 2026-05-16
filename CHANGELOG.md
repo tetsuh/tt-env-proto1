@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-No changes yet.
+- Renamed the sample stack release from `2024.1` to `proto-stack-2026.05.16` and refreshed its component versions to the latest Tenstorrent releases observed on 2026-05-16 JST.
 
 ## 0.2.0
 

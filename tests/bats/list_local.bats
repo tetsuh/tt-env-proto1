@@ -33,36 +33,36 @@ EOF
 }
 
 @test "tt-env list marks installed and available local releases" {
-  write_release_manifest "2024.1"
+  write_release_manifest "proto-stack-2026.05.16"
   write_release_manifest "2024.2"
-  mkdir -p "${TT_HOME}/versions/2024.1"
-  touch "${TT_HOME}/versions/2024.1/.tt-env-installed"
+  mkdir -p "${TT_HOME}/versions/proto-stack-2026.05.16"
+  touch "${TT_HOME}/versions/proto-stack-2026.05.16/.tt-env-installed"
 
   run "$TT_ENV" list
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"2024.1 [installed]"* ]]
+  [[ "$output" == *"proto-stack-2026.05.16 [installed]"* ]]
   [[ "$output" == *"2024.2 [available]"* ]]
 }
 
 @test "tt-env list does not mark unverified version dirs installed" {
-  write_release_manifest "2024.1"
-  mkdir -p "${TT_HOME}/versions/2024.1"
+  write_release_manifest "proto-stack-2026.05.16"
+  mkdir -p "${TT_HOME}/versions/proto-stack-2026.05.16"
 
   run "$TT_ENV" list
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"2024.1 [available]"* ]]
+  [[ "$output" == *"proto-stack-2026.05.16 [available]"* ]]
 }
 
 @test "tt-env list skips invalid release manifests with a warning" {
-  write_release_manifest "2024.1"
+  write_release_manifest "proto-stack-2026.05.16"
   printf '{ "release": "broken" }\n' >"${TT_HOME}/releases/broken.json"
 
   run "$TT_ENV" list
 
   [ "$status" -eq 0 ]
-  [[ "$output" == *"2024.1 [available]"* ]]
+  [[ "$output" == *"proto-stack-2026.05.16 [available]"* ]]
   [[ "$output" == *"Skipping invalid release manifest:"* ]]
   [[ "$output" == *"broken.json"* ]]
 }

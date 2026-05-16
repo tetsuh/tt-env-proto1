@@ -36,7 +36,7 @@ See [PATH setup](./path-setup.md) for bash, zsh, and fish snippets. The
 ## Install a release
 
 ```bash
-tt-env install 2024.1
+tt-env install proto-stack-2026.05.16
 ```
 
 When the OS manifest has `USE_SYSTEM_PACKAGES="true"` (or legacy
@@ -47,7 +47,7 @@ installing resolved packages. A successful Ubuntu apt-path run looks like:
 [INFO] Adding apt repository: ppa:tenstorrent/ppa
 [INFO] Updating apt package metadata.
 [INFO] Installing apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms
-[INFO] Installed release 2024.1 at /home/alice/.tt-env/versions/2024.1.
+[INFO] Installed release proto-stack-2026.05.16 at /home/alice/.tt-env/versions/proto-stack-2026.05.16.
 ```
 
 When the manifest has `USE_SYSTEM_PACKAGES="false"` (or legacy
@@ -66,20 +66,20 @@ Running the same install again exits successfully without rerunning apt or
 downloads:
 
 ```text
-[INFO] Release 2024.1 is already installed at /home/alice/.tt-env/versions/2024.1.
+[INFO] Release proto-stack-2026.05.16 is already installed at /home/alice/.tt-env/versions/proto-stack-2026.05.16.
 ```
 
 Use `--force` to reinstall from scratch:
 
 ```bash
-tt-env install --force 2024.1
+tt-env install --force proto-stack-2026.05.16
 ```
 
 Use `--dry-run` to print planned apt or download actions without creating the
 version directory:
 
 ```bash
-tt-env install --dry-run 2024.1
+tt-env install --dry-run proto-stack-2026.05.16
 ```
 
 ## Rollback behavior
