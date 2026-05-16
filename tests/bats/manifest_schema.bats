@@ -30,7 +30,7 @@ write_stack_manifest() {
   {
     printf '{\n'
     if [[ "$omitted_key" != "release" ]]; then
-      printf '  "release": "proto-stack-2026.05.16",\n'
+      printf '  "release": "2026.05.16",\n'
     fi
     printf '  "description": "Tenstorrent proto sample stack 2026.05.16",\n'
     printf '  "components": {\n'

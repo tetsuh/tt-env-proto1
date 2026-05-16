@@ -22,7 +22,7 @@ assert_installed_layout() {
   [ -f "${TT_HOME}/manifests/ubuntu-22.04.env" ]
   [ -f "${TT_HOME}/manifests/ubuntu-24.04.env" ]
   [ -f "${TT_HOME}/manifests/linuxmint-22.1.env" ]
-  [ -f "${TT_HOME}/releases/proto-stack-2026.05.16.json" ]
+  [ -f "${TT_HOME}/releases/2026.05.16.json" ]
   [ -f "${TT_HOME}/VERSION" ]
   [ -x "${TT_HOME}/shims/tt-smi" ]
 }

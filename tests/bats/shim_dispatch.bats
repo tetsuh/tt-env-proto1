@@ -39,15 +39,15 @@ EOF
   run bash "$INSTALL_SH"
   [ "$status" -eq 0 ]
 
-  make_mock_release "proto-stack-2026.05.16"
+  make_mock_release "2026.05.16"
   make_mock_release "2024.2"
 
-  run "${TT_HOME}/bin/tt-env" use proto-stack-2026.05.16
+  run "${TT_HOME}/bin/tt-env" use 2026.05.16
   [ "$status" -eq 0 ]
 
   run "${TT_HOME}/shims/tt-smi" --version
   [ "$status" -eq 0 ]
-  [ "$output" = "tt-smi proto-stack-2026.05.16" ]
+  [ "$output" = "tt-smi 2026.05.16" ]
 
   run "${TT_HOME}/bin/tt-env" use 2024.2
   [ "$status" -eq 0 ]

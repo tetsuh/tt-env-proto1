@@ -124,9 +124,9 @@ write_download_release_manifest() {
   local firmware_sha="${1:-$(sha_for_asset firmware)}"
 
   mkdir -p "${TT_HOME}/releases"
-  cat >"${TT_HOME}/releases/proto-stack-2026.05.16.json" <<EOF
+  cat >"${TT_HOME}/releases/2026.05.16.json" <<EOF
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "components": {
     "tt-kmd": {
       "version": "ttkmd-2.8.0",
