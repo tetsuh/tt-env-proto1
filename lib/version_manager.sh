@@ -42,8 +42,8 @@ _version_remove_version_dir() {
     local physical_versions_dir
     local physical_parent_dir
 
-    physical_versions_dir="$(cd "$versions_dir" && pwd -P)"
-    physical_parent_dir="$(cd "$(dirname "$version_dir")" && pwd -P)"
+    physical_versions_dir="$(cd -- "$versions_dir" >/dev/null && pwd -P)"
+    physical_parent_dir="$(cd -- "$(dirname "$version_dir")" >/dev/null && pwd -P)"
 
     if [[ "$physical_parent_dir" != "$physical_versions_dir" || "$version_dir" == "$versions_dir" ]]; then
         fail "Refusing to remove unsafe version directory: ${version_dir}"
