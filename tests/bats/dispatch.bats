@@ -17,7 +17,7 @@ setup() {
   run "$TT_ENV" help
   [ "$status" -eq 0 ]
 
-  for command in install use list status update help; do
+  for command in install remove use list status update help; do
     [[ "$output" == *"$command"* ]]
   done
 }
@@ -61,4 +61,10 @@ EOF
   run "$TT_ENV" use
   [ "$status" -ne 0 ]
   [[ "$output" == *"tt-env use <release>"* ]]
+}
+
+@test "tt-env remove requires a release argument" {
+  run "$TT_ENV" remove
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"tt-env remove <release>"* ]]
 }

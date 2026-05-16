@@ -29,6 +29,15 @@ setup() {
   [[ "$output" == *"Exit codes:"* ]]
 }
 
+@test "tt-env help remove documents release removal" {
+  run "$TT_ENV" help remove
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"tt-env remove - remove an installed Tenstorrent stack release"* ]]
+  [[ "$output" == *"tt-env remove <release>"* ]]
+  [[ "$output" == *"release is not installed"* ]]
+}
+
 @test "tt-env help update documents self-update" {
   run "$TT_ENV" help update
   [ "$status" -eq 0 ]

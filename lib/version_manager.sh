@@ -2,6 +2,7 @@
 # Active version selection helpers for tt-env.
 #
 # Public symbols:
+#   - remove_release <release>
 #   - use_release <release>
 
 if [[ -n "${TT_VERSION_MANAGER_LOADED:-}" ]]; then
@@ -20,12 +21,93 @@ Usage:
 EOF
 }
 
+_remove_usage() {
+    cat <<'EOF'
+Usage:
+  tt-env remove <release>
+EOF
+}
+
 _version_validate_release_name() {
     local release="$1"
 
     if [[ ! "$release" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
         fail "Invalid release name: ${release}"
     fi
+}
+
+_version_remove_version_dir() {
+    local versions_dir="$1"
+    local version_dir="$2"
+    local physical_versions_dir
+    local physical_parent_dir
+
+    physical_versions_dir="$(cd -- "$versions_dir" >/dev/null && pwd -P)"
+    physical_parent_dir="$(cd -- "$(dirname "$version_dir")" >/dev/null && pwd -P)"
+
+    if [[ "$physical_parent_dir" != "$physical_versions_dir" || "$version_dir" == "$versions_dir" ]]; then
+        fail "Refusing to remove unsafe version directory: ${version_dir}"
+    fi
+
+    rm -rf -- "$version_dir"
+}
+
+remove_release() {
+    local release=""
+    local arg
+    local versions_dir
+    local version_dir
+    local installed_marker
+    local current_link
+    local current_target
+
+    while [[ "$#" -gt 0 ]]; do
+        arg="$1"
+        case "$arg" in
+            --help|-h)
+                _remove_usage
+                return 0
+                ;;
+            --*)
+                fail "Unknown remove option: ${arg}"
+                ;;
+            *)
+                if [[ -n "$release" ]]; then
+                    fail "remove accepts exactly one release."
+                fi
+                release="$arg"
+                ;;
+        esac
+        shift
+    done
+
+    if [[ -z "$release" ]]; then
+        _remove_usage >&2
+        return 1
+    fi
+
+    _version_validate_release_name "$release"
+    init_tt_home
+
+    versions_dir="${TT_HOME}/versions"
+    version_dir="${versions_dir}/${release}"
+    installed_marker="${version_dir}/.tt-env-installed"
+    current_link="${TT_HOME}/current"
+
+    if [[ ! -d "$version_dir" || ! -f "$installed_marker" ]]; then
+        fail "Release ${release} is not installed."
+    fi
+
+    if [[ -L "$current_link" ]]; then
+        current_target="$(readlink "$current_link")" || \
+            fail "Failed to read current symlink: ${current_link}"
+        if [[ "$current_target" == "$version_dir" ]]; then
+            rm -f -- "$current_link"
+        fi
+    fi
+
+    _version_remove_version_dir "$versions_dir" "$version_dir"
+    log_info "Removed release ${release} from ${version_dir}."
 }
 
 use_release() {

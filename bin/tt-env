@@ -29,6 +29,7 @@ Usage:
 
 Commands:
   install    Install a Tenstorrent stack release
+  remove     Remove an installed Tenstorrent stack release
   use        Switch the active Tenstorrent stack release
   list       List available and installed stack releases
   status     Show hardware and environment status
@@ -81,6 +82,25 @@ Examples:
 Exit codes:
   0  Active release symlink was updated
   1  Invalid arguments, release is not installed, or symlink update failed
+EOF
+}
+
+help_remove() {
+    cat <<'EOF'
+tt-env remove - remove an installed Tenstorrent stack release
+
+Synopsis:
+  tt-env remove <release>
+
+Options:
+  -h, --help Show this help message
+
+Examples:
+  tt-env remove proto-stack-2026.05.16
+
+Exit codes:
+  0  Installed release directory was removed
+  1  Invalid arguments, release is not installed, or directory removal failed
 EOF
 }
 
@@ -161,6 +181,9 @@ help_command() {
             ;;
         use)
             help_use
+            ;;
+        remove)
+            help_remove
             ;;
         list)
             help_list
@@ -245,6 +268,15 @@ main() {
                 return 0
             fi
             use_release "$@"
+            ;;
+        remove)
+            init_tt_home
+            shift || true
+            if args_request_help "$@"; then
+                help_remove
+                return 0
+            fi
+            remove_release "$@"
             ;;
         status)
             init_tt_home
