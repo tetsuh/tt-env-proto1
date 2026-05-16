@@ -55,7 +55,7 @@ setup() {
 
   run "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 1 ]
-  [[ "$output" == *"requires download_url and sha256 when USE_PPA=false"* ]]
+  [[ "$output" == *"requires download_url and sha256 when system package installation is disabled"* ]]
   [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 

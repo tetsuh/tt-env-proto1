@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Renamed the sample stack release from `2024.1` to `proto-stack-2026.05.16` and refreshed its component versions to the latest Tenstorrent releases observed on 2026-05-16 JST.
+- Replaced the placeholder Tenstorrent Launchpad PPA with the official signed `ppa.tenstorrent.com` apt repository for Ubuntu and Linux Mint manifests, and updated the KMD package mapping to `tenstorrent-dkms`.
 
 ## 0.2.0
 

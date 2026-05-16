@@ -9,12 +9,12 @@ setup() {
 PKG_MANAGER="apt"
 USE_PPA="true"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+  "https://repo.example.invalid/tenstorrent"
 )
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 WORKAROUNDS=()
 EOF
   cat >"$dnf_manifest_file" <<'EOF'
@@ -26,7 +26,7 @@ REQUIRED_REPOS=(
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib-devel"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 WORKAROUNDS=()
 EOF
 }
@@ -79,9 +79,9 @@ EOF
   run bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages apt 1' \
     bash "$PACKAGE_MANAGER_SH" "$manifest_file"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] Would add apt repository: ppa:tenstorrent/ppa"* ]]
+  [[ "$output" == *"[dry-run] Would add apt repository: https://repo.example.invalid/tenstorrent"* ]]
   [[ "$output" == *"[dry-run] Would run apt-get update."* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms"* ]]
 }
 
 @test "package manager dispatcher rejects unsupported managers" {
@@ -104,7 +104,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add dnf repository: https://repo.example.invalid/tenstorrent.repo"* ]]
   [[ "$output" == *"[dry-run] Would run dnf makecache."* ]]
-  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tt-kmd-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms"* ]]
 }
 
 @test "package manager dispatcher runs dnf repo cache and install commands" {
@@ -118,7 +118,7 @@ EOF
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tt-kmd-dkms" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms" ]
 }
 
 @test "package manager dispatcher fails clearly when dnf is missing" {

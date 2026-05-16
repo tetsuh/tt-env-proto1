@@ -108,17 +108,23 @@ test -f "${HOME}/.tt-env/manifests/last_update"
 tt-env install proto-stack-2026.05.16
 ```
 
-Expected PPA-path output includes:
+The repository Ubuntu and Linux Mint manifests configure the official signed
+Tenstorrent apt repository at `https://ppa.tenstorrent.com/ubuntu/`. Expected
+output includes adding the repository, updating package metadata, and installing
+the resolved packages:
 
 ```text
-[INFO] Adding apt repository: ppa:tenstorrent/ppa
+[INFO] Adding apt repository: https://ppa.tenstorrent.com/ubuntu/
 [INFO] Updating apt package metadata.
-[INFO] Installing apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms
+[INFO] Installing apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms
 [INFO] Installed release proto-stack-2026.05.16 at /home/<user>/.tt-env/versions/proto-stack-2026.05.16.
 ```
 
-If the manifest uses the fallback download path instead of PPA, expected output
-includes signed artifact downloads and final install success:
+If the host codename is not one of the currently published Tenstorrent apt
+pockets (`jammy` or `noble`), `tt-env` fails before writing an apt source entry.
+If a validation run instead provides a stack manifest with signed component
+download metadata and disables system packages, expected output includes signed
+artifact downloads and final install success:
 
 ```text
 [INFO] Downloading <component> from <url>

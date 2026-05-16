@@ -8,7 +8,7 @@ PKG_MANAGER="apt"
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 EOF
 }
 
@@ -20,7 +20,7 @@ EOF
   ' bash "$MANIFEST_PARSER" "$MANIFEST_FILE"
 
   [ "$status" -eq 0 ]
-  [ "$output" = "tt-kmd-dkms" ]
+  [ "$output" = "tenstorrent-dkms" ]
 }
 
 @test "resolve_package uppercases package names" {

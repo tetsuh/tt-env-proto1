@@ -27,7 +27,7 @@ write_download_manifest() {
 
 @test "tt-env install --force reruns apt path from scratch" {
   fake_bin="$(make_fake_sudo)"
-  write_install_os_manifest "true"
+  write_install_os_manifest "true" "https://repo.example.invalid/tenstorrent"
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
   [ "$status" -eq 0 ]

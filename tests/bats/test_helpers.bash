@@ -6,22 +6,45 @@ install_test_setup_common() {
   export TT_OVERRIDE_OS_VERSION="22.04"
   export TT_APT_LOG="${BATS_TEST_TMPDIR}/apt.log"
   export TT_CURL_LOG="${BATS_TEST_TMPDIR}/curl.log"
+  export TT_OS_RELEASE_FILE="${BATS_TEST_TMPDIR}/os-release"
+  write_test_os_release ubuntu "22.04" jammy ""
+}
+
+write_test_os_release() {
+  local os_id="$1"
+  local version_id="$2"
+  local version_codename="$3"
+  local ubuntu_codename="${4:-}"
+
+  cat >"$TT_OS_RELEASE_FILE" <<EOF
+ID="${os_id}"
+VERSION_ID="${version_id}"
+VERSION_CODENAME="${version_codename}"
+EOF
+  if [[ -n "$ubuntu_codename" ]]; then
+    printf 'UBUNTU_CODENAME="%s"\n' "$ubuntu_codename" >>"$TT_OS_RELEASE_FILE"
+  fi
 }
 
 write_install_os_manifest() {
-  local use_ppa="$1"
+  local use_system_packages="$1"
+  local required_repo="${2:-}"
 
   mkdir -p "${TT_HOME}/manifests"
   cat >"${TT_HOME}/manifests/ubuntu-22.04.env" <<EOF
 PKG_MANAGER="apt"
-USE_PPA="${use_ppa}"
+USE_SYSTEM_PACKAGES="${use_system_packages}"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+EOF
+  if [[ -n "$required_repo" ]]; then
+    printf '  "%s"\n' "$required_repo" >>"${TT_HOME}/manifests/ubuntu-22.04.env"
+  fi
+  cat >>"${TT_HOME}/manifests/ubuntu-22.04.env" <<'EOF'
 )
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 WORKAROUNDS=()
 EOF
 }
@@ -30,11 +53,35 @@ make_fake_sudo() {
   local fake_bin="${BATS_TEST_TMPDIR}/fake-apt-bin"
 
   mkdir -p "$fake_bin"
-  cat >"${fake_bin}/sudo" <<'EOF'
+cat >"${fake_bin}/sudo" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$TT_APT_LOG"
+if [[ "${1:-}" == "install" && "${2:-}" == "-m" && "${3:-}" == "0644" && ! -f "${4:-}" ]]; then
+  exit 1
+fi
 EOF
-  chmod +x "${fake_bin}/sudo"
+  cat >"${fake_bin}/curl" <<'EOF'
+#!/usr/bin/env bash
+output=""
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --output)
+      output="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+printf 'fake-tenstorrent-key\n' >"$output"
+EOF
+  cat >"${fake_bin}/gpg" <<'EOF'
+#!/usr/bin/env bash
+printf 'pub:::::::::\n'
+printf 'fpr:::::::::58540CD771C55DD7C33030CA8A9D565F6A208463:\n'
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"
