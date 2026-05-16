@@ -142,6 +142,7 @@ _package_manager_os_release_field() {
                 value="${value#\"}"
                 value="${value%\'}"
                 value="${value#\'}"
+                break
                 ;;
         esac
     done <"$os_release_file"
