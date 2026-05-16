@@ -1,27 +1,30 @@
 # Security
 
-`install.sh` bootstraps the proto1 project signing public key into
-`${TT_HOME}/keys` and verifies that the imported primary key fingerprint matches:
+## Current proto1 trust model
 
-```text
-C55F EB19 6FB6 7D83 F63F  E18C BEF4 1823 5C01 1DF8
-```
+Proto1 temporarily suspends project-managed GPG signature enforcement for
+manifests, direct-download stack artifacts, and self-update binaries. The
+previous embedded proto1 public key was not a Tenstorrent official signing key,
+and the matching private key is not under an operational key-management process.
+Keeping that signature requirement would imply a stronger authenticity guarantee
+than proto1 can currently provide.
 
-The armored public key is stored at
-`${TT_HOME}/keys/tt-env-proto-signing-key.asc`. To inspect the installed keyring:
+The current guarantees are:
 
-```bash
-gpg --homedir "${TT_HOME:-$HOME/.tt-env}/keys" --list-keys
-```
+- Official Tenstorrent apt repository setup verifies the repository signing key
+  fingerprint before writing apt sources.
+- Direct-download stack artifacts still require manifest-provided sha256
+  checksums, and checksum mismatches abort before a release is marked installed.
+- Manifest updates require HTTPS transport and a valid archive shape, but do not
+  currently authenticate manifest publisher identity with proto1-managed GPG.
+- `tt-env update --self` requires HTTPS transport, but does not currently verify
+  a proto1-managed detached signature.
 
-This is the proto1 project signing key used to verify manifest and binary
-artifact signatures.
+This means proto1 currently protects artifact integrity when checksums are
+available, but it does not provide project-managed GPG authenticity or downgrade
+protection for manifests. Reintroduce GPG only after a clear trust model exists,
+such as verified upstream Tenstorrent signatures or a managed project signing key
+with documented private-key custody.
 
-Downloaded binary artifacts must provide a detached ASCII-armored signature next
-to the artifact URL using the `.asc` suffix. For example, a component downloaded
-from `https://example.invalid/tt-smi` must also provide
-`https://example.invalid/tt-smi.asc`.
-
-Manifest updates verify each downloaded `releases/*.json` and `manifests/*.env`
-file against its sidecar `.asc` file before replacing the local manifest cache.
-Missing or invalid signatures abort before the existing cache is mutated.
+Existing `${TT_HOME}/keys` directories from older proto1 installs are legacy
+state and are no longer used by default.

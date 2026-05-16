@@ -57,9 +57,6 @@ case "$url" in
   *VERSION)
     printf '%s\n' "0.2.1" >"$output"
     ;;
-  *.asc)
-    printf '%s\n' "signature" >"$output"
-    ;;
   *)
     cat >"$output" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -69,31 +66,11 @@ SCRIPT
 esac
 printf '200'
 EOF
-  cat >"${fake_bin}/gpg" <<'EOF'
-#!/usr/bin/env bash
-if [[ "$*" == *"--with-colons"* && "$*" == *"--fingerprint"* ]]; then
-  printf 'pub:::::::::\n'
-  printf 'fpr:::::::::C55FEB196FB67D83F63FE18CBEF418235C011DF8:\n'
-  exit 0
-fi
-if [[ "$*" == *"--import"* ]]; then
-  exit 0
-fi
-if [[ "$*" == *"--verify"* ]]; then
-  if [[ -n "${TT_FAKE_GPG_VERIFY_EXIT:-}" && "${TT_FAKE_GPG_VERIFY_EXIT}" -ne 0 ]]; then
-    printf '[GNUPG:] BADSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 test\n'
-    exit "$TT_FAKE_GPG_VERIFY_EXIT"
-  fi
-  printf '[GNUPG:] VALIDSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 0 0 0 0 0 0 0 0 C55FEB196FB67D83F63FE18CBEF418235C011DF8\n'
-  exit 0
-fi
-exit 0
-EOF
-  chmod +x "${fake_bin}/curl" "${fake_bin}/gpg"
+  chmod +x "${fake_bin}/curl"
   printf '%s\n' "$fake_bin"
 }
 
-@test "tt-env update --self atomically replaces after a good signature" {
+@test "tt-env update --self atomically replaces without proto1-managed signatures" {
   fake_bin="$(make_fake_replace_tools)"
   target_file="$(make_self_update_target)"
   export TT_SELF_UPDATE_TARGET_FILE="$target_file"
@@ -104,19 +81,5 @@ EOF
   [[ "$output" == *"Updated tt-env to 0.2.1."* ]]
   [ "$("$target_file")" = "new-version" ]
   [ -x "$target_file" ]
-  [ "$(find "$(dirname "$target_file")" -name '.tt-env-self-update.*' | wc -l)" -eq 0 ]
-}
-
-@test "tt-env update --self leaves target unchanged after a bad signature" {
-  fake_bin="$(make_fake_replace_tools)"
-  target_file="$(make_self_update_target)"
-  export TT_SELF_UPDATE_TARGET_FILE="$target_file"
-  export TT_FAKE_GPG_VERIFY_EXIT=1
-
-  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update --self
-
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"GPG signature verification failed"* ]]
-  [ "$("$target_file")" = "old-version" ]
   [ "$(find "$(dirname "$target_file")" -name '.tt-env-self-update.*' | wc -l)" -eq 0 ]
 }

@@ -16,14 +16,14 @@ System package installation is controlled by:
 2. `USE_PPA`, the legacy Ubuntu-compatible fallback.
 
 If the selected flag is `false`, `tt-env` skips package-manager operations and
-uses signed component downloads from the stack manifest instead.
+uses component downloads plus manifest-provided sha256 checksums instead.
 
 ## OS manifest fields
 
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `PKG_MANAGER` | Yes | Adapter name. Currently `apt` and `dnf` are implemented. |
-| `USE_SYSTEM_PACKAGES` | New manifests | `true` to install system packages through the adapter, `false` to use signed downloads. |
+| `USE_SYSTEM_PACKAGES` | New manifests | `true` to install system packages through the adapter, `false` to use checksum-verified downloads. |
 | `USE_PPA` | Legacy Ubuntu manifests | Backward-compatible alias for `USE_SYSTEM_PACKAGES`. Avoid it for non-Ubuntu manifests. |
 | `REQUIRED_REPOS` | Yes | Array of repositories the adapter must configure before package install. Use `()` when none are needed. |
 | `VIRT_PKG_<NAME>` | Yes | Native package name for each virtual dependency (`cmake`, `ninja`, `zlib`, `kmd`). |
