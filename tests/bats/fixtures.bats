@@ -13,13 +13,15 @@ setup() {
     printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
     printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
+    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/ubuntu-22.04.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "false" ]
+  [ "${lines[1]}" = "true" ]
   [ "${lines[2]}" = "tenstorrent-dkms" ]
-  [ "${lines[3]}" = "0" ]
+  [ "${lines[3]}" = "1" ]
+  [ "${lines[4]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts repository ubuntu 24.04 manifest" {
@@ -30,13 +32,15 @@ setup() {
     printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
     printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
+    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/ubuntu-24.04.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "false" ]
+  [ "${lines[1]}" = "true" ]
   [ "${lines[2]}" = "tenstorrent-dkms" ]
-  [ "${lines[3]}" = "0" ]
+  [ "${lines[3]}" = "1" ]
+  [ "${lines[4]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts repository Linux Mint 22.1 manifest" {
@@ -47,13 +51,15 @@ setup() {
     printf "%s\n" "${TT_MANIFEST_SCALARS[USE_SYSTEM_PACKAGES]}"
     printf "%s\n" "${TT_MANIFEST_SCALARS[VIRT_PKG_KMD]}"
     printf "%s\n" "${#TT_MANIFEST_LIST_REQUIRED_REPOS[@]}"
+    printf "%s\n" "${TT_MANIFEST_LIST_REQUIRED_REPOS[0]}"
   ' bash "$MANIFEST_PARSER" "${REPO_DIR}/manifests/linuxmint-22.1.env"
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "false" ]
+  [ "${lines[1]}" = "true" ]
   [ "${lines[2]}" = "tenstorrent-dkms" ]
-  [ "${lines[3]}" = "0" ]
+  [ "${lines[3]}" = "1" ]
+  [ "${lines[4]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts Fedora dnf fixture" {
