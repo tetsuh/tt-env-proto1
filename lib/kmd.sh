@@ -176,7 +176,7 @@ kmd_preflight() {
 }
 
 kmd_install() {
-    local package="${1:-${TT_KMD_PACKAGE:-tt-kmd-dkms}}"
+    local package="${1:-${TT_KMD_PACKAGE:-tenstorrent-dkms}}"
     local module="${TT_KMD_MODULE:-tenstorrent}"
 
     if [[ "$#" -gt 1 ]]; then

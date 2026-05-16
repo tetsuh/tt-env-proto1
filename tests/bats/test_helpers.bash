@@ -16,12 +16,12 @@ write_install_os_manifest() {
 PKG_MANAGER="apt"
 USE_PPA="${use_ppa}"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+  "https://ppa.tenstorrent.com/ubuntu/"
 )
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 WORKAROUNDS=()
 EOF
 }
@@ -37,6 +37,13 @@ EOF
   chmod +x "${fake_bin}/sudo"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
+
+  cat >"${fake_bin}/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "fake-key-data"
+EOF
+  chmod +x "${fake_bin}/curl"
+
   printf '%s\n' "$fake_bin"
 }
 

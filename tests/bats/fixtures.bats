@@ -16,8 +16,8 @@ setup() {
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "tt-kmd-dkms" ]
-  [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "tenstorrent-dkms" ]
+  [ "${lines[2]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts repository ubuntu 24.04 manifest" {
@@ -31,8 +31,8 @@ setup() {
 
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
-  [ "${lines[1]}" = "tt-kmd-dkms" ]
-  [ "${lines[2]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[1]}" = "tenstorrent-dkms" ]
+  [ "${lines[2]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts repository Linux Mint 22.1 manifest" {
@@ -48,8 +48,8 @@ setup() {
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
   [ "${lines[1]}" = "true" ]
-  [ "${lines[2]}" = "tt-kmd-dkms" ]
-  [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
+  [ "${lines[3]}" = "https://ppa.tenstorrent.com/ubuntu/" ]
 }
 
 @test "OS parser accepts Fedora dnf fixture" {

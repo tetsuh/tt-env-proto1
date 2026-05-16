@@ -22,7 +22,7 @@ REQUIRED_REPOS=(
 VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
-VIRT_PKG_KMD="tt-kmd-dkms"
+VIRT_PKG_KMD="tenstorrent-dkms"
 
 # OS Specific Workarounds
 WORKAROUNDS=()
@@ -46,7 +46,7 @@ EOF
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "apt" ]
   [ "${lines[1]}" = "true" ]
-  [ "${lines[2]}" = "tt-kmd-dkms" ]
+  [ "${lines[2]}" = "tenstorrent-dkms" ]
   [ "${lines[3]}" = "ppa:tenstorrent/ppa" ]
   [ "${lines[4]}" = "0" ]
 }

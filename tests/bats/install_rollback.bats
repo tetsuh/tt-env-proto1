@@ -19,6 +19,13 @@ EOF
   chmod +x "${fake_bin}/sudo"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
+
+  cat >"${fake_bin}/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "fake-key-data"
+EOF
+  chmod +x "${fake_bin}/curl"
+
   printf '%s\n' "$fake_bin"
 }
 
@@ -61,6 +68,7 @@ EOF
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2024.1
   [ "$status" -eq 1 ]
+  echo "ACTUAL: $output"
   [[ "$output" == *"Failed to install apt packages"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
   [ ! -e "${TT_HOME}/versions/.2024.1.partial" ]

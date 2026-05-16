@@ -105,6 +105,29 @@ _package_manager_os_release_field() {
     printf '%s' "$value"
 }
 
+_package_manager_apt_add_repo_tenstorrent() {
+    local ubuntu_codename deb_url source_file key_file
+
+    ubuntu_codename="$(_package_manager_os_release_field UBUNTU_CODENAME)"
+    [[ -n "$ubuntu_codename" ]] || ubuntu_codename="$(_package_manager_os_release_field VERSION_CODENAME)"
+
+    [[ -n "$ubuntu_codename" ]] || \
+        fail "Could not determine apt repository codename from /etc/os-release"
+
+    deb_url="https://ppa.tenstorrent.com/ubuntu/"
+    source_file="/etc/apt/sources.list.d/tenstorrent.list"
+    key_file="/etc/apt/keyrings/tt-pkg-key.asc"
+
+    sudo mkdir -p /etc/apt/keyrings
+    if command_exists curl; then
+        curl -fsSL "https://ppa.tenstorrent.com/ubuntu/tt-pkg-key.asc" | sudo tee "$key_file" >/dev/null || fail "Failed to download Tenstorrent GPG key"
+    else
+        fail "curl is required to download Tenstorrent GPG key"
+    fi
+
+    echo "deb [signed-by=${key_file}] ${deb_url} ${ubuntu_codename} main" | sudo tee "$source_file" >/dev/null
+}
+
 # On Linux Mint, /usr/bin/add-apt-repository is Mint's mintSources.py wrapper,
 # which validates ppa: repos against the Launchpad API before adding them. This
 # fails when the PPA is not yet published on Launchpad. Work around this by
@@ -184,7 +207,9 @@ _package_manager_apt_install_system_packages() {
 
     for repo in "${repos[@]}"; do
         log_info "Adding apt repository: ${repo}"
-        if [[ "${OS_ID:-}" == "linuxmint" ]]; then
+        if [[ "$repo" == "https://ppa.tenstorrent.com/ubuntu/" || "$repo" == "ppa:tenstorrent/ppa" ]]; then
+            _package_manager_apt_add_repo_tenstorrent
+        elif [[ "${OS_ID:-}" == "linuxmint" ]]; then
             _package_manager_apt_add_repo_mint "$repo"
         else
             sudo add-apt-repository -y "$repo" || fail "Failed to add repository: ${repo}"

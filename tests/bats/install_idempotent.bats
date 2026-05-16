@@ -38,7 +38,7 @@ write_download_manifest() {
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install --force 2024.1
   [ "$status" -eq 0 ]
-  [ "$(wc -l <"$TT_APT_LOG")" -eq 6 ]
+  [ "$(wc -l <"$TT_APT_LOG")" -eq 10 ]
 }
 
 @test "tt-env install --force reruns download path from scratch" {

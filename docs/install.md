@@ -46,7 +46,7 @@ installing resolved packages. A successful Ubuntu apt-path run looks like:
 ```text
 [INFO] Adding apt repository: ppa:tenstorrent/ppa
 [INFO] Updating apt package metadata.
-[INFO] Installing apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms
+[INFO] Installing apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms
 [INFO] Installed release 2024.1 at /home/alice/.tt-env/versions/2024.1.
 ```
 

@@ -15,5 +15,5 @@ setup() {
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would run dnf makecache."* ]]
-  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tt-kmd-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms"* ]]
 }

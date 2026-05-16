@@ -14,9 +14,12 @@ setup() {
   [ -d "${TT_HOME}/versions/2024.1" ]
 
   mapfile -t apt_calls <"$TT_APT_LOG"
-  [ "${apt_calls[0]}" = "add-apt-repository -y ppa:tenstorrent/ppa" ]
-  [ "${apt_calls[1]}" = "apt-get update" ]
-  [ "${apt_calls[2]}" = "apt-get install -y cmake ninja-build zlib1g-dev tt-kmd-dkms" ]
+  [ "${apt_calls[0]}" = "mkdir -p /etc/apt/keyrings" ]
+  [ "${apt_calls[1]}" = "tee /etc/apt/keyrings/tt-pkg-key.asc" ]
+  [ "${apt_calls[2]}" = "tee /etc/apt/sources.list.d/tenstorrent.list" ]
+  [ "${apt_calls[3]}" = "apt-get update" ]
+  echo "ACTUAL: ${apt_calls[4]}"
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms" ]
 }
 
 @test "tt-env install fails clearly when sudo is missing" {
@@ -43,8 +46,8 @@ setup() {
 
   run env BASH_ENV="$bash_env" "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]
-  [[ "$output" == *"[dry-run] Would add apt repository: ppa:tenstorrent/ppa"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tt-kmd-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would add apt repository: https://ppa.tenstorrent.com/ubuntu/"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
@@ -54,12 +57,12 @@ setup() {
 PKG_MANAGER="apt"
 USE_PPA="true"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+  "https://ppa.tenstorrent.com/ubuntu/"
 )
 VIRT_PKG_CMAKE="cmake-24"
 VIRT_PKG_NINJA="ninja-build-24"
 VIRT_PKG_ZLIB="zlib1g-dev-24"
-VIRT_PKG_KMD="tt-kmd-dkms-24"
+VIRT_PKG_KMD="tenstorrent-dkms-24"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -68,7 +71,7 @@ EOF
     "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: ubuntu 24.04"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tt-kmd-dkms-24"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tenstorrent-dkms-24"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
@@ -78,12 +81,12 @@ EOF
 PKG_MANAGER="apt"
 USE_SYSTEM_PACKAGES="true"
 REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
+  "https://ppa.tenstorrent.com/ubuntu/"
 )
 VIRT_PKG_CMAKE="cmake-mint"
 VIRT_PKG_NINJA="ninja-build-mint"
 VIRT_PKG_ZLIB="zlib1g-dev-mint"
-VIRT_PKG_KMD="tt-kmd-dkms-mint"
+VIRT_PKG_KMD="tenstorrent-dkms-mint"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -92,29 +95,14 @@ EOF
     "$TT_ENV" install --dry-run 2024.1
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: linuxmint 22.1"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tenstorrent-dkms-mint"* ]]
   [ ! -e "${TT_HOME}/versions/2024.1" ]
 }
 
-@test "tt-env install on Linux Mint bypasses mintSources.py for ppa: repos" {
-  mkdir -p "${TT_HOME}/manifests"
-  cat >"${TT_HOME}/manifests/linuxmint-22.1.env" <<'EOF'
-PKG_MANAGER="apt"
-USE_SYSTEM_PACKAGES="true"
-REQUIRED_REPOS=(
-  "ppa:tenstorrent/ppa"
-)
-VIRT_PKG_CMAKE="cmake-mint"
-VIRT_PKG_NINJA="ninja-build-mint"
-VIRT_PKG_ZLIB="zlib1g-dev-mint"
-VIRT_PKG_KMD="tt-kmd-dkms-mint"
-WORKAROUNDS=()
-EOF
-
+@test "tt-env install handles Tenstorrent repository directly on Linux Mint" {
   fake_bin="$(make_fake_sudo)"
-  curl_fail_bin="$(make_fake_curl_fail)"
 
-  run env PATH="${curl_fail_bin}:${fake_bin}:${PATH}" \
+  run env PATH="${fake_bin}:${PATH}" \
     TT_OVERRIDE_OS_ID=linuxmint TT_OVERRIDE_OS_VERSION=22.1 \
     "$TT_ENV" install 2024.1
 
@@ -122,8 +110,10 @@ EOF
   [ -d "${TT_HOME}/versions/2024.1" ]
 
   mapfile -t apt_calls <"$TT_APT_LOG"
-  # Mint path writes the apt source directly via tee, not via add-apt-repository
-  [[ "${apt_calls[0]}" == "tee /etc/apt/sources.list.d/tenstorrent-ppa-"* ]]
-  [ "${apt_calls[1]}" = "apt-get update" ]
-  [ "${apt_calls[2]}" = "apt-get install -y cmake-mint ninja-build-mint zlib1g-dev-mint tt-kmd-dkms-mint" ]
+  [ "${apt_calls[0]}" = "mkdir -p /etc/apt/keyrings" ]
+  [ "${apt_calls[1]}" = "tee /etc/apt/keyrings/tt-pkg-key.asc" ]
+  [ "${apt_calls[2]}" = "tee /etc/apt/sources.list.d/tenstorrent.list" ]
+  [ "${apt_calls[3]}" = "apt-get update" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms" ]
 }
+

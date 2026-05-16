@@ -8,7 +8,7 @@ current state cannot be checked safely.
 ## Scope
 
 Proto1 supports Ubuntu 22.04 with Secure Boot disabled. It can install the
-`tt-kmd-dkms` package, load the `tenstorrent` module, and swap an already-loaded
+`tenstorrent-dkms` package, load the `tenstorrent` module, and swap an already-loaded
 module by unloading and reloading it. MOK enrollment and Secure Boot workflows
 are out of scope for proto1.
 
