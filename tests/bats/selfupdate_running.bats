@@ -79,9 +79,6 @@ case "$url" in
   *VERSION)
     printf '%s\n' "0.2.1" >"$output"
     ;;
-  *.asc)
-    printf '%s\n' "signature" >"$output"
-    ;;
   *)
     cat >"$output" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -91,23 +88,7 @@ SCRIPT
 esac
 printf '200'
 EOF
-  cat >"${fake_bin}/gpg" <<'EOF'
-#!/usr/bin/env bash
-if [[ "$*" == *"--with-colons"* && "$*" == *"--fingerprint"* ]]; then
-  printf 'pub:::::::::\n'
-  printf 'fpr:::::::::C55FEB196FB67D83F63FE18CBEF418235C011DF8:\n'
-  exit 0
-fi
-if [[ "$*" == *"--import"* ]]; then
-  exit 0
-fi
-if [[ "$*" == *"--verify"* ]]; then
-  printf '[GNUPG:] VALIDSIG C55FEB196FB67D83F63FE18CBEF418235C011DF8 0 0 0 0 0 0 0 0 C55FEB196FB67D83F63FE18CBEF418235C011DF8\n'
-  exit 0
-fi
-exit 0
-EOF
-  chmod +x "${fake_bin}/curl" "${fake_bin}/gpg"
+  chmod +x "${fake_bin}/curl"
   printf '%s\n' "$fake_bin"
 }
 

@@ -19,7 +19,6 @@ fixture-only until manual validation exists.
 - `sudo`, `dnf`, and `dnf config-manager` for dnf fixture/adapter validation.
   `config-manager` is provided by `dnf-plugins-core` on Fedora-family systems.
 - `curl` plus `sha256sum` or `shasum` for the GitHub Releases download fallback.
-- `gpg` for bootstrapping the proto1 trusted public key into `${TT_HOME}/keys`.
 - A stack manifest in `releases/<release>.json`.
 - An OS manifest for the detected host, such as `manifests/ubuntu-22.04.env`.
 
@@ -58,8 +57,9 @@ codenames fail before `tt-env` writes an apt source entry.
 
 When a manifest has `USE_SYSTEM_PACKAGES="false"` (or legacy `USE_PPA="false"`)
 and the stack manifest includes `components.<name>.download_url` plus
-`components.<name>.sha256`, `tt-env` downloads and verifies each signed artifact
-before finalizing the version directory.
+`components.<name>.sha256`, `tt-env` downloads each artifact and verifies its
+sha256 before finalizing the version directory. Proto1-managed detached GPG
+signatures are temporarily suspended for this path.
 
 When a custom OS manifest has `USE_SYSTEM_PACKAGES="true"`, `tt-env` adds any
 configured repositories before installing resolved packages. For custom apt
@@ -109,7 +109,7 @@ new install has completed successfully.
 | `add-apt-repository is required to add repositories` | Install `software-properties-common`. |
 | `Unsupported Tenstorrent apt repository codename` | Use Ubuntu 22.04/24.04 or a derivative that exposes `UBUNTU_CODENAME=jammy` or `noble`; unsupported codenames fail before apt source mutation. |
 | `Tenstorrent apt signing key fingerprint mismatch` | Do not continue; check whether Tenstorrent rotated the repository signing key and update `tt-env` only after verifying the new fingerprint. |
-| `Stack component <name> requires download_url and sha256` | The OS manifest disabled system packages, but the stack manifest only contains version strings. Add signed download metadata or use a verified package source. |
+| `Stack component <name> requires download_url and sha256` | The OS manifest disabled system packages, but the stack manifest only contains version strings. Add download URLs with sha256 metadata or use a verified package source. |
 | `dnf config-manager is required to add repositories` | Install `dnf-plugins-core` before using a dnf manifest with repositories. |
 | `curl is required to download release artifacts` | Install `curl` before using the fallback path. |
 | `sha256 mismatch` | Check the stack manifest `sha256` values and artifact URLs; the partial install is rolled back. |

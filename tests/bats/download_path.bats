@@ -30,23 +30,13 @@ setup() {
   [ ! -e "${TT_HOME}/versions/.proto-stack-2026.05.16.partial" ]
 }
 
-@test "tt-env install aborts when a GPG signature is missing" {
-  rm -f "${BATS_TEST_TMPDIR}/assets/firmware.asc"
+@test "tt-env install does not require proto1-managed artifact signatures" {
+  rm -f "${BATS_TEST_TMPDIR}/assets/"*.asc
 
   run "$TT_ENV" install proto-stack-2026.05.16
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"Missing GPG signature for firmware"* ]]
-  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
-  [ ! -e "${TT_HOME}/versions/.proto-stack-2026.05.16.partial" ]
-}
 
-@test "tt-env install aborts when a GPG signature is bad" {
-  export TT_FAKE_GPG_VERIFY_EXIT=1
-
-  run "$TT_ENV" install proto-stack-2026.05.16
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"GPG signature verification failed"* ]]
-  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [ "$status" -eq 0 ]
+  [ -f "${TT_HOME}/versions/proto-stack-2026.05.16/.tt-env-installed" ]
   [ ! -e "${TT_HOME}/versions/.proto-stack-2026.05.16.partial" ]
 }
 
@@ -63,7 +53,7 @@ setup() {
   run "$TT_ENV" install --dry-run proto-stack-2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would download tt-kmd from file://${BATS_TEST_TMPDIR}/assets/tt-kmd"* ]]
-  [[ "$output" == *"[dry-run] Would download tt-kmd signature from file://${BATS_TEST_TMPDIR}/assets/tt-kmd.asc"* ]]
+  [[ "$output" != *"signature"* ]]
   [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
 }
 

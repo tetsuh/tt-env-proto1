@@ -120,11 +120,9 @@ _install_download_components() {
     local -a curl_args=()
     local component
     local download_url
-    local signature_url
     local expected_sha256
     local actual_sha256
     local artifact_path
-    local signature_path
 
     mapfile -t components < <(_install_component_names)
 
@@ -142,7 +140,6 @@ _install_download_components() {
 
         if [[ "$dry_run" -eq 1 ]]; then
             log_info "[dry-run] Would download ${component} from ${download_url}"
-            log_info "[dry-run] Would download ${component} signature from ${download_url}.asc"
         fi
     done
 
@@ -162,20 +159,12 @@ _install_download_components() {
 
     for component in "${components[@]}"; do
         download_url="${TT_STACK_COMPONENT_DOWNLOAD_URLS[$component]:-}"
-        signature_url="${download_url}.asc"
         expected_sha256="${TT_STACK_COMPONENT_SHA256S[$component],,}"
         artifact_path="${artifacts_dir}/${component}"
-        signature_path="${artifact_path}.asc"
 
         log_info "Downloading ${component} from ${download_url}"
         curl "${curl_args[@]}" --output "$artifact_path" "$download_url" || \
             _install_rollback_fail "$target_dir" "Failed to download ${component} from ${download_url}"
-
-        log_info "Downloading ${component} signature from ${signature_url}"
-        curl "${curl_args[@]}" --output "$signature_path" "$signature_url" || \
-            _install_rollback_fail "$target_dir" "Missing GPG signature for ${component} from ${signature_url}"
-
-        verify_gpg "$artifact_path" "$signature_path"
 
         actual_sha256="$(calculate_sha256 "$artifact_path")"
         actual_sha256="${actual_sha256,,}"
