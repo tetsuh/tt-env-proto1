@@ -11,41 +11,41 @@ setup() {
 }
 
 @test "tt-env install creates a per-release version directory" {
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
-  [ -d "${TT_HOME}/versions/proto-stack-2026.05.16" ]
-  [ -f "${TT_HOME}/versions/proto-stack-2026.05.16/.tt-env-installed" ]
-  [[ "$output" == *"Installed release proto-stack-2026.05.16"* ]]
+  [ -d "${TT_HOME}/versions/2026.05.16" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/.tt-env-installed" ]
+  [[ "$output" == *"Installed release 2026.05.16"* ]]
 }
 
 @test "tt-env install is a no-op when release is already installed" {
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
 
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"already installed"* ]]
 }
 
 @test "tt-env install --force re-creates the version directory" {
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
 
-  touch "${TT_HOME}/versions/proto-stack-2026.05.16/sentinel"
+  touch "${TT_HOME}/versions/2026.05.16/sentinel"
 
-  run "$TT_ENV" install --force proto-stack-2026.05.16
+  run "$TT_ENV" install --force 2026.05.16
   [ "$status" -eq 0 ]
-  [ -d "${TT_HOME}/versions/proto-stack-2026.05.16" ]
-  [ -f "${TT_HOME}/versions/proto-stack-2026.05.16/.tt-env-installed" ]
-  [ ! -d "${TT_HOME}/versions/proto-stack-2026.05.16/.proto-stack-2026.05.16.partial" ]
-  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16/sentinel" ]
+  [ -d "${TT_HOME}/versions/2026.05.16" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/.tt-env-installed" ]
+  [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
+  [ ! -e "${TT_HOME}/versions/2026.05.16/sentinel" ]
   [[ "$output" == *"Removing existing version directory"* ]]
 }
 
 @test "tt-env install --dry-run prints planned actions without creating the directory" {
-  run "$TT_ENV" install --dry-run proto-stack-2026.05.16
+  run "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
-  [ ! -e "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [ ! -e "${TT_HOME}/versions/2026.05.16" ]
   [[ "$output" == *"[dry-run] Would create version directory"* ]]
 }
 
@@ -65,9 +65,9 @@ setup() {
 }
 
 @test "tt-env install refuses an unmarked existing version directory without --force" {
-  mkdir -p "${TT_HOME}/versions/proto-stack-2026.05.16"
+  mkdir -p "${TT_HOME}/versions/2026.05.16"
 
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run "$TT_ENV" install 2026.05.16
   [ "$status" -eq 1 ]
   [[ "$output" == *"Version directory exists but is not marked installed"* ]]
 }

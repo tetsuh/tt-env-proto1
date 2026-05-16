@@ -8,7 +8,7 @@ write_stack_manifest() {
   local manifest_file="$1"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "description": "Tenstorrent proto sample stack 2026.05.16",
   "components": {
     "tt-kmd": "ttkmd-2.8.0",
@@ -24,7 +24,7 @@ write_download_stack_manifest() {
   local manifest_file="$1"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "description": "Tenstorrent proto sample stack 2026.05.16",
   "components": {
     "tt-kmd": {
@@ -53,7 +53,7 @@ EOF
 }
 
 @test "parse_stack_manifest fallback extracts release metadata and components" {
-  manifest_file="${BATS_TEST_TMPDIR}/proto-stack-2026.05.16.json"
+  manifest_file="${BATS_TEST_TMPDIR}/2026.05.16.json"
   write_stack_manifest "$manifest_file"
 
   run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
@@ -66,7 +66,7 @@ EOF
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "proto-stack-2026.05.16" ]
+  [ "${lines[0]}" = "2026.05.16" ]
   [ "${lines[1]}" = "Tenstorrent proto sample stack 2026.05.16" ]
   [ "${lines[2]}" = "ttkmd-2.8.0" ]
   [ "${lines[3]}" = "v0.70.1" ]
@@ -75,7 +75,7 @@ EOF
 @test "parse_stack_manifest jq and fallback paths return identical results" {
   command -v jq >/dev/null 2>&1 || skip "jq not available"
 
-  manifest_file="${BATS_TEST_TMPDIR}/proto-stack-2026.05.16.json"
+  manifest_file="${BATS_TEST_TMPDIR}/2026.05.16.json"
   write_stack_manifest "$manifest_file"
 
   run bash -c '
@@ -168,7 +168,7 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/unknown-field.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "components": {
     "tt-kmd": {
       "version": "ttkmd-2.8.0",
@@ -192,7 +192,7 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/bad.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "components": []
 }
 EOF
@@ -206,7 +206,7 @@ EOF
   manifest_file="${BATS_TEST_TMPDIR}/metadata.json"
   cat >"$manifest_file" <<'EOF'
 {
-  "release": "proto-stack-2026.05.16 beta",
+  "release": "2026.05.16 beta",
   "description": "[preview] Tenstorrent Stable Stack",
   "components": {
     "tt-kmd": "ttkmd-2.8.0",
@@ -226,7 +226,7 @@ EOF
   ' bash "$MANIFEST_PARSER" "$manifest_file"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "proto-stack-2026.05.16 beta" ]
+  [ "${lines[0]}" = "2026.05.16 beta" ]
   [ "${lines[1]}" = "[preview] Tenstorrent Stable Stack" ]
   [ "${lines[2]}" = "[v19.6.0 beta]" ]
 }

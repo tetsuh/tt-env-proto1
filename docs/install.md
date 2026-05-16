@@ -37,7 +37,7 @@ See [PATH setup](./path-setup.md) for bash, zsh, and fish snippets. The
 ## Install a release
 
 ```bash
-tt-env install proto-stack-2026.05.16
+tt-env install 2026.05.16
 ```
 
 The repository Ubuntu and Linux Mint manifests use the official signed
@@ -77,20 +77,20 @@ Running the same install again exits successfully without rerunning apt or
 downloads:
 
 ```text
-[INFO] Release proto-stack-2026.05.16 is already installed at /home/alice/.tt-env/versions/proto-stack-2026.05.16.
+[INFO] Release 2026.05.16 is already installed at /home/alice/.tt-env/versions/2026.05.16.
 ```
 
 Use `--force` to reinstall from scratch:
 
 ```bash
-tt-env install --force proto-stack-2026.05.16
+tt-env install --force 2026.05.16
 ```
 
 Use `--dry-run` to print planned apt or download actions without creating the
 version directory:
 
 ```bash
-tt-env install --dry-run proto-stack-2026.05.16
+tt-env install --dry-run 2026.05.16
 ```
 
 ## Rollback behavior

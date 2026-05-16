@@ -36,9 +36,9 @@ EOF
 @test "tt-env install can use a dnf OS manifest" {
   fake_bin="$(make_fake_dnf_sudo)"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install proto-stack-2026.05.16
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
-  [ -d "${TT_HOME}/versions/proto-stack-2026.05.16" ]
+  [ -d "${TT_HOME}/versions/2026.05.16" ]
 
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]

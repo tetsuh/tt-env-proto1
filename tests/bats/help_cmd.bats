@@ -16,7 +16,7 @@ setup() {
   [[ "$output" == *"--dry-run"* ]]
   [[ "$output" == *"--force"* ]]
   [[ "$output" == *"Examples:"* ]]
-  [[ "$output" == *"tt-env install --dry-run proto-stack-2026.05.16"* ]]
+  [[ "$output" == *"tt-env install --dry-run 2026.05.16"* ]]
   [[ "$output" == *"Exit codes:"* ]]
 }
 
@@ -25,7 +25,7 @@ setup() {
   [ "$status" -eq 0 ]
 
   [[ "$output" == *"Examples:"* ]]
-  [[ "$output" == *"tt-env install --force proto-stack-2026.05.16"* ]]
+  [[ "$output" == *"tt-env install --force 2026.05.16"* ]]
   [[ "$output" == *"Exit codes:"* ]]
 }
 

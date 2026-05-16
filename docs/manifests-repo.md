@@ -13,7 +13,7 @@ tt-env-manifests-proto1/
 ├── README.md
 ├── LICENSE
 ├── releases/
-│   └── proto-stack-2026.05.16.json           # Stack manifest for release proto-stack-2026.05.16
+│   └── 2026.05.16.json           # Stack manifest for release 2026.05.16
 └── manifests/
     └── ubuntu-22.04.env      # OS manifest for Ubuntu 22.04
 ```

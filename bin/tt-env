@@ -55,9 +55,9 @@ Options:
   -h, --help Show this help message
 
 Examples:
-  tt-env install proto-stack-2026.05.16
-  tt-env install --dry-run proto-stack-2026.05.16
-  tt-env install --force proto-stack-2026.05.16
+  tt-env install 2026.05.16
+  tt-env install --dry-run 2026.05.16
+  tt-env install --force 2026.05.16
 
 Exit codes:
   0  Release is installed or the requested dry run completed
@@ -76,7 +76,7 @@ Options:
   -h, --help Show this help message
 
 Examples:
-  tt-env use proto-stack-2026.05.16
+  tt-env use 2026.05.16
   readlink ~/.tt-env/current
 
 Exit codes:
@@ -96,7 +96,7 @@ Options:
   -h, --help Show this help message
 
 Examples:
-  tt-env remove proto-stack-2026.05.16
+  tt-env remove 2026.05.16
 
 Exit codes:
   0  Installed release directory was removed

@@ -77,16 +77,16 @@ setup() {
   [ "${lines[2]}" = "0" ]
 }
 
-@test "parse_stack_manifest accepts repository proto-stack-2026.05.16 release" {
+@test "parse_stack_manifest accepts repository 2026.05.16 release" {
   run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
     source "$1"
     parse_stack_manifest "$2"
     printf "%s\n" "$TT_STACK_RELEASE"
     printf "%s\n" "${TT_STACK_COMPONENTS[tt-metal]}"
-  ' bash "$MANIFEST_PARSER" "${REPO_DIR}/releases/proto-stack-2026.05.16.json"
+  ' bash "$MANIFEST_PARSER" "${REPO_DIR}/releases/2026.05.16.json"
 
   [ "$status" -eq 0 ]
-  [ "${lines[0]}" = "proto-stack-2026.05.16" ]
+  [ "${lines[0]}" = "2026.05.16" ]
   [ "${lines[1]}" = "v0.70.1" ]
 }
 
@@ -100,6 +100,6 @@ setup() {
   run cmp -s "${REPO_DIR}/manifests/linuxmint-22.1.env" "${REPO_DIR}/tests/fixtures/manifests/linuxmint-22.1.env"
   [ "$status" -eq 0 ]
 
-  run cmp -s "${REPO_DIR}/releases/proto-stack-2026.05.16.json" "${REPO_DIR}/tests/fixtures/releases/proto-stack-2026.05.16.json"
+  run cmp -s "${REPO_DIR}/releases/2026.05.16.json" "${REPO_DIR}/tests/fixtures/releases/2026.05.16.json"
   [ "$status" -eq 0 ]
 }

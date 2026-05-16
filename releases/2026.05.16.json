@@ -1,5 +1,5 @@
 {
-  "release": "proto-stack-2026.05.16",
+  "release": "2026.05.16",
   "description": "Tenstorrent proto sample stack 2026.05.16",
   "components": {
     "tt-kmd": "ttkmd-2.8.0",
