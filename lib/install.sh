@@ -87,8 +87,6 @@ _install_require_download_tools() {
     if ! _install_require_sha256_tool; then
         _install_rollback_fail "$rollback_dir" "sha256sum or shasum is required to verify downloaded artifacts."
     fi
-
-    command_exists gpg || _install_rollback_fail "$rollback_dir" "gpg is required to verify downloaded artifacts."
 }
 
 _install_rollback_fail() {

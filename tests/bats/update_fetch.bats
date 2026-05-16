@@ -11,6 +11,21 @@ setup() {
   unset GH_TOKEN
 }
 
+make_command_absent_env() {
+  local command_name="$1"
+  local bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"
+
+  cat >"$bash_env" <<EOF
+command() {
+  if [[ "\$1" == "-v" && "\$2" == "--" && "\$3" == "${command_name}" ]]; then
+    return 1
+  fi
+  builtin command "\$@"
+}
+EOF
+  printf '%s\n' "$bash_env"
+}
+
 write_release_manifest() {
   local dir="$1"
   local release="$2"
@@ -226,6 +241,7 @@ EOF
 
 @test "tt-env update accepts manifest archives without proto1-managed signatures" {
   fake_bin="$(make_fake_update_tools)"
+  bash_env="$(make_command_absent_env gpg)"
   export TT_FAKE_ARCHIVE
   TT_FAKE_ARCHIVE="$(make_manifest_archive_without_signature)"
   export GITHUB_TOKEN="env-token"
@@ -233,7 +249,7 @@ EOF
   printf 'old release\n' >"${TT_HOME}/releases/old.json"
   printf 'old manifest\n' >"${TT_HOME}/manifests/old.env"
 
-  PATH="${fake_bin}:${PATH}" run "$TT_ENV" update
+  PATH="${fake_bin}:${PATH}" run env BASH_ENV="$bash_env" "$TT_ENV" update
 
   [ "$status" -eq 0 ]
   [ -f "${TT_HOME}/releases/2024.2.json" ]

@@ -32,8 +32,9 @@ setup() {
 
 @test "tt-env install does not require proto1-managed artifact signatures" {
   rm -f "${BATS_TEST_TMPDIR}/assets/"*.asc
+  bash_env="$(make_command_absent_env gpg)"
 
-  run "$TT_ENV" install proto-stack-2026.05.16
+  run env BASH_ENV="$bash_env" "$TT_ENV" install proto-stack-2026.05.16
 
   [ "$status" -eq 0 ]
   [ -f "${TT_HOME}/versions/proto-stack-2026.05.16/.tt-env-installed" ]
