@@ -37,7 +37,7 @@ setup() {
   [ "$status" -eq 0 ]
   [ -d "${TT_HOME}/versions/2026.05.16" ]
   [ -f "${TT_HOME}/versions/2026.05.16/.tt-env-installed" ]
-  [ ! -d "${TT_HOME}/versions/2026.05.16/.2026.05.16.partial" ]
+  [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
   [ ! -e "${TT_HOME}/versions/2026.05.16/sentinel" ]
   [[ "$output" == *"Removing existing version directory"* ]]
 }

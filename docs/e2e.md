@@ -68,18 +68,9 @@ Expected output:
 0.2.0
 ```
 
-Verify the trusted proto1 signing key was bootstrapped:
-
-```bash
-gpg --homedir "${HOME}/.tt-env/keys" --with-colons --fingerprint |
-  awk -F: '$1 == "fpr" { print $10 }'
-```
-
-Expected fingerprint:
-
-```text
-C55FEB196FB67D83F63FE18CBEF418235C011DF8
-```
+Proto1-managed GPG signatures are temporarily suspended. Do not expect
+`${HOME}/.tt-env/keys` to contain a trusted proto1 signing key on a fresh
+install.
 
 ## 3. Refresh manifests
 
@@ -122,8 +113,8 @@ the resolved packages:
 
 If the host codename is not one of the currently published Tenstorrent apt
 pockets (`jammy` or `noble`), `tt-env` fails before writing an apt source entry.
-If a validation run instead provides a stack manifest with signed component
-download metadata and disables system packages, expected output includes signed
+If a validation run instead provides a stack manifest with component download
+URLs and sha256 metadata and disables system packages, expected output includes
 artifact downloads and final install success:
 
 ```text
@@ -220,15 +211,15 @@ printf 'before=%s\nafter=%s\n' "$before_hash" "$after_hash"
 rm -rf "$tmp_dir"
 ```
 
-If a newer signed `bin/tt-env` exists at the configured remote ref, expected
-output includes:
+If a newer `bin/tt-env` exists at the configured remote ref, expected output
+includes:
 
 ```text
 [INFO] Self-update available: 0.2.0 -> <remote-version>.
 [INFO] Updated tt-env to <remote-version>.
 ```
 
-If no newer signed binary exists, the no-op output is acceptable.
+If no newer binary exists, the no-op output is acceptable.
 
 ## 8. Final evidence to capture
 
@@ -236,7 +227,7 @@ Attach these to the PR manual verification log:
 
 1. Host OS and Secure Boot output.
 2. `tt-env --version`.
-3. Trusted key fingerprint.
+3. Note that proto1-managed GPG signing is suspended.
 4. `tt-env update` result.
 5. `tt-env install 2026.05.16` result.
 6. `tt-env use 2026.05.16` and `readlink ~/.tt-env/current`.

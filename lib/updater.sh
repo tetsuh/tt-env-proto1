@@ -189,7 +189,6 @@ _update_require_tools() {
     command_exists curl || fail "curl is required to update manifests."
     command_exists tar || fail "tar is required to update manifests."
     command_exists mktemp || fail "mktemp is required to update manifests."
-    command_exists gpg || fail "gpg is required to verify updated manifests."
 }
 
 _update_last_update_file() {
@@ -423,24 +422,6 @@ _self_update_binary_url() {
     _self_update_content_url "bin/tt-env"
 }
 
-_self_update_signature_url() {
-    local binary_url="$1"
-
-    if [[ -n "${TT_SELF_UPDATE_SIGNATURE_URL:-}" ]]; then
-        _self_update_validate_https_url "self-update signature" "$TT_SELF_UPDATE_SIGNATURE_URL"
-        return 0
-    fi
-
-    if [[ -n "${TT_SELF_UPDATE_BINARY_URL:-}" ]]; then
-        [[ "$binary_url" != *\?* ]] || \
-            fail "TT_SELF_UPDATE_SIGNATURE_URL is required when TT_SELF_UPDATE_BINARY_URL contains a query string."
-        _self_update_validate_https_url "self-update signature" "${binary_url}.asc"
-        return 0
-    fi
-
-    _self_update_content_url "bin/tt-env.asc"
-}
-
 _self_update_target_file() {
     printf '%s\n' "${TT_SELF_UPDATE_TARGET_FILE:-${UPDATER_ROOT}/bin/tt-env}"
 }
@@ -508,9 +489,7 @@ _self_update_apply_update() {
     local target_dir
     local work_dir
     local binary_tmp
-    local signature_tmp
     local binary_url
-    local signature_url
 
     command_exists mktemp || fail "mktemp is required to apply self-updates."
     command_exists chmod || fail "chmod is required to apply self-updates."
@@ -527,20 +506,14 @@ _self_update_apply_update() {
     if ! binary_url="$(_self_update_binary_url)"; then
         return 1
     fi
-    if ! signature_url="$(_self_update_signature_url "$binary_url")"; then
-        return 1
-    fi
 
     # Stage under the target directory so the final rename stays atomic.
     work_dir="$(mktemp -d "${target_dir}/.tt-env-self-update.XXXXXX")" || \
         fail "Failed to create self-update staging directory."
     _update_enable_cleanup "$work_dir"
     binary_tmp="${work_dir}/tt-env.tmp"
-    signature_tmp="${work_dir}/tt-env.tmp.asc"
 
     _self_update_fetch_url "$binary_url" "$binary_tmp" "download self-update binary"
-    _self_update_fetch_url "$signature_url" "$signature_tmp" "download self-update signature"
-    verify_gpg "$binary_tmp" "$signature_tmp"
 
     chmod +x "$binary_tmp" || fail "Failed to mark self-update binary executable."
     mv -f -- "$binary_tmp" "$target_file" || fail "Failed to replace tt-env binary atomically."
@@ -612,6 +585,8 @@ _update_stage_manifests() {
     local archive_file="$1"
     local extract_dir="$2"
     local staging_dir="$3"
+    local -a release_files=()
+    local -a os_manifest_files=()
 
     mkdir -p "$extract_dir" "$staging_dir" || fail "Failed to create update staging directories."
 
@@ -620,32 +595,22 @@ _update_stage_manifests() {
 
     [[ -d "${extract_dir}/releases" ]] || fail "Manifest archive is missing releases/."
     [[ -d "${extract_dir}/manifests" ]] || fail "Manifest archive is missing manifests/."
-    _update_verify_manifest_tree "$extract_dir"
+
+    shopt -s nullglob
+    release_files=("${extract_dir}/releases/"*.json)
+    os_manifest_files=("${extract_dir}/manifests/"*.env)
+    shopt -u nullglob
+
+    [[ "${#release_files[@]}" -gt 0 ]] || fail "Manifest archive does not contain release manifests."
+    [[ "${#os_manifest_files[@]}" -gt 0 ]] || fail "Manifest archive does not contain OS manifests."
 
     mkdir -p "${staging_dir}/releases" "${staging_dir}/manifests" || \
         fail "Failed to create manifest staging directories."
-    cp -R "${extract_dir}/releases/." "${staging_dir}/releases/" || \
+
+    cp -- "${release_files[@]}" "${staging_dir}/releases/" || \
         fail "Failed to stage release manifests."
-    cp -R "${extract_dir}/manifests/." "${staging_dir}/manifests/" || \
+    cp -- "${os_manifest_files[@]}" "${staging_dir}/manifests/" || \
         fail "Failed to stage OS manifests."
-}
-
-_update_verify_manifest_tree() {
-    local extract_dir="$1"
-    local manifest_file
-    local found=0
-    local -a manifest_files=()
-
-    shopt -s nullglob
-    manifest_files=("${extract_dir}/releases/"*.json "${extract_dir}/manifests/"*.env)
-    shopt -u nullglob
-
-    for manifest_file in "${manifest_files[@]}"; do
-        found=1
-        verify_gpg "$manifest_file" "${manifest_file}.asc"
-    done
-
-    [[ "$found" -eq 1 ]] || fail "Manifest archive does not contain verifiable manifest files."
 }
 
 _update_restore_backup_dir() {
