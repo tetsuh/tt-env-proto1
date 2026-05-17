@@ -21,6 +21,42 @@ setup() {
   [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms" ]
 }
 
+@test "tt-env install links system package commands into the release bin" {
+  symlinks_supported || skip "POSIX symlinks are not supported in this environment"
+  fake_bin="$(make_fake_sudo)"
+  bridge_bin="${BATS_TEST_TMPDIR}/bridge-bin"
+  make_fake_system_shim_commands "$fake_bin"
+  mkdir -p "${TT_HOME}/shims" "$bridge_bin"
+  printf '#!/usr/bin/env bash\nexit 99\n' >"${TT_HOME}/shims/tt-smi"
+  chmod +x "${TT_HOME}/shims/tt-smi"
+  ln -sfn "${TT_HOME}/shims/tt-smi" "${bridge_bin}/tt-smi"
+
+  run env PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 0 ]
+  for command_name in tt-smi tt-flash tt-topology; do
+    [ -L "${TT_HOME}/versions/2026.05.16/bin/${command_name}" ]
+    [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/${command_name}")" = "${fake_bin}/${command_name}" ]
+  done
+
+  run "$TT_ENV" use 2026.05.16
+  [ "$status" -eq 0 ]
+  run "${TT_HOME}/shims/tt-smi" probe
+  [ "$status" -eq 0 ]
+  [ "$output" = "system tt-smi probe" ]
+}
+
+@test "tt-env install warns but succeeds when system package commands are absent" {
+  fake_bin="$(make_fake_sudo)"
+
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[WARN] Installed command not found in PATH: tt-smi"* ]]
+  [[ "$output" == *"[WARN] Installed command not found in PATH: tt-flash"* ]]
+  [[ "$output" == *"[WARN] Installed command not found in PATH: tt-topology"* ]]
+  [ -d "${TT_HOME}/versions/2026.05.16/bin" ]
+  [ ! -e "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+}
+
 @test "tt-env install fails clearly when sudo is missing" {
   bash_env="$(make_command_absent_env sudo)"
 
