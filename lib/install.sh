@@ -242,6 +242,28 @@ _install_find_system_command() {
     return 1
 }
 
+_install_write_python_package_wrapper() {
+    local command_path="$1"
+    local link_path="$2"
+    local python_subdir="$TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR"
+    local quoted_command_path
+
+    printf -v quoted_command_path '%q' "$command_path"
+    cat >"$link_path" <<EOF || return 1
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
+PYTHONPATH="\${VERSION_DIR}/${python_subdir}\${PYTHONPATH:+:\${PYTHONPATH}}"
+export PYTHONPATH
+
+command_path=${quoted_command_path}
+exec "\$command_path" "\$@"
+EOF
+    chmod 755 "$link_path"
+}
+
 _install_create_system_bin_links() {
     local dry_run="$1"
     local target_dir="$2"
@@ -259,17 +281,31 @@ _install_create_system_bin_links() {
         mkdir -p "$bin_dir" || _install_rollback_fail "$target_dir" "Failed to create bin directory: ${bin_dir}"
     fi
 
+    # package_manager.sh owns the mapping from commands to release-local pip packages.
     for command_name in "${TT_SHIM_COMMANDS[@]}"; do
         link_path="${bin_dir}/${command_name}"
         if command_path="$(_install_find_system_command "$command_name" "$tt_home_real")"; then
             if [[ "$dry_run" -eq 1 ]]; then
-                log_info "[dry-run] Would create bin link: ${link_path} -> ${command_path}"
+                if package_manager_command_needs_pip_packages "$command_name"; then
+                    log_info "[dry-run] Would create Python package wrapper: ${link_path} -> ${command_path}"
+                else
+                    log_info "[dry-run] Would create bin link: ${link_path} -> ${command_path}"
+                fi
                 continue
             fi
-            ln -sf -- "$command_path" "$link_path" || \
+            if package_manager_command_needs_pip_packages "$command_name" && [[ -d "${target_dir}/${TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR}" ]]; then
+                _install_write_python_package_wrapper "$command_path" "$link_path" || \
+                    _install_rollback_fail "$target_dir" "Failed to create Python package wrapper for ${command_name}: ${link_path}"
+            else
+                ln -sf -- "$command_path" "$link_path" || \
                 _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
+            fi
         elif [[ "$dry_run" -eq 1 ]]; then
-            log_info "[dry-run] Would create bin link for ${command_name} after system package install."
+            if package_manager_command_needs_pip_packages "$command_name"; then
+                log_info "[dry-run] Would create Python package wrapper for ${command_name} after system package install."
+            else
+                log_info "[dry-run] Would create bin link for ${command_name} after system package install."
+            fi
         else
             log_warn "Installed command not found in PATH: ${command_name}"
         fi
@@ -302,6 +338,7 @@ _install_system_packages() {
     case "$use_system_packages" in
         true)
             package_manager_install_system_packages "$pkg_manager" "$dry_run"
+            package_manager_install_pip_packages "$dry_run" "$target_dir"
             _install_create_system_bin_links "$dry_run" "$target_dir"
             ;;
         false)

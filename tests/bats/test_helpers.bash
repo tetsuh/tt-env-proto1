@@ -6,6 +6,7 @@ install_test_setup_common() {
   export TT_OVERRIDE_OS_VERSION="22.04"
   export TT_APT_LOG="${BATS_TEST_TMPDIR}/apt.log"
   export TT_CURL_LOG="${BATS_TEST_TMPDIR}/curl.log"
+  export TT_PIP_LOG="${BATS_TEST_TMPDIR}/pip.log"
   export TT_OS_RELEASE_FILE="${BATS_TEST_TMPDIR}/os-release"
   write_test_os_release ubuntu "22.04" jammy ""
 }
@@ -93,7 +94,15 @@ EOF
 printf 'pub:::::::::\n'
 printf 'fpr:::::::::58540CD771C55DD7C33030CA8A9D565F6A208463:\n'
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg"
+  cat >"${fake_bin}/pip3" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "install" && "${2:-}" == "--help" ]]; then
+  printf '  --break-system-packages     Allow pip to modify an EXTERNALLY-MANAGED Python installation\n'
+  exit 0
+fi
+printf '%s\n' "$*" >>"$TT_PIP_LOG"
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/pip3"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"
@@ -214,6 +223,11 @@ write_download_release_manifest() {
       "download_url": "file://${BATS_TEST_TMPDIR}/assets/tt-metal",
       "sha256": "$(sha_for_asset tt-metal)"
     }
+  },
+  "python_packages": {
+    "tt-umd": "0.9.5",
+    "textual": "0.59.0",
+    "elasticsearch": "8.11.0"
   }
 }
 EOF

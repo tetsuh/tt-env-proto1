@@ -4,9 +4,12 @@
 # Public symbols:
 #   - package_manager_require_supported <package-manager>
 #   - package_manager_install_system_packages <package-manager> <dry-run>
+#   - package_manager_install_pip_packages <dry-run> <target-dir>
+#   - package_manager_command_needs_pip_packages <command>
 #
 # Callers must parse the OS manifest with parse_env_manifest before invoking
-# these helpers; package resolution uses the parser globals from that manifest.
+# system package helpers. Callers must parse the stack manifest with
+# parse_stack_manifest before invoking pip package helpers.
 
 if [[ -n "${TT_PACKAGE_MANAGER_LOADED:-}" ]]; then
     return 0
@@ -20,6 +23,14 @@ source "${PACKAGE_MANAGER_LIB_DIR}/core.sh"
 source "${PACKAGE_MANAGER_LIB_DIR}/manifest_parser.sh"
 
 declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
+declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-umd" "textual" "elasticsearch")
+declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
+    ["tt-umd"]="tt-smi"
+    ["textual"]="tt-smi"
+    ["elasticsearch"]="tt-smi"
+)
+readonly TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS
+declare -gr TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR="python"
 declare -gr TT_TENSTORRENT_APT_REPO_URL="https://ppa.tenstorrent.com/ubuntu"
 declare -gr TT_TENSTORRENT_APT_KEY_URL="https://ppa.tenstorrent.com/tt-pkg-key.asc"
 declare -gr TT_TENSTORRENT_APT_KEY_FINGERPRINT="58540CD771C55DD7C33030CA8A9D565F6A208463"
@@ -45,7 +56,7 @@ _package_manager_resolved_packages() {
     local virtual_package
     local resolved_package
 
-    # shellcheck disable=SC2034 # nameref output parameter
+    # shellcheck disable=SC2034,SC2178 # nameref output parameter
     local -n packages_ref="$output_ref"
     packages_ref=()
 
@@ -60,6 +71,86 @@ _package_manager_resolved_packages() {
     if [[ "${#packages_ref[@]}" -eq 0 ]]; then
         fail "No packages resolved from OS manifest."
     fi
+}
+
+_package_manager_join_words() {
+    printf '%s\n' "$*"
+}
+
+_package_manager_resolved_pip_packages() {
+    local output_ref="$1"
+    local package_name
+    local package_version
+
+    # shellcheck disable=SC2034,SC2178 # nameref output parameter
+    local -n packages_ref="$output_ref"
+    packages_ref=()
+
+    for package_name in "${TT_PACKAGE_MANAGER_PIP_PACKAGES[@]}"; do
+        package_version="${TT_STACK_PYTHON_PACKAGES[$package_name]:-}"
+        if [[ -z "$package_version" ]]; then
+            fail "Stack manifest is missing Python package version: python_packages.${package_name}"
+        fi
+        packages_ref+=("${package_name}==${package_version}")
+    done
+}
+
+_package_manager_pip_supports_break_system_packages() {
+    local help_output
+
+    help_output="$(pip3 install --help 2>/dev/null || true)"
+    [[ "$help_output" == *"--break-system-packages"* ]]
+}
+
+package_manager_command_needs_pip_packages() {
+    local command_name="$1"
+    local package_name
+    local package_commands
+    local package_command
+
+    for package_name in "${TT_PACKAGE_MANAGER_PIP_PACKAGES[@]}"; do
+        package_commands="${TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS[$package_name]:-}"
+        for package_command in $package_commands; do
+            [[ "$package_command" == "$command_name" ]] && return 0
+        done
+    done
+
+    return 1
+}
+
+package_manager_install_pip_packages() {
+    local dry_run="$1"
+    local target_dir="$2"
+    local target_python_dir="${target_dir}/${TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR}"
+    local -a pip_args=(install --target "$target_python_dir")
+    local -a pip_packages=()
+    local package_list
+
+    if [[ "${#TT_PACKAGE_MANAGER_PIP_PACKAGES[@]}" -eq 0 ]]; then
+        return 0
+    fi
+
+    _package_manager_resolved_pip_packages pip_packages
+    package_list="$(_package_manager_join_words "${pip_packages[@]}")"
+
+    if [[ "$dry_run" -eq 1 ]]; then
+        log_info "[dry-run] Would install pip packages into ${target_python_dir}: ${package_list}"
+        return 0
+    fi
+
+    if ! command_exists pip3; then
+        fail "pip3 is required to install Python packages: ${package_list}"
+    fi
+
+    if _package_manager_pip_supports_break_system_packages; then
+        pip_args+=(--break-system-packages)
+    fi
+
+    mkdir -p "$target_python_dir" || fail "Failed to create Python package directory: ${target_python_dir}"
+
+    log_info "Installing pip packages into ${target_python_dir}: ${package_list}"
+    pip3 "${pip_args[@]}" "${pip_packages[@]}" || \
+        fail "Failed to install pip packages: ${package_list}"
 }
 
 _package_manager_normalized_repo() {

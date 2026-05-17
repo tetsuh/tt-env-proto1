@@ -6,5 +6,10 @@
     "tt-smi": "v5.2.0",
     "firmware": "v19.6.0",
     "tt-metal": "v0.70.1"
+  },
+  "python_packages": {
+    "tt-umd": "0.9.5",
+    "textual": "0.59.0",
+    "elasticsearch": "8.11.0"
   }
 }
