@@ -26,6 +26,15 @@ EOF
   fi
 }
 
+symlinks_supported() {
+  local probe_dir="${BATS_TEST_TMPDIR}/symlink-probe"
+
+  rm -rf "$probe_dir"
+  mkdir -p "${probe_dir}/target"
+  ln -sfn "${probe_dir}/target" "${probe_dir}/link" 2>/dev/null
+  [ -L "${probe_dir}/link" ]
+}
+
 write_install_os_manifest() {
   local use_system_packages="$1"
   local required_repo="${2:-}"
@@ -85,6 +94,60 @@ EOF
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"
+}
+
+make_fake_system_shim_commands() {
+  local fake_bin="$1"
+  local command_name
+
+  for command_name in tt-smi tt-flash tt-topology; do
+    cat >"${fake_bin}/${command_name}" <<EOF
+#!/usr/bin/env bash
+printf 'system ${command_name}'
+for arg in "\$@"; do
+  printf ' %s' "\$arg"
+done
+printf '\\n'
+EOF
+    chmod +x "${fake_bin}/${command_name}"
+  done
+}
+
+make_clean_path_without_system_shim_commands() {
+  local clean_bin="${BATS_TEST_TMPDIR}/clean-path-bin"
+  local bash_path
+  local command_name
+  local command_path
+  local -a required_commands=(
+    bash
+    cat
+    chmod
+    dirname
+    ln
+    mkdir
+    mktemp
+    mv
+    readlink
+    rm
+    sort
+  )
+
+  mkdir -p "$clean_bin"
+  bash_path="$(command -v bash)"
+
+  for command_name in "${required_commands[@]}"; do
+    command_path="$(command -v "$command_name")" || {
+      printf 'Required test command not found: %s\n' "$command_name" >&2
+      return 1
+    }
+    cat >"${clean_bin}/${command_name}" <<EOF
+#!${bash_path}
+exec "${command_path}" "\$@"
+EOF
+    chmod +x "${clean_bin}/${command_name}"
+  done
+
+  printf '%s\n' "$clean_bin"
 }
 
 make_command_absent_env() {

@@ -174,6 +174,108 @@ _install_download_components() {
     done
 }
 
+_install_path_is_tt_managed() {
+    local path="$1"
+    local tt_home_real="$2"
+
+    case "$path" in
+        "${TT_HOME}"|"${TT_HOME}"/*)
+            return 0
+            ;;
+    esac
+
+    if [[ -n "$tt_home_real" ]]; then
+        case "$path" in
+            "$tt_home_real"|"$tt_home_real"/*)
+                return 0
+                ;;
+        esac
+    fi
+
+    return 1
+}
+
+_install_candidate_is_tt_managed() {
+    local candidate="$1"
+    local tt_home_real="$2"
+    local resolved_candidate=""
+    local path
+    local -a candidate_paths=()
+
+    candidate_paths=("$candidate")
+    if command_exists readlink; then
+        resolved_candidate="$(readlink -f -- "$candidate" 2>/dev/null || true)"
+        [[ -n "$resolved_candidate" ]] && candidate_paths+=("$resolved_candidate")
+    fi
+
+    for path in "${candidate_paths[@]}"; do
+        if _install_path_is_tt_managed "$path" "$tt_home_real"; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+_install_find_system_command() {
+    local command_name="$1"
+    local tt_home_real="$2"
+    local path_entry
+    local candidate
+    local -a path_entries=()
+
+    IFS=':' read -r -a path_entries <<<"${PATH:-}"
+    for path_entry in "${path_entries[@]}"; do
+        [[ "$path_entry" == /* ]] || continue
+        candidate="${path_entry%/}/${command_name}"
+
+        if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
+            continue
+        fi
+
+        if [[ -f "$candidate" && -x "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+_install_create_system_bin_links() {
+    local dry_run="$1"
+    local target_dir="$2"
+    local bin_dir="${target_dir}/bin"
+    local command_name
+    local command_path
+    local link_path
+    local tt_home_real=""
+
+    if [[ -d "$TT_HOME" ]]; then
+        tt_home_real="$(cd "$TT_HOME" && pwd -P)" || tt_home_real=""
+    fi
+
+    if [[ "$dry_run" -eq 0 ]]; then
+        mkdir -p "$bin_dir" || _install_rollback_fail "$target_dir" "Failed to create bin directory: ${bin_dir}"
+    fi
+
+    for command_name in "${TT_SHIM_COMMANDS[@]}"; do
+        link_path="${bin_dir}/${command_name}"
+        if command_path="$(_install_find_system_command "$command_name" "$tt_home_real")"; then
+            if [[ "$dry_run" -eq 1 ]]; then
+                log_info "[dry-run] Would create bin link: ${link_path} -> ${command_path}"
+                continue
+            fi
+            ln -sf -- "$command_path" "$link_path" || \
+                _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
+        elif [[ "$dry_run" -eq 1 ]]; then
+            log_info "[dry-run] Would create bin link for ${command_name} after system package install."
+        else
+            log_warn "Installed command not found in PATH: ${command_name}"
+        fi
+    done
+}
+
 _install_system_packages() {
     local dry_run="$1"
     local target_dir="$2"
@@ -200,6 +302,7 @@ _install_system_packages() {
     case "$use_system_packages" in
         true)
             package_manager_install_system_packages "$pkg_manager" "$dry_run"
+            _install_create_system_bin_links "$dry_run" "$target_dir"
             ;;
         false)
             log_info "System package install path is disabled by ${os_manifest}."
