@@ -16,6 +16,9 @@ VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib-devel"
 VIRT_PKG_KMD="tenstorrent-dkms"
+VIRT_PKG_SMI="tt-smi"
+VIRT_PKG_FLASH="tt-flash"
+VIRT_PKG_TOPOLOGY="tt-topology"
 WORKAROUNDS=()
 EOF
 }
@@ -43,5 +46,5 @@ EOF
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology" ]
 }

@@ -18,7 +18,7 @@ setup() {
   [[ "${apt_calls[1]}" == install\ -m\ 0644\ *\ /etc/apt/keyrings/tt-pkg-key.asc ]]
   [ "${apt_calls[2]}" = "tee /etc/apt/sources.list.d/tenstorrent.list" ]
   [ "${apt_calls[3]}" = "apt-get update" ]
-  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology" ]
 }
 
 @test "tt-env install links system package commands into the release bin" {
@@ -98,7 +98,7 @@ setup() {
   [[ "$output" == *"[dry-run] Would download Tenstorrent apt signing key: https://ppa.tenstorrent.com/tt-pkg-key.asc"* ]]
   [[ "$output" == *"[dry-run] Would verify Tenstorrent apt signing key fingerprint: 58540CD771C55DD7C33030CA8A9D565F6A208463"* ]]
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-smi after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-topology after system package install."* ]]
@@ -118,7 +118,7 @@ setup() {
   mapfile -t apt_calls <"$TT_APT_LOG"
   [ "${apt_calls[0]}" = "install -d -m 0755 /etc/apt/keyrings" ]
   [[ "${apt_calls[1]}" == install\ -m\ 0644\ *\ /etc/apt/keyrings/tt-pkg-key.asc ]]
-  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology" ]
 }
 
 @test "tt-env install selects Ubuntu 24.04 OS manifest when overridden" {
@@ -131,6 +131,9 @@ VIRT_PKG_CMAKE="cmake-24"
 VIRT_PKG_NINJA="ninja-build-24"
 VIRT_PKG_ZLIB="zlib1g-dev-24"
 VIRT_PKG_KMD="tenstorrent-dkms-24"
+VIRT_PKG_SMI="tt-smi-24"
+VIRT_PKG_FLASH="tt-flash-24"
+VIRT_PKG_TOPOLOGY="tt-topology-24"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -139,7 +142,7 @@ EOF
     "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: ubuntu 24.04"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tenstorrent-dkms-24"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tenstorrent-dkms-24 tt-smi-24 tt-flash-24 tt-topology-24"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 
@@ -153,6 +156,9 @@ VIRT_PKG_CMAKE="cmake-mint"
 VIRT_PKG_NINJA="ninja-build-mint"
 VIRT_PKG_ZLIB="zlib1g-dev-mint"
 VIRT_PKG_KMD="tenstorrent-dkms-mint"
+VIRT_PKG_SMI="tt-smi-mint"
+VIRT_PKG_FLASH="tt-flash-mint"
+VIRT_PKG_TOPOLOGY="tt-topology-mint"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -161,7 +167,7 @@ EOF
     "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: linuxmint 22.1"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tenstorrent-dkms-mint"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tenstorrent-dkms-mint tt-smi-mint tt-flash-mint tt-topology-mint"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 
@@ -178,6 +184,9 @@ VIRT_PKG_CMAKE="cmake-mint"
 VIRT_PKG_NINJA="ninja-build-mint"
 VIRT_PKG_ZLIB="zlib1g-dev-mint"
 VIRT_PKG_KMD="tenstorrent-dkms-mint"
+VIRT_PKG_SMI="tt-smi-mint"
+VIRT_PKG_FLASH="tt-flash-mint"
+VIRT_PKG_TOPOLOGY="tt-topology-mint"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"

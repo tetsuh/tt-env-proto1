@@ -26,7 +26,7 @@ uses component downloads plus manifest-provided sha256 checksums instead.
 | `USE_SYSTEM_PACKAGES` | New manifests | `true` to install system packages through the adapter, `false` to use checksum-verified downloads. |
 | `USE_PPA` | Legacy Ubuntu manifests | Backward-compatible alias for `USE_SYSTEM_PACKAGES`. Avoid it for non-Ubuntu manifests. |
 | `REQUIRED_REPOS` | Yes | Array of repositories the adapter must configure before package install. Use `()` when none are needed. |
-| `VIRT_PKG_<NAME>` | Yes | Native package name for each virtual dependency (`cmake`, `ninja`, `zlib`, `kmd`). |
+| `VIRT_PKG_<NAME>` | Yes | Native package name for each virtual dependency (`cmake`, `ninja`, `zlib`, `kmd`, `smi`, `flash`, `topology`). |
 | `WORKAROUNDS` | Yes | Allowlisted workaround keys. Use `()` when none are needed. |
 
 Virtual package names are normalized by `resolve_package`, so `zlib` maps to
