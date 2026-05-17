@@ -113,6 +113,43 @@ EOF
   done
 }
 
+make_clean_path_without_system_shim_commands() {
+  local clean_bin="${BATS_TEST_TMPDIR}/clean-path-bin"
+  local bash_path
+  local command_name
+  local command_path
+  local -a required_commands=(
+    bash
+    cat
+    chmod
+    dirname
+    ln
+    mkdir
+    mktemp
+    mv
+    readlink
+    rm
+    sort
+  )
+
+  mkdir -p "$clean_bin"
+  bash_path="$(command -v bash)"
+
+  for command_name in "${required_commands[@]}"; do
+    command_path="$(command -v "$command_name")" || {
+      printf 'Required test command not found: %s\n' "$command_name" >&2
+      return 1
+    }
+    cat >"${clean_bin}/${command_name}" <<EOF
+#!${bash_path}
+exec "${command_path}" "\$@"
+EOF
+    chmod +x "${clean_bin}/${command_name}"
+  done
+
+  printf '%s\n' "$clean_bin"
+}
+
 make_command_absent_env() {
   local command_name="$1"
   local bash_env="${BATS_TEST_TMPDIR}/${command_name}-absent.bash"

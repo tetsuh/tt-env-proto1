@@ -25,13 +25,14 @@ setup() {
   symlinks_supported || skip "POSIX symlinks are not supported in this environment"
   fake_bin="$(make_fake_sudo)"
   bridge_bin="${BATS_TEST_TMPDIR}/bridge-bin"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
   make_fake_system_shim_commands "$fake_bin"
   mkdir -p "${TT_HOME}/shims" "$bridge_bin"
   printf '#!/usr/bin/env bash\nexit 99\n' >"${TT_HOME}/shims/tt-smi"
   chmod +x "${TT_HOME}/shims/tt-smi"
   ln -sfn "${TT_HOME}/shims/tt-smi" "${bridge_bin}/tt-smi"
 
-  run env PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  run env PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
   for command_name in tt-smi tt-flash tt-topology; do
     [ -L "${TT_HOME}/versions/2026.05.16/bin/${command_name}" ]
@@ -47,8 +48,9 @@ setup() {
 
 @test "tt-env install warns but succeeds when system package commands are absent" {
   fake_bin="$(make_fake_sudo)"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
 
-  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  run env PATH="${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"[WARN] Installed command not found in PATH: tt-smi"* ]]
   [[ "$output" == *"[WARN] Installed command not found in PATH: tt-flash"* ]]
@@ -88,8 +90,9 @@ setup() {
 
 @test "tt-env install --dry-run reports apt actions without sudo" {
   bash_env="$(make_command_absent_env sudo)"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
 
-  run env BASH_ENV="$bash_env" "$TT_ENV" install --dry-run 2026.05.16
+  run env BASH_ENV="$bash_env" PATH="$clean_path" "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would create apt keyring directory: /etc/apt/keyrings"* ]]
   [[ "$output" == *"[dry-run] Would download Tenstorrent apt signing key: https://ppa.tenstorrent.com/tt-pkg-key.asc"* ]]
