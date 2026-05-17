@@ -96,6 +96,9 @@ setup() {
   [[ "$output" == *"[dry-run] Would verify Tenstorrent apt signing key fingerprint: 58540CD771C55DD7C33030CA8A9D565F6A208463"* ]]
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would create bin link for tt-smi after system package install."* ]]
+  [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
+  [[ "$output" == *"[dry-run] Would create bin link for tt-topology after system package install."* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 
