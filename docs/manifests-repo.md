@@ -44,3 +44,20 @@ Mirrors use the same archive layout as `tt-env-manifests-proto1` and are tried i
 
 Updates to manifests should be made directly in the `tt-env-manifests-proto1` repository.
 Major schema changes should be coordinated with the core `tt-env` tool development by opening an Issue in the [tt-env-proto1](https://github.com/tetsuh/tt-env-proto1/issues) repository.
+
+Stack manifests may include a `python_packages` object for release-local pip
+dependencies that supplement upstream system packages:
+
+```json
+{
+  "python_packages": {
+    "tt-umd": "0.9.5",
+    "textual": "0.59.0",
+    "elasticsearch": "8.11.0"
+  }
+}
+```
+
+Package names must use alphanumeric characters plus `.`, `_`, or `-`. Versions
+must be pinned and may use alphanumeric characters plus `.`, `_`, `!`, `+`, or
+`-`.

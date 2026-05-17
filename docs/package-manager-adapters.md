@@ -18,6 +18,12 @@ System package installation is controlled by:
 If the selected flag is `false`, `tt-env` skips package-manager operations and
 uses component downloads plus manifest-provided sha256 checksums instead.
 
+Some upstream system packages need Python dependencies that are not declared by
+the native package metadata. Stack manifests pin those dependencies under
+`python_packages`, and `tt-env` installs them into the staged release directory
+with `pip --target`. Affected commands use wrappers so the release-local Python
+path is active at runtime.
+
 ## OS manifest fields
 
 | Field | Required | Meaning |

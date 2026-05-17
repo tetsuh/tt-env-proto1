@@ -26,6 +26,8 @@
 #       "download_url": "https://example.invalid/artifact",
 #       "sha256": "<64 hex chars>"
 #     }
+# Stack manifest python_packages are package-to-version pins installed with pip
+# into the release-local Python package directory.
 
 if [[ -n "${TT_MANIFEST_PARSER_LOADED:-}" ]]; then
     return 0
@@ -52,6 +54,7 @@ declare -g TT_STACK_DESCRIPTION=""
 declare -gA TT_STACK_COMPONENTS=()
 declare -gA TT_STACK_COMPONENT_DOWNLOAD_URLS=()
 declare -gA TT_STACK_COMPONENT_SHA256S=()
+declare -gA TT_STACK_PYTHON_PACKAGES=()
 declare -ga TT_REQUIRED_STACK_COMPONENTS=("tt-kmd" "tt-smi" "firmware" "tt-metal")
 
 _manifest_is_key() {
@@ -108,10 +111,33 @@ _stack_reset_state() {
     TT_STACK_COMPONENTS=()
     TT_STACK_COMPONENT_DOWNLOAD_URLS=()
     TT_STACK_COMPONENT_SHA256S=()
+    TT_STACK_PYTHON_PACKAGES=()
 }
 
 _stack_is_sha256() {
     [[ "$1" =~ ^[A-Fa-f0-9]{64}$ ]]
+}
+
+_stack_is_python_package_name() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]
+}
+
+_stack_is_python_package_version() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.!+-]*$ ]]
+}
+
+_stack_store_python_package() {
+    local package_name="$1"
+    local package_version="$2"
+    local line_no="$3"
+
+    _stack_is_python_package_name "$package_name" || \
+        fail "Invalid stack Python package name at line ${line_no}: ${package_name}"
+    _stack_is_python_package_version "$package_version" || \
+        fail "Invalid stack Python package version for ${package_name} at line ${line_no}: ${package_version}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_PYTHON_PACKAGES["$package_name"]="$package_version"
 }
 
 _stack_store_component_object() {
@@ -257,13 +283,20 @@ _parse_stack_manifest_with_jq() {
                 (.version | type == "string" and length > 0) and
                 (.download_url | type == "string" and length > 0) and
                 (.sha256 | type == "string" and test("^[A-Fa-f0-9]{64}$")));
+        def python_package_ok:
+            type == "object" and
+            (to_entries | all(
+                (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
+                (.value | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.!+-]*$"))
+            ));
 
         type == "object" and
         ((has("release") | not) or (.release | type == "string")) and
         ((has("description") | not) or (.description | type == "string")) and
         ((has("components") | not) or
             (.components | type == "object" and all(.[]; component_ok))) and
-        ((keys - ["release", "description", "components"]) | length == 0)
+        ((has("python_packages") | not) or (.python_packages | python_package_ok)) and
+        ((keys - ["release", "description", "components", "python_packages"]) | length == 0)
     ' "$manifest_file" >/dev/null || fail "Unsupported stack manifest shape: ${manifest_file}"
 
     TT_STACK_RELEASE="$(jq -r '.release // ""' "$manifest_file")"
@@ -295,6 +328,19 @@ _parse_stack_manifest_with_jq() {
         ] |
         @tsv
     ' "$manifest_file")
+
+    while IFS=$'\t' read -r component_key component_value; do
+        component_key="${component_key%$'\r'}"
+        component_value="${component_value%$'\r'}"
+        [[ -n "$component_key" ]] || continue
+        # shellcheck disable=SC2034
+        TT_STACK_PYTHON_PACKAGES["$component_key"]="$component_value"
+    done < <(jq -r '
+        .python_packages // {} |
+        to_entries[] |
+        [.key, .value] |
+        @tsv
+    ' "$manifest_file")
 }
 
 _parse_stack_manifest_fallback() {
@@ -305,6 +351,7 @@ _parse_stack_manifest_fallback() {
     local saw_close=0
     local in_components=0
     local in_component_object=0
+    local in_python_packages=0
     local key
     local value
     local component_object_key=""
@@ -326,6 +373,17 @@ _parse_stack_manifest_fallback() {
                 continue
             fi
             fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+        fi
+
+        if [[ "$in_python_packages" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                in_python_packages=0
+            elif [[ "$line" =~ ^[[:space:]]*\"([A-Za-z0-9_.-]+)\"[[:space:]]*:[[:space:]]*\"([A-Za-z0-9_.!+-]+)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                _stack_store_python_package "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "$line_no"
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
         fi
 
         if [[ "$in_component_object" -eq 1 ]]; then
@@ -381,12 +439,14 @@ _parse_stack_manifest_fallback() {
             TT_STACK_DESCRIPTION="${BASH_REMATCH[1]}"
         elif [[ "$line" =~ ^[[:space:]]*\"components\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
             in_components=1
+        elif [[ "$line" =~ ^[[:space:]]*\"python_packages\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+            in_python_packages=1
         else
             fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
         fi
     done <"$manifest_file"
 
-    if [[ "$saw_open" -ne 1 || "$saw_close" -ne 1 || "$in_components" -ne 0 || "$in_component_object" -ne 0 ]]; then
+    if [[ "$saw_open" -ne 1 || "$saw_close" -ne 1 || "$in_components" -ne 0 || "$in_component_object" -ne 0 || "$in_python_packages" -ne 0 ]]; then
         fail "Unsupported stack manifest shape: ${manifest_file}"
     fi
 }

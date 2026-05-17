@@ -19,6 +19,9 @@ setup() {
   [ "${apt_calls[2]}" = "tee /etc/apt/sources.list.d/tenstorrent.list" ]
   [ "${apt_calls[3]}" = "apt-get update" ]
   [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+
+  mapfile -t pip_calls <"$TT_PIP_LOG"
+  [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }
 
 @test "tt-env install links system package commands into the release bin" {
@@ -34,7 +37,11 @@ setup() {
 
   run env PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
-  for command_name in tt-smi tt-flash tt-topology; do
+  [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  grep -q 'PYTHONPATH="${VERSION_DIR}/python${PYTHONPATH:+:${PYTHONPATH}}"' \
+    "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  for command_name in tt-flash tt-topology; do
     [ -L "${TT_HOME}/versions/2026.05.16/bin/${command_name}" ]
     [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/${command_name}")" = "${fake_bin}/${command_name}" ]
   done
@@ -99,10 +106,44 @@ setup() {
   [[ "$output" == *"[dry-run] Would verify Tenstorrent apt signing key fingerprint: 58540CD771C55DD7C33030CA8A9D565F6A208463"* ]]
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
-  [[ "$output" == *"[dry-run] Would create bin link for tt-smi after system package install."* ]]
+  [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/python: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [[ "$output" == *"[dry-run] Would create Python package wrapper for tt-smi after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-topology after system package install."* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
+}
+
+@test "tt-env install fails clearly when pip3 is missing" {
+  fake_bin="$(make_fake_sudo)"
+  bash_env="$(make_command_absent_env pip3)"
+
+  run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"pip3 is required to install Python packages: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [ ! -e "${TT_HOME}/versions/2026.05.16" ]
+  [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
+}
+
+@test "tt-env install fails clearly when Python package pins are missing" {
+  fake_bin="$(make_fake_sudo)"
+  mkdir -p "${TT_HOME}/releases"
+  cat >"${TT_HOME}/releases/2026.05.16.json" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  }
+}
+EOF
+
+  run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Stack manifest is missing Python package version: python_packages.tt-umd"* ]]
+  [ ! -e "${TT_HOME}/versions/2026.05.16" ]
+  [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
 }
 
 @test "repository apt manifests use official Tenstorrent repo" {

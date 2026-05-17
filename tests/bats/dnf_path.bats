@@ -31,8 +31,16 @@ make_fake_dnf_sudo() {
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$TT_PKG_LOG"
 EOF
+  cat >"${fake_bin}/pip3" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "install" && "${2:-}" == "--help" ]]; then
+  printf '  --break-system-packages     Allow pip to modify an EXTERNALLY-MANAGED Python installation\n'
+  exit 0
+fi
+printf '%s\n' "$*" >>"$TT_PIP_LOG"
+EOF
   touch "${fake_bin}/dnf"
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/dnf"
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/pip3" "${fake_bin}/dnf"
   printf '%s\n' "$fake_bin"
 }
 
@@ -47,4 +55,6 @@ EOF
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
   [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+  mapfile -t pip_calls <"$TT_PIP_LOG"
+  [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }
