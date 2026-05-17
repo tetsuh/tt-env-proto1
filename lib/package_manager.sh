@@ -19,7 +19,7 @@ source "${PACKAGE_MANAGER_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
 source "${PACKAGE_MANAGER_LIB_DIR}/manifest_parser.sh"
 
-declare -ga TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
+declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
 declare -gr TT_TENSTORRENT_APT_REPO_URL="https://ppa.tenstorrent.com/ubuntu"
 declare -gr TT_TENSTORRENT_APT_KEY_URL="https://ppa.tenstorrent.com/tt-pkg-key.asc"
 declare -gr TT_TENSTORRENT_APT_KEY_FINGERPRINT="58540CD771C55DD7C33030CA8A9D565F6A208463"
