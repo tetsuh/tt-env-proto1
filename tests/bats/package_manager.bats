@@ -15,6 +15,9 @@ VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib1g-dev"
 VIRT_PKG_KMD="tenstorrent-dkms"
+VIRT_PKG_SMI="tt-smi"
+VIRT_PKG_FLASH="tt-flash"
+VIRT_PKG_TOPOLOGY="tt-topology"
 WORKAROUNDS=()
 EOF
   cat >"$dnf_manifest_file" <<'EOF'
@@ -27,6 +30,9 @@ VIRT_PKG_CMAKE="cmake"
 VIRT_PKG_NINJA="ninja-build"
 VIRT_PKG_ZLIB="zlib-devel"
 VIRT_PKG_KMD="tenstorrent-dkms"
+VIRT_PKG_SMI="tt-smi"
+VIRT_PKG_FLASH="tt-flash"
+VIRT_PKG_TOPOLOGY="tt-topology"
 WORKAROUNDS=()
 EOF
 }
@@ -81,7 +87,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add apt repository: https://repo.example.invalid/tenstorrent"* ]]
   [[ "$output" == *"[dry-run] Would run apt-get update."* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
 }
 
 @test "package manager dispatcher rejects unsupported managers" {
@@ -104,7 +110,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add dnf repository: https://repo.example.invalid/tenstorrent.repo"* ]]
   [[ "$output" == *"[dry-run] Would run dnf makecache."* ]]
-  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms"* ]]
+  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
 }
 
 @test "package manager dispatcher runs dnf repo cache and install commands" {
@@ -118,7 +124,7 @@ EOF
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology" ]
 }
 
 @test "package manager dispatcher fails clearly when dnf is missing" {
