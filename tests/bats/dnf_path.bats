@@ -31,16 +31,27 @@ make_fake_dnf_sudo() {
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$TT_PKG_LOG"
 EOF
-  cat >"${fake_bin}/pip3" <<'EOF'
+  cat >"${fake_bin}/python3" <<'EOF'
 #!/usr/bin/env bash
-if [[ "${1:-}" == "install" && "${2:-}" == "--help" ]]; then
-  printf '  --break-system-packages     Allow pip to modify an EXTERNALLY-MANAGED Python installation\n'
+if [[ "${1:-}" == "-m" && "${2:-}" == "venv" && -n "${3:-}" ]]; then
+  venv_dir="$3"
+  printf 'venv %s\n' "$venv_dir" >>"$TT_PIP_LOG"
+  mkdir -p "${venv_dir}/bin"
+  cat >"${venv_dir}/bin/python" <<'PYEOF'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "-m" && "${2:-}" == "pip" && "${3:-}" == "install" ]]; then
+  printf '%s\n' "$*" >>"$TT_PIP_LOG"
   exit 0
 fi
-printf '%s\n' "$*" >>"$TT_PIP_LOG"
+printf 'venv python %s\n' "$*" >>"$TT_PIP_LOG"
+PYEOF
+  chmod +x "${venv_dir}/bin/python"
+  exit 0
+fi
+printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
   touch "${fake_bin}/dnf"
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/pip3" "${fake_bin}/dnf"
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/python3" "${fake_bin}/dnf"
   printf '%s\n' "$fake_bin"
 }
 
@@ -56,5 +67,6 @@ EOF
   [ "${dnf_calls[1]}" = "dnf makecache" ]
   [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19" ]
   mapfile -t pip_calls <"$TT_PIP_LOG"
-  [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
+  [[ "${pip_calls[0]}" == venv\ */versions/.2026.05.16.partial/venv ]]
+  [[ "${pip_calls[1]}" == -m\ pip\ install\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }

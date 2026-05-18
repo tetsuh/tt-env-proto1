@@ -41,9 +41,12 @@ manager error is surfaced.
 
 Some upstream system packages need Python dependencies that are not declared by
 the native package metadata. Stack manifests pin those dependencies under
-`python_packages`, and `tt-env` installs them into the staged release directory
-with `pip --target`. Affected commands use wrappers so the release-local Python
-path is active at runtime.
+`python_packages`, and `tt-env` installs them into a release-local virtualenv at
+`${TT_HOME}/versions/<release>/venv`. If pip installs a command entrypoint such
+as `venv/bin/tt-smi`, `tt-env` uses that release-local entrypoint. Otherwise,
+affected system-package commands use wrappers that enter the release virtualenv
+and re-execute Python scripts with `venv/bin/python` so the pinned dependencies
+are active at runtime.
 
 ## OS manifest fields
 

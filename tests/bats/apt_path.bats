@@ -21,7 +21,8 @@ setup() {
   [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19" ]
 
   mapfile -t pip_calls <"$TT_PIP_LOG"
-  [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
+  [[ "${pip_calls[0]}" == venv\ */versions/.2026.05.16.partial/venv ]]
+  [[ "${pip_calls[1]}" == -m\ pip\ install\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }
 
 @test "tt-env install links system package commands into the release bin" {
@@ -39,8 +40,8 @@ setup() {
   [ "$status" -eq 0 ]
   [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
   [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
-  grep -q 'PYTHONPATH="${VERSION_DIR}/python${PYTHONPATH:+:${PYTHONPATH}}"' \
-    "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'VIRTUAL_ENV="${VENV_DIR}"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'exec "$VENV_PYTHON" "$command_path" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
   for command_name in tt-flash tt-topology; do
     [ -L "${TT_HOME}/versions/2026.05.16/bin/${command_name}" ]
     [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/${command_name}")" = "${fake_bin}/${command_name}" ]
@@ -51,6 +52,24 @@ setup() {
   run "${TT_HOME}/shims/tt-smi" probe
   [ "$status" -eq 0 ]
   [ "$output" = "system tt-smi probe" ]
+}
+
+@test "tt-env install prefers venv command entrypoints for Python CLI packages" {
+  symlinks_supported || skip "POSIX symlinks are not supported in this environment"
+  fake_bin="$(make_fake_sudo)"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
+
+  run env TT_FAKE_VENV_COMMANDS="tt-smi" PATH="${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 0 ]
+  [ -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-smi")" = "../venv/bin/tt-smi" ]
+  [[ "$output" != *"[WARN] Installed command not found in PATH: tt-smi"* ]]
+
+  run "$TT_ENV" use 2026.05.16
+  [ "$status" -eq 0 ]
+  run "${TT_HOME}/shims/tt-smi" probe
+  [ "$status" -eq 0 ]
+  [ "$output" = "venv tt-smi probe" ]
 }
 
 @test "tt-env install warns but succeeds when system package commands are absent" {
@@ -106,20 +125,22 @@ setup() {
   [[ "$output" == *"[dry-run] Would verify Tenstorrent apt signing key fingerprint: 58540CD771C55DD7C33030CA8A9D565F6A208463"* ]]
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
-  [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/python: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
-  [[ "$output" == *"[dry-run] Would create Python package wrapper for tt-smi after system package install."* ]]
+  [[ "$output" == *"[dry-run] Would create Python virtualenv: ${TT_HOME}/versions/2026.05.16/venv"* ]]
+  [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/venv: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [[ "$output" == *"[dry-run] Would use venv command if installed: ${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"* ]]
+  [[ "$output" == *"[dry-run] Would create Python virtualenv wrapper for tt-smi after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-topology after system package install."* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 
-@test "tt-env install fails clearly when pip3 is missing" {
+@test "tt-env install fails clearly when python3 is missing" {
   fake_bin="$(make_fake_sudo)"
-  bash_env="$(make_command_absent_env pip3)"
+  bash_env="$(make_command_absent_env python3)"
 
   run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 1 ]
-  [[ "$output" == *"pip3 is required to install Python packages: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [[ "$output" == *"python3 is required to create a virtualenv for Python packages: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
   [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
 }
