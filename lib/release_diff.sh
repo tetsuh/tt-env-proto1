@@ -73,8 +73,10 @@ _diff_copy_current_stack() {
             ;;
     esac
 
-    # shellcheck disable=SC2034 # nameref targets are assigned through indirect references
-    local -n rel_target="TT_RELEASE_DIFF_${side^^}_RELEASE" comp_target="TT_RELEASE_DIFF_${side^^}_COMPONENTS" sys_target="TT_RELEASE_DIFF_${side^^}_SYSTEM_PACKAGES" py_target="TT_RELEASE_DIFF_${side^^}_PYTHON_PACKAGES"
+    local -n rel_target="TT_RELEASE_DIFF_${side^^}_RELEASE"
+    local -n comp_target="TT_RELEASE_DIFF_${side^^}_COMPONENTS"
+    local -n sys_target="TT_RELEASE_DIFF_${side^^}_SYSTEM_PACKAGES"
+    local -n py_target="TT_RELEASE_DIFF_${side^^}_PYTHON_PACKAGES"
 
     rel_target="$TT_STACK_RELEASE"
     comp_target=()
@@ -90,6 +92,9 @@ _diff_copy_current_stack() {
     for key in "${!TT_STACK_PYTHON_PACKAGES[@]}"; do
         py_target["$key"]="${TT_STACK_PYTHON_PACKAGES[$key]}"
     done
+
+    # The target namerefs are intentionally written through; read once for ShellCheck.
+    : "$rel_target" "${comp_target[*]-}" "${sys_target[*]-}" "${py_target[*]-}"
 }
 
 _diff_print_row() {
