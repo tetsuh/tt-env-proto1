@@ -22,7 +22,7 @@ setup() {
 
   mapfile -t pip_calls <"$TT_PIP_LOG"
   [[ "${pip_calls[0]}" == venv\ */versions/.2026.05.16.partial/venv ]]
-  [[ "${pip_calls[1]}" == -m\ pip\ install\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
+  [[ "${pip_calls[1]}" == -m\ pip\ install\ --disable-pip-version-check\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }
 
 @test "tt-env install links system package commands into the release bin" {

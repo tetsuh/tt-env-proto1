@@ -204,7 +204,7 @@ package_manager_install_pip_packages() {
     fi
 
     log_info "Installing pip packages into ${target_venv_dir}: ${package_list}"
-    "$venv_python" -m pip install "${pip_packages[@]}" || \
+    "$venv_python" -m pip install --disable-pip-version-check "${pip_packages[@]}" || \
         fail "Failed to install pip packages: ${package_list}"
 }
 
