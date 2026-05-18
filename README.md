@@ -41,6 +41,8 @@ prerequisites, sudo behavior, fallback downloads, and troubleshooting.
 See [docs/package-manager-adapters.md](./docs/package-manager-adapters.md)
 for OS manifest fields, package manager adapter responsibilities, and distro
 fixture expectations.
+See [docs/release-capture.md](./docs/release-capture.md) for the workflow used
+to create new dated stack release manifests.
 See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
 See [docs/release-diff.md](./docs/release-diff.md) for comparing dated stack
