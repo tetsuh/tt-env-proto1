@@ -264,7 +264,7 @@ export VIRTUAL_ENV PATH
 
 command_path=${quoted_command_path}
 first_line=""
-IFS= read -r first_line <"\$command_path" || true
+IFS= read -r -n 128 first_line <"\$command_path" || true
 if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
   exec "\$VENV_PYTHON" "\$command_path" "\$@"
 fi
