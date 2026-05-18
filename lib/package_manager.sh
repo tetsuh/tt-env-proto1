@@ -89,6 +89,7 @@ _package_manager_validate_system_package_pins() {
 
 _package_manager_package_spec() {
     local output_ref="$1"
+    # shellcheck disable=SC2034 # nameref output parameter
     local -n package_spec_ref="$output_ref"
     shift
     local pkg_manager="$1"
