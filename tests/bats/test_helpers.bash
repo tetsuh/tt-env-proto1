@@ -94,15 +94,39 @@ EOF
 printf 'pub:::::::::\n'
 printf 'fpr:::::::::58540CD771C55DD7C33030CA8A9D565F6A208463:\n'
 EOF
-  cat >"${fake_bin}/pip3" <<'EOF'
+  cat >"${fake_bin}/python3" <<'EOF'
 #!/usr/bin/env bash
-if [[ "${1:-}" == "install" && "${2:-}" == "--help" ]]; then
-  printf '  --break-system-packages     Allow pip to modify an EXTERNALLY-MANAGED Python installation\n'
+if [[ "${1:-}" == "-m" && "${2:-}" == "venv" && -n "${3:-}" ]]; then
+  venv_dir="$3"
+  printf 'venv %s\n' "$venv_dir" >>"$TT_PIP_LOG"
+  mkdir -p "${venv_dir}/bin"
+  cat >"${venv_dir}/bin/python" <<'PYEOF'
+#!/usr/bin/env bash
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+venv_dir="$(cd "${script_dir}/.." && pwd)"
+if [[ "${1:-}" == "-m" && "${2:-}" == "pip" && "${3:-}" == "install" ]]; then
+  printf '%s\n' "$*" >>"$TT_PIP_LOG"
+  if [[ " ${TT_FAKE_VENV_COMMANDS:-} " == *" tt-smi "* ]]; then
+    cat >"${venv_dir}/bin/tt-smi" <<'SMIEOF'
+#!/usr/bin/env bash
+printf 'venv tt-smi'
+for arg in "$@"; do
+  printf ' %s' "$arg"
+done
+printf '\n'
+SMIEOF
+    chmod +x "${venv_dir}/bin/tt-smi"
+  fi
   exit 0
 fi
-printf '%s\n' "$*" >>"$TT_PIP_LOG"
+printf 'venv python %s\n' "$*" >>"$TT_PIP_LOG"
+PYEOF
+  chmod +x "${venv_dir}/bin/python"
+  exit 0
+fi
+printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/pip3"
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/python3"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"

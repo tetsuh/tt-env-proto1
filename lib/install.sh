@@ -245,7 +245,7 @@ _install_find_system_command() {
 _install_write_python_package_wrapper() {
     local command_path="$1"
     local link_path="$2"
-    local python_subdir="$TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR"
+    local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
     local quoted_command_path
 
     printf -v quoted_command_path '%q' "$command_path"
@@ -255,10 +255,20 @@ set -euo pipefail
 
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
-PYTHONPATH="\${VERSION_DIR}/${python_subdir}\${PYTHONPATH:+:\${PYTHONPATH}}"
-export PYTHONPATH
+VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
+VENV_PYTHON="\${VENV_DIR}/bin/python"
+
+VIRTUAL_ENV="\${VENV_DIR}"
+PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
+export VIRTUAL_ENV PATH
 
 command_path=${quoted_command_path}
+first_line=""
+IFS= read -r first_line <"\$command_path" || true
+if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
+  exec "\$VENV_PYTHON" "\$command_path" "\$@"
+fi
+
 exec "\$command_path" "\$@"
 EOF
     chmod 755 "$link_path"
@@ -271,6 +281,7 @@ _install_create_system_bin_links() {
     local command_name
     local command_path
     local link_path
+    local venv_command_path
     local tt_home_real=""
 
     if [[ -d "$TT_HOME" ]]; then
@@ -284,25 +295,33 @@ _install_create_system_bin_links() {
     # package_manager.sh owns the mapping from commands to release-local pip packages.
     for command_name in "${TT_SHIM_COMMANDS[@]}"; do
         link_path="${bin_dir}/${command_name}"
+        venv_command_path="${target_dir}/${TT_PACKAGE_MANAGER_VENV_SUBDIR}/bin/${command_name}"
+        if [[ "$dry_run" -eq 1 ]] && package_manager_command_needs_pip_packages "$command_name"; then
+            log_info "[dry-run] Would use venv command if installed: ${venv_command_path}"
+        elif [[ "$dry_run" -eq 0 && -x "$venv_command_path" ]]; then
+            ln -sf -- "../${TT_PACKAGE_MANAGER_VENV_SUBDIR}/bin/${command_name}" "$link_path" || \
+                _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
+            continue
+        fi
         if command_path="$(_install_find_system_command "$command_name" "$tt_home_real")"; then
             if [[ "$dry_run" -eq 1 ]]; then
                 if package_manager_command_needs_pip_packages "$command_name"; then
-                    log_info "[dry-run] Would create Python package wrapper: ${link_path} -> ${command_path}"
+                    log_info "[dry-run] Would create Python virtualenv wrapper: ${link_path} -> ${command_path}"
                 else
                     log_info "[dry-run] Would create bin link: ${link_path} -> ${command_path}"
                 fi
                 continue
             fi
-            if package_manager_command_needs_pip_packages "$command_name" && [[ -d "${target_dir}/${TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR}" ]]; then
+            if package_manager_command_needs_pip_packages "$command_name" && [[ -d "${target_dir}/${TT_PACKAGE_MANAGER_VENV_SUBDIR}" ]]; then
                 _install_write_python_package_wrapper "$command_path" "$link_path" || \
-                    _install_rollback_fail "$target_dir" "Failed to create Python package wrapper for ${command_name}: ${link_path}"
+                    _install_rollback_fail "$target_dir" "Failed to create Python virtualenv wrapper for ${command_name}: ${link_path}"
             else
                 ln -sf -- "$command_path" "$link_path" || \
                 _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
             fi
         elif [[ "$dry_run" -eq 1 ]]; then
             if package_manager_command_needs_pip_packages "$command_name"; then
-                log_info "[dry-run] Would create Python package wrapper for ${command_name} after system package install."
+                log_info "[dry-run] Would create Python virtualenv wrapper for ${command_name} after system package install."
             else
                 log_info "[dry-run] Would create bin link for ${command_name} after system package install."
             fi

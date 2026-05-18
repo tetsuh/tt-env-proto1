@@ -18,6 +18,8 @@ fixture-only until manual validation exists.
   `software-properties-common`.
 - `sudo`, `dnf`, and `dnf config-manager` for dnf fixture/adapter validation.
   `config-manager` is provided by `dnf-plugins-core` on Fedora-family systems.
+- `python3` with the standard `venv` module for release-local Python package
+  environments.
 - `curl` plus `sha256sum` or `shasum` for the GitHub Releases download fallback.
 - A stack manifest in `releases/<release>.json`.
 - An OS manifest for the detected host, such as `manifests/ubuntu-22.04.env`.
@@ -66,6 +68,11 @@ configured repositories before installing resolved packages. For custom apt
 repositories other than the official Tenstorrent repository, `tt-env` uses
 `add-apt-repository`.
 
+Python package pins from the stack manifest are installed into a release-local
+virtualenv at `${TT_HOME}/versions/<release>/venv`. `tt-env` prefers command
+entrypoints from that virtualenv, such as `venv/bin/tt-smi`, and falls back to a
+wrapper around system-package commands when no virtualenv entrypoint exists.
+
 See [package manager adapter contract](./package-manager-adapters.md) for
 manifest fields, adapter responsibilities, and validation requirements for new
 distros.
@@ -111,6 +118,7 @@ new install has completed successfully.
 | `Tenstorrent apt signing key fingerprint mismatch` | Do not continue; check whether Tenstorrent rotated the repository signing key and update `tt-env` only after verifying the new fingerprint. |
 | `Stack component <name> requires download_url and sha256` | The OS manifest disabled system packages, but the stack manifest only contains version strings. Add download URLs with sha256 metadata or use a verified package source. |
 | `dnf config-manager is required to add repositories` | Install `dnf-plugins-core` before using a dnf manifest with repositories. |
+| `python3 is required to create a virtualenv` | Install Python 3 and its venv support package, such as `python3-venv` on Ubuntu. |
 | `curl is required to download release artifacts` | Install `curl` before using the fallback path. |
 | `sha256 mismatch` | Check the stack manifest `sha256` values and artifact URLs; the partial install is rolled back. |
 | `Version directory exists but is not marked installed` | Inspect the directory and rerun with `--force` if it is safe to recreate. |

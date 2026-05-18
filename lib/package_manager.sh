@@ -31,7 +31,7 @@ declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
     ["elasticsearch"]="tt-smi"
 )
 readonly TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS
-declare -gr TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR="python"
+declare -gr TT_PACKAGE_MANAGER_VENV_SUBDIR="venv"
 declare -gr TT_TENSTORRENT_APT_REPO_URL="https://ppa.tenstorrent.com/ubuntu"
 declare -gr TT_TENSTORRENT_APT_KEY_URL="https://ppa.tenstorrent.com/tt-pkg-key.asc"
 declare -gr TT_TENSTORRENT_APT_KEY_FINGERPRINT="58540CD771C55DD7C33030CA8A9D565F6A208463"
@@ -154,13 +154,6 @@ _package_manager_resolved_pip_packages() {
     done
 }
 
-_package_manager_pip_supports_break_system_packages() {
-    local help_output
-
-    help_output="$(pip3 install --help 2>/dev/null || true)"
-    [[ "$help_output" == *"--break-system-packages"* ]]
-}
-
 package_manager_command_needs_pip_packages() {
     local command_name="$1"
     local package_name
@@ -180,8 +173,8 @@ package_manager_command_needs_pip_packages() {
 package_manager_install_pip_packages() {
     local dry_run="$1"
     local target_dir="$2"
-    local target_python_dir="${target_dir}/${TT_PACKAGE_MANAGER_PIP_TARGET_SUBDIR}"
-    local -a pip_args=(install --target "$target_python_dir")
+    local target_venv_dir="${target_dir}/${TT_PACKAGE_MANAGER_VENV_SUBDIR}"
+    local venv_python="${target_venv_dir}/bin/python"
     local -a pip_packages=()
     local package_list
 
@@ -193,22 +186,25 @@ package_manager_install_pip_packages() {
     package_list="$(_package_manager_join_words "${pip_packages[@]}")"
 
     if [[ "$dry_run" -eq 1 ]]; then
-        log_info "[dry-run] Would install pip packages into ${target_python_dir}: ${package_list}"
+        log_info "[dry-run] Would create Python virtualenv: ${target_venv_dir}"
+        log_info "[dry-run] Would install pip packages into ${target_venv_dir}: ${package_list}"
         return 0
     fi
 
-    if ! command_exists pip3; then
-        fail "pip3 is required to install Python packages: ${package_list}"
+    if ! command_exists python3; then
+        fail "python3 is required to create a virtualenv for Python packages: ${package_list}"
     fi
 
-    if _package_manager_pip_supports_break_system_packages; then
-        pip_args+=(--break-system-packages)
+    log_info "Creating Python virtualenv: ${target_venv_dir}"
+    python3 -m venv "$target_venv_dir" || \
+        fail "Failed to create Python virtualenv: ${target_venv_dir}"
+
+    if [[ ! -x "$venv_python" ]]; then
+        fail "Virtualenv Python is missing or not executable: ${venv_python}"
     fi
 
-    mkdir -p "$target_python_dir" || fail "Failed to create Python package directory: ${target_python_dir}"
-
-    log_info "Installing pip packages into ${target_python_dir}: ${package_list}"
-    pip3 "${pip_args[@]}" "${pip_packages[@]}" || \
+    log_info "Installing pip packages into ${target_venv_dir}: ${package_list}"
+    "$venv_python" -m pip install "${pip_packages[@]}" || \
         fail "Failed to install pip packages: ${package_list}"
 }
 
