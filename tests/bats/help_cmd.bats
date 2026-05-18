@@ -38,6 +38,15 @@ setup() {
   [[ "$output" == *"release is not installed"* ]]
 }
 
+@test "tt-env help diff documents release comparison" {
+  run "$TT_ENV" help diff
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"tt-env diff - compare two stack release manifests"* ]]
+  [[ "$output" == *"tt-env diff <release-a> <release-b>"* ]]
+  [[ "$output" == *"tt-env diff 2026.05.16 2026.08.16"* ]]
+}
+
 @test "tt-env help update documents self-update" {
   run "$TT_ENV" help update
   [ "$status" -eq 0 ]

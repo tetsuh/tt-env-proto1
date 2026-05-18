@@ -54,7 +54,7 @@ EOF
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19" ]
   mapfile -t pip_calls <"$TT_PIP_LOG"
   [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
 }

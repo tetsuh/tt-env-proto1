@@ -17,7 +17,7 @@ setup() {
   run "$TT_ENV" help
   [ "$status" -eq 0 ]
 
-  for command in install remove use list status update help; do
+  for command in install remove use diff list status update help; do
     [[ "$output" == *"$command"* ]]
   done
 }
