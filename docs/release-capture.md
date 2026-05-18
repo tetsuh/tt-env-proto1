@@ -25,6 +25,8 @@ the versions that define the release:
 
 ```sh
 apt-cache madison tenstorrent-dkms tt-smi tt-flash tt-topology
+# Fedora-family fixtures or future Fedora support:
+dnf --showduplicates list tenstorrent-dkms tt-smi tt-flash tt-topology
 ```
 
 Record the selected versions under `system_packages` using virtual package
@@ -86,11 +88,15 @@ the downloadable object form with `download_url` and `sha256`.
 
 ## 5. Validate the new manifest
 
-Run the parser tests and compare the new release against the previous one:
+Run the parser tests and compare the new release against the previous one.
+Use `tt-env diff` when that command is available; otherwise compare the JSON
+manifests directly:
 
 ```sh
 bash scripts/test.sh
 tt-env diff 2026.05.16 "${release}"
+# Fallback before tt-env diff is available:
+diff releases/2026.05.16.json "releases/${release}.json"
 ```
 
 Then install and switch releases on real hardware if the package pins are
