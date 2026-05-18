@@ -73,10 +73,8 @@ _diff_copy_current_stack() {
             ;;
     esac
 
-    local -n rel_target="TT_RELEASE_DIFF_${side^^}_RELEASE"
-    local -n comp_target="TT_RELEASE_DIFF_${side^^}_COMPONENTS"
-    local -n sys_target="TT_RELEASE_DIFF_${side^^}_SYSTEM_PACKAGES"
-    local -n py_target="TT_RELEASE_DIFF_${side^^}_PYTHON_PACKAGES"
+    # shellcheck disable=SC2034 # nameref targets are assigned through indirect references
+    local -n rel_target="TT_RELEASE_DIFF_${side^^}_RELEASE" comp_target="TT_RELEASE_DIFF_${side^^}_COMPONENTS" sys_target="TT_RELEASE_DIFF_${side^^}_SYSTEM_PACKAGES" py_target="TT_RELEASE_DIFF_${side^^}_PYTHON_PACKAGES"
 
     rel_target="$TT_STACK_RELEASE"
     comp_target=()
