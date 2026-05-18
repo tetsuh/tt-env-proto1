@@ -10,9 +10,9 @@ const REVIEW_CONTEXT = `Repository AI review workflow:
 - After requesting rereview, poll for Gemini or GitHub Copilot review feedback every 1 minute for up to 8 minutes before proceeding.
 - If Gemini or GitHub Copilot confirms the fix is OK, resolve the corresponding review thread before merging.
 - Do not merge PRs automatically; when a PR is mergeable, report the status and let the user decide whether to merge.
-- If the user approves merging, use squash merge and put bullet-point details on line 3 and later of the squash commit message body.`;
+- If the user approves merging, use squash merge with a Conventional Commits title and put bullet-point details on line 3 and later of the squash commit message body.`;
 
-const REVIEW_PROMPT_PATTERN = /\b(PR|pull request|merge|review|Gemini|gemini-code-assist|Copilot)\b/i;
+const REVIEW_PROMPT_PATTERN = /\b(PRs?|pull requests?|merg(e|ing)s?|review(s|ing)?|Gemini|Copilot)\b/i;
 
 await joinSession({
   hooks: {
