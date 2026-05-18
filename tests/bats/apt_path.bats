@@ -18,7 +18,7 @@ setup() {
   [[ "${apt_calls[1]}" == install\ -m\ 0644\ *\ /etc/apt/keyrings/tt-pkg-key.asc ]]
   [ "${apt_calls[2]}" = "tee /etc/apt/sources.list.d/tenstorrent.list" ]
   [ "${apt_calls[3]}" = "apt-get update" ]
-  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19" ]
 
   mapfile -t pip_calls <"$TT_PIP_LOG"
   [[ "${pip_calls[0]}" == install\ --target\ */versions/.2026.05.16.partial/python\ --break-system-packages\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
@@ -105,7 +105,7 @@ setup() {
   [[ "$output" == *"[dry-run] Would download Tenstorrent apt signing key: https://ppa.tenstorrent.com/tt-pkg-key.asc"* ]]
   [[ "$output" == *"[dry-run] Would verify Tenstorrent apt signing key fingerprint: 58540CD771C55DD7C33030CA8A9D565F6A208463"* ]]
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
   [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/python: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
   [[ "$output" == *"[dry-run] Would create Python package wrapper for tt-smi after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
@@ -135,6 +135,12 @@ setup() {
     "tt-smi": "v5.2.0",
     "firmware": "v19.6.0",
     "tt-metal": "v0.70.1"
+  },
+  "system_packages": {
+    "kmd": "2.8.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
   }
 }
 EOF
@@ -159,7 +165,7 @@ EOF
   mapfile -t apt_calls <"$TT_APT_LOG"
   [ "${apt_calls[0]}" = "install -d -m 0755 /etc/apt/keyrings" ]
   [[ "${apt_calls[1]}" == install\ -m\ 0644\ *\ /etc/apt/keyrings/tt-pkg-key.asc ]]
-  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19" ]
 }
 
 @test "tt-env install selects Ubuntu 24.04 OS manifest when overridden" {
@@ -183,7 +189,7 @@ EOF
     "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: ubuntu 24.04"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tenstorrent-dkms-24 tt-smi-24 tt-flash-24 tt-topology-24"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-24 ninja-build-24 zlib1g-dev-24 tenstorrent-dkms-24=2.8.0 tt-smi-24=5.0.1 tt-flash-24=3.6.5 tt-topology-24=1.2.19"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 
@@ -208,7 +214,7 @@ EOF
     "$TT_ENV" install --dry-run 2026.05.16
   [ "$status" -eq 0 ]
   [[ "$output" == *"Using override OS: linuxmint 22.1"* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tenstorrent-dkms-mint tt-smi-mint tt-flash-mint tt-topology-mint"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake-mint ninja-build-mint zlib1g-dev-mint tenstorrent-dkms-mint=2.8.0 tt-smi-mint=5.0.1 tt-flash-mint=3.6.5 tt-topology-mint=1.2.19"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
 }
 

@@ -81,13 +81,22 @@ EOF
   printf '%s\n' "$fake_bin"
 }
 
+with_system_package_pins() {
+  cat <<'EOF'
+TT_STACK_SYSTEM_PACKAGES[kmd]="2.8.0"
+TT_STACK_SYSTEM_PACKAGES[smi]="5.0.1"
+TT_STACK_SYSTEM_PACKAGES[flash]="3.6.5"
+TT_STACK_SYSTEM_PACKAGES[topology]="1.2.19"
+EOF
+}
+
 @test "package manager dispatcher runs apt dry-run from parsed manifest" {
-  run bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages apt 1' \
-    bash "$PACKAGE_MANAGER_SH" "$manifest_file"
+  run bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages apt 1' \
+    bash "$PACKAGE_MANAGER_SH" "$manifest_file" "$(with_system_package_pins)"
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add apt repository: https://repo.example.invalid/tenstorrent"* ]]
   [[ "$output" == *"[dry-run] Would run apt-get update."* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
 }
 
 @test "package manager dispatcher rejects unsupported managers" {
@@ -105,34 +114,34 @@ EOF
 }
 
 @test "package manager dispatcher runs dnf dry-run from parsed manifest" {
-  run bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages dnf 1' \
-    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file"
+  run bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages dnf 1' \
+    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file" "$(with_system_package_pins)"
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add dnf repository: https://repo.example.invalid/tenstorrent.repo"* ]]
   [[ "$output" == *"[dry-run] Would run dnf makecache."* ]]
-  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology"* ]]
+  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19"* ]]
 }
 
 @test "package manager dispatcher runs dnf repo cache and install commands" {
   fake_bin="$(make_fake_dnf_sudo)"
 
   run env PATH="${fake_bin}:${PATH}" TT_PKG_LOG="$TT_PKG_LOG" \
-    bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages dnf 0' \
-    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file"
+    bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages dnf 0' \
+    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file" "$(with_system_package_pins)"
   [ "$status" -eq 0 ]
 
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms tt-smi tt-flash tt-topology" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19" ]
 }
 
 @test "package manager dispatcher fails clearly when dnf is missing" {
   fake_bin="$(make_fake_sudo_only)"
 
   run env PATH="${fake_bin}:${PATH}" TT_PKG_LOG="$TT_PKG_LOG" \
-    bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages dnf 0' \
-    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file"
+    bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages dnf 0' \
+    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file" "$(with_system_package_pins)"
   [ "$status" -eq 1 ]
   [[ "$output" == *"dnf is required to install dnf packages"* ]]
 }
@@ -141,8 +150,30 @@ EOF
   fake_bin="$(make_fake_dnf_without_config_manager)"
 
   run env PATH="${fake_bin}:${PATH}" TT_PKG_LOG="$TT_PKG_LOG" \
-    bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages dnf 0' \
-    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file"
+    bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages dnf 0' \
+    bash "$PACKAGE_MANAGER_SH" "$dnf_manifest_file" "$(with_system_package_pins)"
   [ "$status" -eq 1 ]
   [[ "$output" == *"dnf config-manager is required to add repositories"* ]]
+}
+
+@test "package manager dispatcher fails when required system package pins are missing" {
+  run bash -c 'source "$1"; parse_env_manifest "$2"; package_manager_install_system_packages apt 1' \
+    bash "$PACKAGE_MANAGER_SH" "$manifest_file"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Stack manifest is missing system package version: system_packages.kmd"* ]]
+}
+
+@test "package manager dispatcher fails for unknown system package pins" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    TT_STACK_SYSTEM_PACKAGES[unknown]="1.0"
+    TT_STACK_SYSTEM_PACKAGES[kmd]="2.8.0"
+    TT_STACK_SYSTEM_PACKAGES[smi]="5.0.1"
+    TT_STACK_SYSTEM_PACKAGES[flash]="3.6.5"
+    TT_STACK_SYSTEM_PACKAGES[topology]="1.2.19"
+    package_manager_install_system_packages apt 1
+  ' bash "$PACKAGE_MANAGER_SH" "$manifest_file"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Stack manifest pins unknown system package: system_packages.unknown"* ]]
 }
