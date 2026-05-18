@@ -87,43 +87,13 @@ _package_manager_validate_system_package_pins() {
     done
 }
 
-_package_manager_package_spec() {
-    local output_ref="$1"
-    # shellcheck disable=SC2034 # nameref output parameter
-    local -n package_spec_ref="$output_ref"
-    shift
-    local pkg_manager="$1"
-    local virtual_package="$2"
-    local resolved_package="$3"
-    local package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
-
-    if [[ -z "$package_version" ]]; then
-        if _package_manager_virtual_package_requires_pin "$virtual_package"; then
-            fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
-        fi
-        package_spec_ref="$resolved_package"
-        return 0
-    fi
-
-    case "$pkg_manager" in
-        apt)
-            package_spec_ref="${resolved_package}=${package_version}"
-            ;;
-        dnf)
-            package_spec_ref="${resolved_package}-${package_version}"
-            ;;
-        *)
-            package_spec_ref="$resolved_package"
-            ;;
-    esac
-}
-
 _package_manager_resolved_packages() {
     local output_ref="$1"
     local pkg_manager="$2"
     local virtual_package
     local resolved_package
     local package_spec
+    local package_version
 
     # shellcheck disable=SC2034,SC2178 # nameref output parameter
     local -n packages_ref="$output_ref"
@@ -135,8 +105,25 @@ _package_manager_resolved_packages() {
         if ! resolved_package="$(resolve_package "$virtual_package")"; then
             fail "Failed to resolve package from OS manifest: ${virtual_package}"
         fi
-        # shellcheck disable=SC2034 # nameref output parameter
-        _package_manager_package_spec package_spec "$pkg_manager" "$virtual_package" "$resolved_package"
+        package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
+        if [[ -z "$package_version" ]]; then
+            if _package_manager_virtual_package_requires_pin "$virtual_package"; then
+                fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
+            fi
+            package_spec="$resolved_package"
+        else
+            case "$pkg_manager" in
+                apt)
+                    package_spec="${resolved_package}=${package_version}"
+                    ;;
+                dnf)
+                    package_spec="${resolved_package}-${package_version}"
+                    ;;
+                *)
+                    package_spec="$resolved_package"
+                    ;;
+            esac
+        fi
         packages_ref+=("$package_spec")
     done
 
