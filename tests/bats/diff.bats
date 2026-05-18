@@ -55,18 +55,27 @@ EOF
 @test "tt-env diff marks missing values" {
   write_release_manifest 2026.05.16 v0.70.1 2.8.0 0.9.5
   write_release_manifest 2026.08.16 v0.76.0 3.1.0 1.2.0
-  tmp_file="${TT_HOME}/releases/2026.08.16.json"
-  python3 - "$tmp_file" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-with open(path, encoding="utf-8") as f:
-    data = json.load(f)
-del data["python_packages"]["textual"]
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2)
-    f.write("\n")
-PY
+  cat >"${TT_HOME}/releases/2026.08.16.json" <<'EOF'
+{
+  "release": "2026.08.16",
+  "components": {
+    "tt-kmd": "ttkmd-3.1.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.76.0"
+  },
+  "system_packages": {
+    "kmd": "3.1.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
+  },
+  "python_packages": {
+    "tt-umd": "1.2.0",
+    "elasticsearch": "8.11.0"
+  }
+}
+EOF
 
   run "$TT_ENV" diff 2026.05.16 2026.08.16
 
