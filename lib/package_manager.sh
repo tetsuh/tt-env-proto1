@@ -7,9 +7,9 @@
 #   - package_manager_install_pip_packages <dry-run> <target-dir>
 #   - package_manager_command_needs_pip_packages <command>
 #
-# Callers must parse the OS manifest with parse_env_manifest before invoking
-# system package helpers. Callers must parse the stack manifest with
-# parse_stack_manifest before invoking pip package helpers.
+# Callers must parse the OS manifest with parse_env_manifest and the stack
+# manifest with parse_stack_manifest before invoking system package or pip
+# package helpers.
 
 if [[ -n "${TT_PACKAGE_MANAGER_LOADED:-}" ]]; then
     return 0
@@ -23,6 +23,7 @@ source "${PACKAGE_MANAGER_LIB_DIR}/core.sh"
 source "${PACKAGE_MANAGER_LIB_DIR}/manifest_parser.sh"
 
 declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
+declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=("kmd" "smi" "flash" "topology")
 declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-umd" "textual" "elasticsearch")
 declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
     ["tt-umd"]="tt-smi"
@@ -51,21 +52,91 @@ _package_manager_required_repos() {
     fi
 }
 
+_package_manager_virtual_package_known() {
+    local virtual_package="$1"
+    local known_package
+
+    for known_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
+        [[ "$virtual_package" == "$known_package" ]] && return 0
+    done
+
+    return 1
+}
+
+_package_manager_virtual_package_requires_pin() {
+    local virtual_package="$1"
+    local pinned_package
+
+    for pinned_package in "${TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES[@]}"; do
+        [[ "$virtual_package" == "$pinned_package" ]] && return 0
+    done
+
+    return 1
+}
+
+_package_manager_validate_system_package_pins() {
+    local package_key
+    local -a package_keys=()
+
+    mapfile -t package_keys < <(printf '%s\n' "${!TT_STACK_SYSTEM_PACKAGES[@]}" | sort)
+
+    for package_key in "${package_keys[@]}"; do
+        [[ -n "$package_key" ]] || continue
+        _package_manager_virtual_package_known "$package_key" || \
+            fail "Stack manifest pins unknown system package: system_packages.${package_key}"
+    done
+}
+
+_package_manager_package_spec() {
+    local output_ref="$1"
+    local -n package_spec_ref="$output_ref"
+    shift
+    local pkg_manager="$1"
+    local virtual_package="$2"
+    local resolved_package="$3"
+    local package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
+
+    if [[ -z "$package_version" ]]; then
+        if _package_manager_virtual_package_requires_pin "$virtual_package"; then
+            fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
+        fi
+        package_spec_ref="$resolved_package"
+        return 0
+    fi
+
+    case "$pkg_manager" in
+        apt)
+            package_spec_ref="${resolved_package}=${package_version}"
+            ;;
+        dnf)
+            package_spec_ref="${resolved_package}-${package_version}"
+            ;;
+        *)
+            package_spec_ref="$resolved_package"
+            ;;
+    esac
+}
+
 _package_manager_resolved_packages() {
     local output_ref="$1"
+    local pkg_manager="$2"
     local virtual_package
     local resolved_package
+    local package_spec
 
     # shellcheck disable=SC2034,SC2178 # nameref output parameter
     local -n packages_ref="$output_ref"
     packages_ref=()
+
+    _package_manager_validate_system_package_pins
 
     for virtual_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
         if ! resolved_package="$(resolve_package "$virtual_package")"; then
             fail "Failed to resolve package from OS manifest: ${virtual_package}"
         fi
         # shellcheck disable=SC2034 # nameref output parameter
-        packages_ref+=("$resolved_package")
+        _package_manager_package_spec package_spec "$pkg_manager" "$virtual_package" "$resolved_package"
+        packages_ref+=("$package_spec")
     done
 
     if [[ "${#packages_ref[@]}" -eq 0 ]]; then
@@ -361,7 +432,7 @@ _package_manager_apt_install_system_packages() {
     local repo
 
     _package_manager_required_repos repos
-    _package_manager_resolved_packages packages
+    _package_manager_resolved_packages packages apt
 
     if [[ "$dry_run" -eq 1 ]]; then
         for repo in "${repos[@]}"; do
@@ -414,7 +485,7 @@ _package_manager_dnf_install_system_packages() {
     local repo
 
     _package_manager_required_repos repos
-    _package_manager_resolved_packages packages
+    _package_manager_resolved_packages packages dnf
 
     if [[ "$dry_run" -eq 1 ]]; then
         for repo in "${repos[@]}"; do

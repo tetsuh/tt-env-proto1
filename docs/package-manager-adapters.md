@@ -7,8 +7,9 @@ the supported OS list.
 ## Install flow
 
 `tt-env install` detects the host OS, loads `manifests/<id>-<version>.env`, and
-parses it without sourcing it. When system package installation is enabled, the
-install path dispatches to the adapter named by `PKG_MANAGER`.
+parses it without sourcing it. It also parses the selected stack release
+manifest for system package version pins. When system package installation is
+enabled, the install path dispatches to the adapter named by `PKG_MANAGER`.
 
 System package installation is controlled by:
 
@@ -17,6 +18,26 @@ System package installation is controlled by:
 
 If the selected flag is `false`, `tt-env` skips package-manager operations and
 uses component downloads plus manifest-provided sha256 checksums instead.
+
+Stack manifests must pin Tenstorrent-managed system package versions under
+`system_packages` when system package installation is enabled. The keys are
+virtual package names, not distro-specific names:
+
+```json
+{
+  "system_packages": {
+    "kmd": "2.8.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
+  }
+}
+```
+
+Adapters format those pins for their native package manager. `apt` uses
+`<package>=<version>`, while `dnf` uses `<package>-<version>`. If a pinned
+version is no longer available in the configured repository, the native package
+manager error is surfaced.
 
 Some upstream system packages need Python dependencies that are not declared by
 the native package metadata. Stack manifests pin those dependencies under
@@ -45,11 +66,12 @@ Each adapter must:
 
 1. Resolve all virtual packages from the parsed manifest before mutating the system.
 2. Make `--dry-run` side-effect free: no `sudo`, package-manager command, network, or file-system mutation.
-3. Check required local tools before running privileged commands.
-4. Add required repositories before refreshing package metadata.
-5. Refresh package metadata before installing packages.
-6. Surface failures with clear `fail` messages and never silently skip a failed step.
-7. Preserve command ordering in tests so repository setup, metadata refresh, and install remain deterministic.
+3. Apply stack manifest pins for Tenstorrent-managed packages before install.
+4. Check required local tools before running privileged commands.
+5. Add required repositories before refreshing package metadata.
+6. Refresh package metadata before installing packages.
+7. Surface failures with clear `fail` messages and never silently skip a failed step.
+8. Preserve command ordering in tests so repository setup, metadata refresh, and install remain deterministic.
 
 The current adapters behave as follows:
 
