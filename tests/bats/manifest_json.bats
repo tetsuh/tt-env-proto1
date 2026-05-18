@@ -352,7 +352,8 @@ EOF
     "firmware": "v19.6.0",
     "tt-metal": "v0.70.1"
   },
-  "system_packages": {}
+  "system_packages": {
+  }
 }
 EOF
 
@@ -367,6 +368,43 @@ EOF
   [ "$status" -eq 0 ]
   [ "${lines[0]}" = "0" ]
   [ "${lines[1]}" = "0" ]
+}
+
+@test "parse_stack_manifest accepts system package keys that start with digits" {
+  manifest_file="${BATS_TEST_TMPDIR}/numeric-system-package-key.json"
+  cat >"$manifest_file" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  },
+  "system_packages": {
+    "7zip": "24.09"
+  }
+}
+EOF
+
+  run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
+    source "$1"
+    parse_stack_manifest "$2"
+    printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[7zip]}"
+  ' bash "$MANIFEST_PARSER" "$manifest_file"
+
+  [ "$status" -eq 0 ]
+  [ "$output" = "24.09" ]
+
+  if command -v jq >/dev/null 2>&1; then
+    run bash -c '
+      source "$1"
+      parse_stack_manifest "$2"
+      printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[7zip]}"
+    ' bash "$MANIFEST_PARSER" "$manifest_file"
+    [ "$status" -eq 0 ]
+    [ "$output" = "24.09" ]
+  fi
 }
 
 @test "parse_stack_manifest fallback accepts string values with brackets and spaces" {

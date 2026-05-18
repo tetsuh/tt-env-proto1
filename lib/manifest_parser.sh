@@ -130,7 +130,7 @@ _stack_is_python_package_version() {
 }
 
 _stack_is_system_package_key() {
-    [[ "$1" =~ ^[a-z][a-z0-9_]*$ ]]
+    [[ "$1" =~ ^[a-z0-9][a-z0-9_]*$ ]]
 }
 
 _stack_is_system_package_version() {
@@ -319,7 +319,7 @@ _parse_stack_manifest_with_jq() {
         def system_package_ok:
             type == "object" and
             (to_entries | all(
-                (.key | test("^[a-z][a-z0-9_]*$")) and
+                (.key | test("^[a-z0-9][a-z0-9_]*$")) and
                 (.value | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.!+:~-]*$"))
             ));
 
@@ -426,7 +426,7 @@ _parse_stack_manifest_fallback() {
         if [[ "$in_system_packages" -eq 1 ]]; then
             if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
                 in_system_packages=0
-            elif [[ "$line" =~ ^[[:space:]]*\"([a-z][a-z0-9_]*)\"[[:space:]]*:[[:space:]]*\"([A-Za-z0-9][A-Za-z0-9_.!+:~-]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+            elif [[ "$line" =~ ^[[:space:]]*\"([a-z0-9][a-z0-9_]*)\"[[:space:]]*:[[:space:]]*\"([A-Za-z0-9][A-Za-z0-9_.!+:~-]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 _stack_store_system_package "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "$line_no"
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
@@ -498,8 +498,6 @@ _parse_stack_manifest_fallback() {
             TT_STACK_DESCRIPTION="${BASH_REMATCH[1]}"
         elif [[ "$line" =~ ^[[:space:]]*\"components\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
             in_components=1
-        elif [[ "$line" =~ ^[[:space:]]*\"system_packages\"[[:space:]]*:[[:space:]]*\{[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
-            :
         elif [[ "$line" =~ ^[[:space:]]*\"system_packages\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
             in_system_packages=1
         elif [[ "$line" =~ ^[[:space:]]*\"python_packages\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
