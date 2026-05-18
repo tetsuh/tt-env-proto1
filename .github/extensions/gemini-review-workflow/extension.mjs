@@ -13,7 +13,15 @@ const REVIEW_CONTEXT = `Repository AI review workflow:
 - Do not merge PRs automatically; when a PR is mergeable, report the status and let the user decide whether to merge.
 - If the user approves merging, use squash merge with a Conventional Commits title and put bullet-point details on line 3 and later of the squash commit message body.`;
 
-const REVIEW_PROMPT_PATTERN = /\b(PRs?|pull requests?|merg(e|ing)s?|review(s|ing)?|Gemini|Copilot)\b/i;
+const REVIEW_KEYWORDS = [
+  "PRs?",
+  "pull requests?",
+  "merge(s|ing)?",
+  "review(s|ing)?",
+  "Gemini",
+  "Copilot",
+];
+const REVIEW_PROMPT_PATTERN = new RegExp(`\\b(${REVIEW_KEYWORDS.join("|")})\\b`, "i");
 
 await joinSession({
   hooks: {
