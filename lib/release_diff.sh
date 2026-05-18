@@ -18,11 +18,17 @@ source "${RELEASE_DIFF_LIB_DIR}/manifest_parser.sh"
 
 declare -g TT_RELEASE_DIFF_LEFT_RELEASE=""
 declare -g TT_RELEASE_DIFF_RIGHT_RELEASE=""
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_LEFT_COMPONENTS=()
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_RIGHT_COMPONENTS=()
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_LEFT_SYSTEM_PACKAGES=()
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_RIGHT_SYSTEM_PACKAGES=()
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_LEFT_PYTHON_PACKAGES=()
+# shellcheck disable=SC2034 # copied into via nameref and read via name arguments
 declare -gA TT_RELEASE_DIFF_RIGHT_PYTHON_PACKAGES=()
 
 _diff_usage() {
@@ -61,40 +67,35 @@ _diff_copy_current_stack() {
     local key
 
     case "$side" in
-        left)
-            TT_RELEASE_DIFF_LEFT_RELEASE="$TT_STACK_RELEASE"
-            TT_RELEASE_DIFF_LEFT_COMPONENTS=()
-            TT_RELEASE_DIFF_LEFT_SYSTEM_PACKAGES=()
-            TT_RELEASE_DIFF_LEFT_PYTHON_PACKAGES=()
-            for key in "${!TT_STACK_COMPONENTS[@]}"; do
-                TT_RELEASE_DIFF_LEFT_COMPONENTS["$key"]="${TT_STACK_COMPONENTS[$key]}"
-            done
-            for key in "${!TT_STACK_SYSTEM_PACKAGES[@]}"; do
-                TT_RELEASE_DIFF_LEFT_SYSTEM_PACKAGES["$key"]="${TT_STACK_SYSTEM_PACKAGES[$key]}"
-            done
-            for key in "${!TT_STACK_PYTHON_PACKAGES[@]}"; do
-                TT_RELEASE_DIFF_LEFT_PYTHON_PACKAGES["$key"]="${TT_STACK_PYTHON_PACKAGES[$key]}"
-            done
-            ;;
-        right)
-            TT_RELEASE_DIFF_RIGHT_RELEASE="$TT_STACK_RELEASE"
-            TT_RELEASE_DIFF_RIGHT_COMPONENTS=()
-            TT_RELEASE_DIFF_RIGHT_SYSTEM_PACKAGES=()
-            TT_RELEASE_DIFF_RIGHT_PYTHON_PACKAGES=()
-            for key in "${!TT_STACK_COMPONENTS[@]}"; do
-                TT_RELEASE_DIFF_RIGHT_COMPONENTS["$key"]="${TT_STACK_COMPONENTS[$key]}"
-            done
-            for key in "${!TT_STACK_SYSTEM_PACKAGES[@]}"; do
-                TT_RELEASE_DIFF_RIGHT_SYSTEM_PACKAGES["$key"]="${TT_STACK_SYSTEM_PACKAGES[$key]}"
-            done
-            for key in "${!TT_STACK_PYTHON_PACKAGES[@]}"; do
-                TT_RELEASE_DIFF_RIGHT_PYTHON_PACKAGES["$key"]="${TT_STACK_PYTHON_PACKAGES[$key]}"
-            done
-            ;;
+        left | right) ;;
         *)
             fail "Invalid diff side: ${side}"
             ;;
     esac
+
+    local -n rel_target="TT_RELEASE_DIFF_${side^^}_RELEASE"
+    local -n comp_target="TT_RELEASE_DIFF_${side^^}_COMPONENTS"
+    local -n sys_target="TT_RELEASE_DIFF_${side^^}_SYSTEM_PACKAGES"
+    local -n py_target="TT_RELEASE_DIFF_${side^^}_PYTHON_PACKAGES"
+
+    rel_target="$TT_STACK_RELEASE"
+    comp_target=()
+    sys_target=()
+    py_target=()
+
+    for key in "${!TT_STACK_COMPONENTS[@]}"; do
+        comp_target["$key"]="${TT_STACK_COMPONENTS[$key]}"
+    done
+    for key in "${!TT_STACK_SYSTEM_PACKAGES[@]}"; do
+        sys_target["$key"]="${TT_STACK_SYSTEM_PACKAGES[$key]}"
+    done
+    for key in "${!TT_STACK_PYTHON_PACKAGES[@]}"; do
+        py_target["$key"]="${TT_STACK_PYTHON_PACKAGES[$key]}"
+    done
+}
+
+_diff_print_row() {
+    printf '%-32s %-24s %-24s\n' "$1" "$2" "$3"
 }
 
 _diff_load_release() {
@@ -130,7 +131,7 @@ _diff_print_section() {
         item="${prefix}.${key}"
         left_value="${left_ref[$key]:--}"
         right_value="${right_ref[$key]:--}"
-        printf '%-32s %-18s %-18s\n' "$item" "$left_value" "$right_value"
+        _diff_print_row "$item" "$left_value" "$right_value"
     done
 }
 
@@ -146,7 +147,7 @@ diff_releases() {
     _diff_load_release "$left_release" left
     _diff_load_release "$right_release" right
 
-    printf '%-32s %-18s %-18s\n' "Item" "$TT_RELEASE_DIFF_LEFT_RELEASE" "$TT_RELEASE_DIFF_RIGHT_RELEASE"
+    _diff_print_row "Item" "$TT_RELEASE_DIFF_LEFT_RELEASE" "$TT_RELEASE_DIFF_RIGHT_RELEASE"
     _diff_print_section "components" TT_RELEASE_DIFF_LEFT_COMPONENTS TT_RELEASE_DIFF_RIGHT_COMPONENTS
     _diff_print_section "system_packages" TT_RELEASE_DIFF_LEFT_SYSTEM_PACKAGES TT_RELEASE_DIFF_RIGHT_SYSTEM_PACKAGES
     _diff_print_section "python_packages" TT_RELEASE_DIFF_LEFT_PYTHON_PACKAGES TT_RELEASE_DIFF_RIGHT_PYTHON_PACKAGES
