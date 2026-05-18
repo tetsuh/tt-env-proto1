@@ -52,33 +52,33 @@ _package_manager_required_repos() {
     fi
 }
 
-_package_manager_virtual_package_known() {
-    local virtual_package="$1"
-    local known_package
+_package_manager_array_contains() {
+    local item="$1"
+    shift
+    local element
 
-    for known_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
-        [[ "$virtual_package" == "$known_package" ]] && return 0
+    for element in "$@"; do
+        [[ "$item" == "$element" ]] && return 0
     done
 
     return 1
 }
 
+_package_manager_virtual_package_known() {
+    _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"
+}
+
 _package_manager_virtual_package_requires_pin() {
-    local virtual_package="$1"
-    local pinned_package
-
-    for pinned_package in "${TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES[@]}"; do
-        [[ "$virtual_package" == "$pinned_package" ]] && return 0
-    done
-
-    return 1
+    _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES[@]}"
 }
 
 _package_manager_validate_system_package_pins() {
     local package_key
     local -a package_keys=()
+    local -a unsorted_keys=("${!TT_STACK_SYSTEM_PACKAGES[@]}")
 
-    mapfile -t package_keys < <(printf '%s\n' "${!TT_STACK_SYSTEM_PACKAGES[@]}" | sort)
+    [[ "${#unsorted_keys[@]}" -eq 0 ]] && return 0
+    mapfile -t package_keys < <(printf '%s\n' "${unsorted_keys[@]}" | sort)
 
     for package_key in "${package_keys[@]}"; do
         [[ -n "$package_key" ]] || continue
