@@ -18,6 +18,8 @@ source "${LIB_DIR}/version_manager.sh"
 source "${LIB_DIR}/status.sh"
 # shellcheck disable=SC1091
 source "${LIB_DIR}/updater.sh"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/release_diff.sh"
 
 usage() {
     cat <<'EOF'
@@ -31,6 +33,7 @@ Commands:
   install    Install a Tenstorrent stack release
   remove     Remove an installed Tenstorrent stack release
   use        Switch the active Tenstorrent stack release
+  diff       Compare two stack release manifests
   list       List available and installed stack releases
   status     Show hardware and environment status
   update     Sync manifests and metadata
@@ -123,6 +126,25 @@ Exit codes:
 EOF
 }
 
+help_diff() {
+    cat <<'EOF'
+tt-env diff - compare two stack release manifests
+
+Synopsis:
+  tt-env diff <release-a> <release-b>
+
+Options:
+  -h, --help Show this help message
+
+Examples:
+  tt-env diff 2026.05.16 2026.08.16
+
+Exit codes:
+  0  Releases were compared
+  1  Invalid arguments, missing manifests, or manifest parsing failed
+EOF
+}
+
 help_status() {
     cat <<'EOF'
 tt-env status - show hardware and environment status
@@ -187,6 +209,9 @@ help_command() {
             ;;
         list)
             help_list
+            ;;
+        diff)
+            help_diff
             ;;
         status)
             help_status
@@ -297,6 +322,16 @@ main() {
             fi
             maybe_update_manifests
             list_releases "$@"
+            ;;
+        diff)
+            init_tt_home
+            shift || true
+            if args_request_help "$@"; then
+                help_diff
+                return 0
+            fi
+            maybe_update_manifests
+            diff_releases "$@"
             ;;
         update)
             init_tt_home

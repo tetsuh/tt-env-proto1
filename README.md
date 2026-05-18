@@ -43,6 +43,8 @@ for OS manifest fields, package manager adapter responsibilities, and distro
 fixture expectations.
 See [docs/path-setup.md](./docs/path-setup.md) for shell-specific PATH setup
 that enables both `tt-env` and generated shims such as `tt-smi`.
+See [docs/release-diff.md](./docs/release-diff.md) for comparing dated stack
+release manifests with `tt-env diff`.
 See [docs/kmd-safety.md](./docs/kmd-safety.md) for KMD preflight, Secure Boot,
 swap, rollback, and recovery guidance.
 See [docs/e2e.md](./docs/e2e.md) for the full Ubuntu manual
