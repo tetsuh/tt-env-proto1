@@ -7,6 +7,12 @@
     "firmware": "v19.6.0",
     "tt-metal": "v0.70.1"
   },
+  "system_packages": {
+    "kmd": "2.8.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
+  },
   "python_packages": {
     "tt-umd": "0.9.5",
     "textual": "0.59.0",
