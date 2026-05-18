@@ -45,8 +45,34 @@ Mirrors use the same archive layout as `tt-env-manifests-proto1` and are tried i
 Updates to manifests should be made directly in the `tt-env-manifests-proto1` repository.
 Major schema changes should be coordinated with the core `tt-env` tool development by opening an Issue in the [tt-env-proto1](https://github.com/tetsuh/tt-env-proto1/issues) repository.
 
-Stack manifests may include a `python_packages` object for release-local pip
-dependencies that supplement upstream system packages:
+Stack manifests may include a `system_packages` object for best-effort package
+manager version pins. Keys are virtual package names resolved through the OS
+manifest (`kmd` maps to `VIRT_PKG_KMD`, `smi` maps to `VIRT_PKG_SMI`, and so
+on), not distro-specific package names:
+
+```json
+{
+  "system_packages": {
+    "kmd": "2.8.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
+  }
+}
+```
+
+These pins are intended for comparing dated stack releases such as
+`2026.05.16` and `2026.08.16`. They rely on upstream package repositories
+retaining historical package versions; `tt-env` does not mirror or archive
+those packages.
+
+The `components` object records stack component versions or downloadable
+artifacts. The `system_packages` object records distro package versions used to
+install system-managed tools for a release. They are related but distinct
+metadata and may use different version formats.
+
+Stack manifests may also include a `python_packages` object for release-local
+pip dependencies that supplement upstream system packages:
 
 ```json
 {
@@ -58,6 +84,8 @@ dependencies that supplement upstream system packages:
 }
 ```
 
-Package names must use alphanumeric characters plus `.`, `_`, or `-`. Versions
-must be pinned and may use alphanumeric characters plus `.`, `_`, `!`, `+`, or
-`-`.
+Python package names must use alphanumeric characters plus `.`, `_`, or `-`.
+System package keys must use lowercase alphanumeric characters plus `_`.
+Versions must be pinned. Python package versions may use alphanumeric
+characters plus `.`, `_`, `!`, `+`, or `-`. System package versions may also
+use `:` and `~` for apt/dnf-style version strings.

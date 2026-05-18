@@ -16,6 +16,12 @@ write_stack_manifest() {
     "firmware": "v19.6.0",
     "tt-metal": "v0.70.1"
   },
+  "system_packages": {
+    "kmd": "2.8.0",
+    "smi": "5.0.1",
+    "flash": "3.6.5",
+    "topology": "1.2.19"
+  },
   "python_packages": {
     "tt-umd": "0.9.5",
     "textual": "0.59.0",
@@ -68,6 +74,10 @@ EOF
     printf "%s\n" "$TT_STACK_DESCRIPTION"
     printf "%s\n" "${TT_STACK_COMPONENTS[tt-kmd]}"
     printf "%s\n" "${TT_STACK_COMPONENTS[tt-metal]}"
+    printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[kmd]}"
+    printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[smi]}"
+    printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[flash]}"
+    printf "%s\n" "${TT_STACK_SYSTEM_PACKAGES[topology]}"
     printf "%s\n" "${TT_STACK_PYTHON_PACKAGES[tt-umd]}"
     printf "%s\n" "${TT_STACK_PYTHON_PACKAGES[textual]}"
     printf "%s\n" "${TT_STACK_PYTHON_PACKAGES[elasticsearch]}"
@@ -78,9 +88,13 @@ EOF
   [ "${lines[1]}" = "Tenstorrent proto sample stack 2026.05.16" ]
   [ "${lines[2]}" = "ttkmd-2.8.0" ]
   [ "${lines[3]}" = "v0.70.1" ]
-  [ "${lines[4]}" = "0.9.5" ]
-  [ "${lines[5]}" = "0.59.0" ]
-  [ "${lines[6]}" = "8.11.0" ]
+  [ "${lines[4]}" = "2.8.0" ]
+  [ "${lines[5]}" = "5.0.1" ]
+  [ "${lines[6]}" = "3.6.5" ]
+  [ "${lines[7]}" = "1.2.19" ]
+  [ "${lines[8]}" = "0.9.5" ]
+  [ "${lines[9]}" = "0.59.0" ]
+  [ "${lines[10]}" = "8.11.0" ]
 }
 
 @test "parse_stack_manifest jq and fallback paths return identical results" {
@@ -92,13 +106,17 @@ EOF
   run bash -c '
     source "$1"
     parse_stack_manifest "$2"
-    printf "%s|%s|%s|%s|%s|%s|%s|%s|%s\n" \
+    printf "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n" \
       "$TT_STACK_RELEASE" \
       "$TT_STACK_DESCRIPTION" \
       "${TT_STACK_COMPONENTS[tt-kmd]}" \
       "${TT_STACK_COMPONENTS[tt-smi]}" \
       "${TT_STACK_COMPONENTS[firmware]}" \
       "${TT_STACK_COMPONENTS[tt-metal]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[kmd]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[smi]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[flash]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[topology]}" \
       "${TT_STACK_PYTHON_PACKAGES[tt-umd]}" \
       "${TT_STACK_PYTHON_PACKAGES[textual]}" \
       "${TT_STACK_PYTHON_PACKAGES[elasticsearch]}"
@@ -109,13 +127,17 @@ EOF
   run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
     source "$1"
     parse_stack_manifest "$2"
-    printf "%s|%s|%s|%s|%s|%s|%s|%s|%s\n" \
+    printf "%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n" \
       "$TT_STACK_RELEASE" \
       "$TT_STACK_DESCRIPTION" \
       "${TT_STACK_COMPONENTS[tt-kmd]}" \
       "${TT_STACK_COMPONENTS[tt-smi]}" \
       "${TT_STACK_COMPONENTS[firmware]}" \
       "${TT_STACK_COMPONENTS[tt-metal]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[kmd]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[smi]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[flash]}" \
+      "${TT_STACK_SYSTEM_PACKAGES[topology]}" \
       "${TT_STACK_PYTHON_PACKAGES[tt-umd]}" \
       "${TT_STACK_PYTHON_PACKAGES[textual]}" \
       "${TT_STACK_PYTHON_PACKAGES[elasticsearch]}"
@@ -246,6 +268,105 @@ EOF
     [ "$status" -eq 1 ]
     [[ "$output" == *"Unsupported stack manifest shape"* ]]
   fi
+}
+
+@test "parse_stack_manifest rejects invalid system package keys" {
+  manifest_file="${BATS_TEST_TMPDIR}/invalid-system-package-key.json"
+  cat >"$manifest_file" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  },
+  "system_packages": {
+    "tt-kmd": "2.8.0"
+  }
+}
+EOF
+
+  run env TT_MANIFEST_DISABLE_JQ=1 bash -c 'source "$1"; parse_stack_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Unsupported stack manifest shape"* ]]
+
+  if command -v jq >/dev/null 2>&1; then
+    run bash -c 'source "$1"; parse_stack_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Unsupported stack manifest shape"* ]]
+  fi
+}
+
+@test "parse_stack_manifest rejects invalid system package versions" {
+  manifest_file="${BATS_TEST_TMPDIR}/invalid-system-package-version.json"
+  cat >"$manifest_file" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  },
+  "system_packages": {
+    "kmd": "--2.8.0"
+  }
+}
+EOF
+
+  run env TT_MANIFEST_DISABLE_JQ=1 bash -c 'source "$1"; parse_stack_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Unsupported stack manifest shape"* ]]
+
+  if command -v jq >/dev/null 2>&1; then
+    run bash -c 'source "$1"; parse_stack_manifest "$2"' bash "$MANIFEST_PARSER" "$manifest_file"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Unsupported stack manifest shape"* ]]
+  fi
+}
+
+@test "parse_stack_manifest accepts missing and empty system package pins" {
+  missing_manifest="${BATS_TEST_TMPDIR}/missing-system-packages.json"
+  cat >"$missing_manifest" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  }
+}
+EOF
+
+  empty_manifest="${BATS_TEST_TMPDIR}/empty-system-packages.json"
+  cat >"$empty_manifest" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  },
+  "system_packages": {}
+}
+EOF
+
+  run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
+    source "$1"
+    parse_stack_manifest "$2"
+    printf "%s\n" "${#TT_STACK_SYSTEM_PACKAGES[@]}"
+    parse_stack_manifest "$3"
+    printf "%s\n" "${#TT_STACK_SYSTEM_PACKAGES[@]}"
+  ' bash "$MANIFEST_PARSER" "$missing_manifest" "$empty_manifest"
+
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "0" ]
+  [ "${lines[1]}" = "0" ]
 }
 
 @test "parse_stack_manifest fallback accepts string values with brackets and spaces" {
