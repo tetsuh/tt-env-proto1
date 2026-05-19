@@ -54,5 +54,6 @@ tt-env install --help
 ```
 
 `tt-env use <release>` updates `${TT_HOME}/current`, and shims dispatch to
-`${TT_HOME}/current/bin/<command>`. If no release is active, shim commands fail
-until you install and select a release.
+`${TT_HOME}/current/bin/<command>`. If no release is active, or if the active
+release does not provide that command, shim commands fail instead of falling
+through to unmanaged commands such as stale `${HOME}/.local/bin/tt-*` scripts.

@@ -141,7 +141,7 @@ make_fake_system_shim_commands() {
   local fake_bin="$1"
   local command_name
 
-  for command_name in tt-smi tt-flash tt-topology; do
+  for command_name in tt-smi tt-flash tt-topology tt-burnin tt-inference-server tt-metalium tt-metalium-models tt-studio; do
     cat >"${fake_bin}/${command_name}" <<EOF
 #!/usr/bin/env bash
 printf 'system ${command_name}'
