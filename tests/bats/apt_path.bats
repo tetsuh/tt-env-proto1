@@ -44,7 +44,7 @@ setup() {
   [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
   [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
   grep -q 'VIRTUAL_ENV="${VENV_DIR}"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
-  grep -q 'exec "$VENV_PYTHON" "$command_path" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'exec "$VENV_PYTHON" "$TARGET_COMMAND" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
   for command_name in tt-flash tt-topology; do
     [ -L "${TT_HOME}/versions/2026.05.16/bin/${command_name}" ]
     [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/${command_name}")" = "${fake_bin}/${command_name}" ]
@@ -66,8 +66,9 @@ setup() {
   [ "$status" -eq 0 ]
   [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
   [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
-  grep -q 'VENV_COMMAND="${VENV_DIR}/bin/tt-smi"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
-  grep -q 'exec "$VENV_PYTHON" "$VENV_COMMAND" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'VENV_COMMAND_NAME=tt-smi' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'TARGET_COMMAND="${VENV_DIR}/bin/${VENV_COMMAND_NAME}"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'exec "$VENV_PYTHON" "$TARGET_COMMAND" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
   grep -q "${TT_HOME}/versions/.2026.05.16.partial/venv/bin/python" "${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"
   [[ "$output" != *"[WARN] Installed command not found in PATH: tt-smi"* ]]
 

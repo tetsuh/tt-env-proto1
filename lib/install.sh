@@ -242,13 +242,27 @@ _install_find_system_command() {
     return 1
 }
 
-_install_write_python_package_wrapper() {
-    local command_path="$1"
-    local link_path="$2"
+_install_write_python_command_wrapper() {
+    local link_path="$1"
+    local command_kind="$2"
+    local command_value="$3"
     local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
-    local quoted_command_path
+    local quoted_command_value
+    local command_assignment
 
-    printf -v quoted_command_path '%q' "$command_path"
+    printf -v quoted_command_value '%q' "$command_value"
+    case "$command_kind" in
+        absolute)
+            command_assignment="TARGET_COMMAND=${quoted_command_value}"
+            ;;
+        venv)
+            command_assignment=$(printf 'VENV_COMMAND_NAME=%s\nTARGET_COMMAND="${VENV_DIR}/bin/${VENV_COMMAND_NAME}"' "$quoted_command_value")
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+
     cat >"$link_path" <<EOF || return 1
 #!/usr/bin/env bash
 set -euo pipefail
@@ -262,46 +276,30 @@ VIRTUAL_ENV="\${VENV_DIR}"
 PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
 export VIRTUAL_ENV PATH
 
-command_path=${quoted_command_path}
+${command_assignment}
 first_line=""
-IFS= read -r -n 128 first_line <"\$command_path" || true
+IFS= read -r -n 128 first_line <"\$TARGET_COMMAND" || true
 if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
-  exec "\$VENV_PYTHON" "\$command_path" "\$@"
+  exec "\$VENV_PYTHON" "\$TARGET_COMMAND" "\$@"
 fi
 
-exec "\$command_path" "\$@"
+exec "\$TARGET_COMMAND" "\$@"
 EOF
     chmod 755 "$link_path"
+}
+
+_install_write_python_package_wrapper() {
+    local command_path="$1"
+    local link_path="$2"
+
+    _install_write_python_command_wrapper "$link_path" absolute "$command_path"
 }
 
 _install_write_venv_command_wrapper() {
     local command_name="$1"
     local link_path="$2"
-    local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
 
-    cat >"$link_path" <<EOF || return 1
-#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
-VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
-VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
-VENV_PYTHON="\${VENV_DIR}/bin/python"
-VENV_COMMAND="\${VENV_DIR}/bin/${command_name}"
-
-VIRTUAL_ENV="\${VENV_DIR}"
-PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
-export VIRTUAL_ENV PATH
-
-first_line=""
-IFS= read -r -n 128 first_line <"\$VENV_COMMAND" || true
-if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
-  exec "\$VENV_PYTHON" "\$VENV_COMMAND" "\$@"
-fi
-
-exec "\$VENV_COMMAND" "\$@"
-EOF
-    chmod 755 "$link_path"
+    _install_write_python_command_wrapper "$link_path" venv "$command_name"
 }
 
 _install_create_system_bin_links() {
