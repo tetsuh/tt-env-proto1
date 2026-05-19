@@ -274,6 +274,36 @@ EOF
     chmod 755 "$link_path"
 }
 
+_install_write_venv_command_wrapper() {
+    local command_name="$1"
+    local link_path="$2"
+    local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
+
+    cat >"$link_path" <<EOF || return 1
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
+VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
+VENV_PYTHON="\${VENV_DIR}/bin/python"
+VENV_COMMAND="\${VENV_DIR}/bin/${command_name}"
+
+VIRTUAL_ENV="\${VENV_DIR}"
+PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
+export VIRTUAL_ENV PATH
+
+first_line=""
+IFS= read -r -n 128 first_line <"\$VENV_COMMAND" || true
+if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
+  exec "\$VENV_PYTHON" "\$VENV_COMMAND" "\$@"
+fi
+
+exec "\$VENV_COMMAND" "\$@"
+EOF
+    chmod 755 "$link_path"
+}
+
 _install_create_system_bin_links() {
     local dry_run="$1"
     local target_dir="$2"
@@ -299,8 +329,8 @@ _install_create_system_bin_links() {
         if [[ "$dry_run" -eq 1 ]] && package_manager_command_needs_pip_packages "$command_name"; then
             log_info "[dry-run] Would use venv command if installed: ${venv_command_path}"
         elif [[ "$dry_run" -eq 0 && -x "$venv_command_path" ]]; then
-            ln -sf -- "../${TT_PACKAGE_MANAGER_VENV_SUBDIR}/bin/${command_name}" "$link_path" || \
-                _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
+            _install_write_venv_command_wrapper "$command_name" "$link_path" || \
+                _install_rollback_fail "$target_dir" "Failed to create venv command wrapper for ${command_name}: ${link_path}"
             continue
         fi
         if command_path="$(_install_find_system_command "$command_name" "$tt_home_real")"; then

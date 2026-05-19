@@ -64,8 +64,11 @@ setup() {
 
   run env TT_FAKE_VENV_COMMANDS="tt-smi" PATH="${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
-  [ -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
-  [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-smi")" = "../venv/bin/tt-smi" ]
+  [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  grep -q 'VENV_COMMAND="${VENV_DIR}/bin/tt-smi"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q 'exec "$VENV_PYTHON" "$VENV_COMMAND" "$@"' "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  grep -q "${TT_HOME}/versions/.2026.05.16.partial/venv/bin/python" "${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"
   [[ "$output" != *"[WARN] Installed command not found in PATH: tt-smi"* ]]
 
   run "$TT_ENV" use 2026.05.16
