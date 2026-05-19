@@ -22,8 +22,25 @@ source "${PACKAGE_MANAGER_LIB_DIR}/core.sh"
 # shellcheck disable=SC1091
 source "${PACKAGE_MANAGER_LIB_DIR}/manifest_parser.sh"
 
-declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
-declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=("kmd" "smi" "flash" "topology")
+declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=(
+    "cmake"
+    "ninja"
+    "zlib"
+    "kmd"
+    "smi"
+    "flash"
+    "topology"
+    "burnin"
+)
+declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
+    "kmd"
+    "smi"
+    "flash"
+    "topology"
+)
+declare -gar TT_PACKAGE_MANAGER_OPTIONAL_PINNED_VIRTUAL_PACKAGES=(
+    "burnin"
+)
 declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-smi" "tt-umd" "textual" "elasticsearch")
 declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
     ["tt-smi"]="tt-smi"
@@ -73,6 +90,10 @@ _package_manager_virtual_package_requires_pin() {
     _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES[@]}"
 }
 
+_package_manager_virtual_package_is_optional_pinned() {
+    _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_OPTIONAL_PINNED_VIRTUAL_PACKAGES[@]}"
+}
+
 _package_manager_validate_system_package_pins() {
     local package_key
     local -a package_keys=()
@@ -108,6 +129,9 @@ _package_manager_resolved_packages() {
         fi
         package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
         if [[ -z "$package_version" ]]; then
+            if _package_manager_virtual_package_is_optional_pinned "$virtual_package"; then
+                continue
+            fi
             if _package_manager_virtual_package_requires_pin "$virtual_package"; then
                 fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
             fi

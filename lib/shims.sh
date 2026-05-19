@@ -26,7 +26,6 @@ SHIMS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SHIMS_LIB_DIR}/core.sh"
 
 declare -ga TT_OPTIONAL_SHIM_COMMANDS=(
-    "tt-burnin"
     "tt-inference-server"
     "tt-metalium"
     "tt-metalium-models"
@@ -36,6 +35,7 @@ declare -ga TT_SHIM_COMMANDS=(
     "tt-smi"
     "tt-flash"
     "tt-topology"
+    "tt-burnin"
     "${TT_OPTIONAL_SHIM_COMMANDS[@]}"
 )
 

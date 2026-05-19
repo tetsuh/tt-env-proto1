@@ -24,9 +24,9 @@ Query the package manager for available Tenstorrent package versions and choose
 the versions that define the release:
 
 ```sh
-apt-cache madison tenstorrent-dkms tt-smi tt-flash tt-topology
+apt-cache madison tenstorrent-dkms tt-smi tt-flash tt-topology tt-burnin
 # Fedora-family fixtures or future Fedora support:
-dnf --showduplicates list tenstorrent-dkms tt-smi tt-flash tt-topology
+dnf --showduplicates list tenstorrent-dkms tt-smi tt-flash tt-topology tt-burnin
 ```
 
 Record the selected versions under `system_packages` using virtual package
@@ -38,7 +38,8 @@ keys:
     "kmd": "2.8.0",
     "smi": "5.0.1",
     "flash": "3.6.5",
-    "topology": "1.2.19"
+    "topology": "1.2.19",
+    "burnin": "0.4.0"
   }
 }
 ```
