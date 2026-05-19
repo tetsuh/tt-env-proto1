@@ -29,8 +29,7 @@ virtual package names, not distro-specific names:
     "kmd": "2.8.0",
     "smi": "5.0.1",
     "flash": "3.6.5",
-    "topology": "1.2.19",
-    "burnin": "0.4.0"
+    "topology": "1.2.19"
   }
 }
 ```

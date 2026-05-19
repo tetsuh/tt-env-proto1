@@ -41,12 +41,19 @@ declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
 declare -gar TT_PACKAGE_MANAGER_OPTIONAL_PINNED_VIRTUAL_PACKAGES=(
     "burnin"
 )
-declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-smi" "tt-umd" "textual" "elasticsearch")
+declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=(
+    "tt-smi"
+    "tt-umd"
+    "textual"
+    "elasticsearch"
+    "tt-burnin"
+)
 declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
     ["tt-smi"]="tt-smi"
     ["tt-umd"]="tt-smi"
     ["textual"]="tt-smi"
     ["elasticsearch"]="tt-smi"
+    ["tt-burnin"]="tt-burnin"
 )
 readonly TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS
 declare -gr TT_PACKAGE_MANAGER_VENV_SUBDIR="venv"
