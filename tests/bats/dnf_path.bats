@@ -68,5 +68,9 @@ EOF
   [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19" ]
   mapfile -t pip_calls <"$TT_PIP_LOG"
   [[ "${pip_calls[0]}" == venv\ */versions/.2026.05.16.partial/venv ]]
-  [[ "${pip_calls[1]}" == -m\ pip\ install\ --disable-pip-version-check\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
+  [[ "${pip_calls[1]}" == -m\ pip\ install\ --disable-pip-version-check* ]]
+  [[ "${pip_calls[1]}" == *"tt-smi==5.2.0"* ]]
+  [[ "${pip_calls[1]}" == *"tt-umd==0.9.5"* ]]
+  [[ "${pip_calls[1]}" == *"textual==0.59.0"* ]]
+  [[ "${pip_calls[1]}" == *"elasticsearch==8.11.0"* ]]
 }

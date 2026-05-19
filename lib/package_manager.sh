@@ -24,8 +24,9 @@ source "${PACKAGE_MANAGER_LIB_DIR}/manifest_parser.sh"
 
 declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=("cmake" "ninja" "zlib" "kmd" "smi" "flash" "topology")
 declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=("kmd" "smi" "flash" "topology")
-declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-umd" "textual" "elasticsearch")
+declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-smi" "tt-umd" "textual" "elasticsearch")
 declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
+    ["tt-smi"]="tt-smi"
     ["tt-umd"]="tt-smi"
     ["textual"]="tt-smi"
     ["elasticsearch"]="tt-smi"

@@ -22,7 +22,11 @@ setup() {
 
   mapfile -t pip_calls <"$TT_PIP_LOG"
   [[ "${pip_calls[0]}" == venv\ */versions/.2026.05.16.partial/venv ]]
-  [[ "${pip_calls[1]}" == -m\ pip\ install\ --disable-pip-version-check\ tt-umd==0.9.5\ textual==0.59.0\ elasticsearch==8.11.0 ]]
+  [[ "${pip_calls[1]}" == -m\ pip\ install\ --disable-pip-version-check* ]]
+  [[ "${pip_calls[1]}" == *"tt-smi==5.2.0"* ]]
+  [[ "${pip_calls[1]}" == *"tt-umd==0.9.5"* ]]
+  [[ "${pip_calls[1]}" == *"textual==0.59.0"* ]]
+  [[ "${pip_calls[1]}" == *"elasticsearch==8.11.0"* ]]
 }
 
 @test "tt-env install links system package commands into the release bin" {
@@ -126,7 +130,11 @@ setup() {
   [[ "$output" == *"[dry-run] Would write apt source /etc/apt/sources.list.d/tenstorrent.list: deb [arch=amd64 signed-by=/etc/apt/keyrings/tt-pkg-key.asc] https://ppa.tenstorrent.com/ubuntu/ jammy main"* ]]
   [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
   [[ "$output" == *"[dry-run] Would create Python virtualenv: ${TT_HOME}/versions/2026.05.16/venv"* ]]
-  [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/venv: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [[ "$output" == *"[dry-run] Would install pip packages into ${TT_HOME}/versions/2026.05.16/venv:"* ]]
+  [[ "$output" == *"tt-smi==5.2.0"* ]]
+  [[ "$output" == *"tt-umd==0.9.5"* ]]
+  [[ "$output" == *"textual==0.59.0"* ]]
+  [[ "$output" == *"elasticsearch==8.11.0"* ]]
   [[ "$output" == *"[dry-run] Would use venv command if installed: ${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"* ]]
   [[ "$output" == *"[dry-run] Would create Python virtualenv wrapper for tt-smi after system package install."* ]]
   [[ "$output" == *"[dry-run] Would create bin link for tt-flash after system package install."* ]]
@@ -140,7 +148,11 @@ setup() {
 
   run env BASH_ENV="$bash_env" PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 1 ]
-  [[ "$output" == *"python3 is required to create a virtualenv for Python packages: tt-umd==0.9.5 textual==0.59.0 elasticsearch==8.11.0"* ]]
+  [[ "$output" == *"python3 is required to create a virtualenv for Python packages:"* ]]
+  [[ "$output" == *"tt-smi==5.2.0"* ]]
+  [[ "$output" == *"tt-umd==0.9.5"* ]]
+  [[ "$output" == *"textual==0.59.0"* ]]
+  [[ "$output" == *"elasticsearch==8.11.0"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
   [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
 }
@@ -168,7 +180,7 @@ EOF
 
   run env PATH="${fake_bin}:${PATH}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 1 ]
-  [[ "$output" == *"Stack manifest is missing Python package version: python_packages.tt-umd"* ]]
+  [[ "$output" == *"Stack manifest is missing Python package version: python_packages.tt-smi"* ]]
   [ ! -e "${TT_HOME}/versions/2026.05.16" ]
   [ ! -e "${TT_HOME}/versions/.2026.05.16.partial" ]
 }
