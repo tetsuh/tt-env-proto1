@@ -217,6 +217,23 @@ _install_candidate_is_tt_managed() {
     return 1
 }
 
+_install_path_entry_is_preferred_system_dir() {
+    local path_entry="$1"
+    local system_dirs="${TT_INSTALL_SYSTEM_COMMAND_DIRS:-/usr/bin:/bin:/usr/sbin:/sbin}"
+    local system_dir
+    local -a system_dir_entries=()
+
+    IFS=':' read -r -a system_dir_entries <<<"$system_dirs"
+    for system_dir in "${system_dir_entries[@]}"; do
+        [[ -n "$system_dir" ]] || continue
+        if [[ "$path_entry" == "$system_dir" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 _install_find_system_command() {
     local command_name="$1"
     local tt_home_real="$2"
@@ -227,6 +244,22 @@ _install_find_system_command() {
     IFS=':' read -r -a path_entries <<<"${PATH:-}"
     for path_entry in "${path_entries[@]}"; do
         [[ "$path_entry" == /* ]] || continue
+        _install_path_entry_is_preferred_system_dir "$path_entry" || continue
+        candidate="${path_entry%/}/${command_name}"
+
+        if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
+            continue
+        fi
+
+        if [[ -f "$candidate" && -x "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    for path_entry in "${path_entries[@]}"; do
+        [[ "$path_entry" == /* ]] || continue
+        _install_path_entry_is_preferred_system_dir "$path_entry" && continue
         candidate="${path_entry%/}/${command_name}"
 
         if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
@@ -242,13 +275,28 @@ _install_find_system_command() {
     return 1
 }
 
-_install_write_python_package_wrapper() {
-    local command_path="$1"
-    local link_path="$2"
+_install_write_python_command_wrapper() {
+    local link_path="$1"
+    local command_kind="$2"
+    local command_value="$3"
     local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
-    local quoted_command_path
+    local quoted_command_value
+    local command_assignment
 
-    printf -v quoted_command_path '%q' "$command_path"
+    printf -v quoted_command_value '%q' "$command_value"
+    case "$command_kind" in
+        absolute)
+            command_assignment="TARGET_COMMAND=${quoted_command_value}"
+            ;;
+        venv)
+            command_assignment=$(printf "VENV_COMMAND_NAME=%s\nTARGET_COMMAND=\"\${VENV_DIR}/bin/\${VENV_COMMAND_NAME}\"" "$quoted_command_value")
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+
+    rm -f -- "$link_path" || return 1
     cat >"$link_path" <<EOF || return 1
 #!/usr/bin/env bash
 set -euo pipefail
@@ -262,16 +310,30 @@ VIRTUAL_ENV="\${VENV_DIR}"
 PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
 export VIRTUAL_ENV PATH
 
-command_path=${quoted_command_path}
+${command_assignment}
 first_line=""
-IFS= read -r -n 128 first_line <"\$command_path" || true
+IFS= read -r -n 128 first_line <"\$TARGET_COMMAND" || true
 if [[ -x "\$VENV_PYTHON" && "\$first_line" == '#!'*python* ]]; then
-  exec "\$VENV_PYTHON" "\$command_path" "\$@"
+  exec "\$VENV_PYTHON" "\$TARGET_COMMAND" "\$@"
 fi
 
-exec "\$command_path" "\$@"
+exec "\$TARGET_COMMAND" "\$@"
 EOF
     chmod 755 "$link_path"
+}
+
+_install_write_python_package_wrapper() {
+    local command_path="$1"
+    local link_path="$2"
+
+    _install_write_python_command_wrapper "$link_path" absolute "$command_path"
+}
+
+_install_write_venv_command_wrapper() {
+    local command_name="$1"
+    local link_path="$2"
+
+    _install_write_python_command_wrapper "$link_path" venv "$command_name"
 }
 
 _install_create_system_bin_links() {
@@ -299,8 +361,8 @@ _install_create_system_bin_links() {
         if [[ "$dry_run" -eq 1 ]] && package_manager_command_needs_pip_packages "$command_name"; then
             log_info "[dry-run] Would use venv command if installed: ${venv_command_path}"
         elif [[ "$dry_run" -eq 0 && -x "$venv_command_path" ]]; then
-            ln -sf -- "../${TT_PACKAGE_MANAGER_VENV_SUBDIR}/bin/${command_name}" "$link_path" || \
-                _install_rollback_fail "$target_dir" "Failed to create bin link for ${command_name}: ${link_path}"
+            _install_write_venv_command_wrapper "$command_name" "$link_path" || \
+                _install_rollback_fail "$target_dir" "Failed to create venv command wrapper for ${command_name}: ${link_path}"
             continue
         fi
         if command_path="$(_install_find_system_command "$command_name" "$tt_home_real")"; then

@@ -107,16 +107,21 @@ venv_dir="$(cd "${script_dir}/.." && pwd)"
 if [[ "${1:-}" == "-m" && "${2:-}" == "pip" && "${3:-}" == "install" ]]; then
   printf '%s\n' "$*" >>"$TT_PIP_LOG"
   if [[ " ${TT_FAKE_VENV_COMMANDS:-} " == *" tt-smi "* ]]; then
-    cat >"${venv_dir}/bin/tt-smi" <<'SMIEOF'
-#!/usr/bin/env bash
-printf 'venv tt-smi'
-for arg in "$@"; do
-  printf ' %s' "$arg"
-done
-printf '\n'
-SMIEOF
+    {
+      printf '#!%s/bin/python\n' "$venv_dir"
+      printf 'from tt_smi import main\n'
+    } >"${venv_dir}/bin/tt-smi"
     chmod +x "${venv_dir}/bin/tt-smi"
   fi
+  exit 0
+fi
+if [[ "${1:-}" == */bin/tt-smi ]]; then
+  shift
+  printf 'venv tt-smi'
+  for arg in "$@"; do
+    printf ' %s' "$arg"
+  done
+  printf '\n'
   exit 0
 fi
 printf 'venv python %s\n' "$*" >>"$TT_PIP_LOG"
