@@ -30,7 +30,6 @@ declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=(
     "smi"
     "flash"
     "topology"
-    "burnin"
 )
 declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
     "kmd"
@@ -38,15 +37,16 @@ declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
     "flash"
     "topology"
 )
-declare -gar TT_PACKAGE_MANAGER_OPTIONAL_PINNED_VIRTUAL_PACKAGES=(
-    "burnin"
+declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=(
+    "tt-smi"
+    "tt-umd"
+    "textual"
+    "elasticsearch"
+    "tt-burnin"
 )
-declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=("tt-smi" "tt-umd" "textual" "elasticsearch")
 declare -gA TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS=(
     ["tt-smi"]="tt-smi"
-    ["tt-umd"]="tt-smi"
-    ["textual"]="tt-smi"
-    ["elasticsearch"]="tt-smi"
+    ["tt-burnin"]="tt-burnin"
 )
 readonly TT_PACKAGE_MANAGER_PIP_PACKAGE_COMMANDS
 declare -gr TT_PACKAGE_MANAGER_VENV_SUBDIR="venv"
@@ -90,10 +90,6 @@ _package_manager_virtual_package_requires_pin() {
     _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES[@]}"
 }
 
-_package_manager_virtual_package_is_optional_pinned() {
-    _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_OPTIONAL_PINNED_VIRTUAL_PACKAGES[@]}"
-}
-
 _package_manager_validate_system_package_pins() {
     local package_key
     local -a package_keys=()
@@ -129,9 +125,6 @@ _package_manager_resolved_packages() {
         fi
         package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
         if [[ -z "$package_version" ]]; then
-            if _package_manager_virtual_package_is_optional_pinned "$virtual_package"; then
-                continue
-            fi
             if _package_manager_virtual_package_requires_pin "$virtual_package"; then
                 fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
             fi

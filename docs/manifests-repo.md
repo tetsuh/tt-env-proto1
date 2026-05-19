@@ -56,8 +56,7 @@ on), not distro-specific package names:
     "kmd": "2.8.0",
     "smi": "5.0.1",
     "flash": "3.6.5",
-    "topology": "1.2.19",
-    "burnin": "0.4.0"
+    "topology": "1.2.19"
   }
 }
 ```
@@ -80,7 +79,8 @@ pip dependencies that supplement upstream system packages:
   "python_packages": {
     "tt-umd": "0.9.5",
     "textual": "0.59.0",
-    "elasticsearch": "8.11.0"
+    "elasticsearch": "8.11.0",
+    "tt-burnin": "0.4.0"
   }
 }
 ```

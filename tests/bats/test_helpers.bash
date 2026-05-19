@@ -58,7 +58,6 @@ VIRT_PKG_KMD="tenstorrent-dkms"
 VIRT_PKG_SMI="tt-smi"
 VIRT_PKG_FLASH="tt-flash"
 VIRT_PKG_TOPOLOGY="tt-topology"
-VIRT_PKG_BURNIN="tt-burnin"
 WORKAROUNDS=()
 EOF
 }
@@ -107,18 +106,21 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 venv_dir="$(cd "${script_dir}/.." && pwd)"
 if [[ "${1:-}" == "-m" && "${2:-}" == "pip" && "${3:-}" == "install" ]]; then
   printf '%s\n' "$*" >>"$TT_PIP_LOG"
-  if [[ " ${TT_FAKE_VENV_COMMANDS:-} " == *" tt-smi "* ]]; then
-    {
-      printf '#!%s/bin/python\n' "$venv_dir"
-      printf 'from tt_smi import main\n'
-    } >"${venv_dir}/bin/tt-smi"
-    chmod +x "${venv_dir}/bin/tt-smi"
-  fi
+  for fake_command in tt-smi tt-burnin; do
+    if [[ " ${TT_FAKE_VENV_COMMANDS:-} " == *" ${fake_command} "* || " $* " == *" ${fake_command}=="* ]]; then
+      {
+        printf '#!%s/bin/python\n' "$venv_dir"
+        printf 'from %s import main\n' "${fake_command//-/_}"
+      } >"${venv_dir}/bin/${fake_command}"
+      chmod +x "${venv_dir}/bin/${fake_command}"
+    fi
+  done
   exit 0
 fi
-if [[ "${1:-}" == */bin/tt-smi ]]; then
+if [[ "${1:-}" == */bin/tt-smi || "${1:-}" == */bin/tt-burnin ]]; then
+  command_name="${1##*/}"
   shift
-  printf 'venv tt-smi'
+  printf 'venv %s' "$command_name"
   for arg in "$@"; do
     printf ' %s' "$arg"
   done
