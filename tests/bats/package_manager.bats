@@ -166,6 +166,21 @@ EOF
   [[ "$output" == *"Stack manifest is missing system package version: system_packages.kmd"* ]]
 }
 
+@test "package manager dispatcher skips optional pinned packages when unpinned" {
+  run bash -c '
+    source "$1"
+    parse_env_manifest "$2"
+    TT_STACK_SYSTEM_PACKAGES[kmd]="2.8.0"
+    TT_STACK_SYSTEM_PACKAGES[smi]="5.0.1"
+    TT_STACK_SYSTEM_PACKAGES[flash]="3.6.5"
+    TT_STACK_SYSTEM_PACKAGES[topology]="1.2.19"
+    package_manager_install_system_packages apt 1
+  ' bash "$PACKAGE_MANAGER_SH" "$manifest_file"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
+  [[ "$output" != *"tt-burnin"* ]]
+}
+
 @test "package manager dispatcher fails for unknown system package pins" {
   run bash -c '
     source "$1"
