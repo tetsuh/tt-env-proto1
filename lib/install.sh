@@ -219,7 +219,7 @@ _install_candidate_is_tt_managed() {
 
 _install_path_entry_is_preferred_system_dir() {
     local path_entry="$1"
-    local system_dirs="${TT_INSTALL_SYSTEM_COMMAND_DIRS:-/usr/bin:/bin:/usr/sbin:/sbin}"
+    local system_dirs="${TT_INSTALL_SYSTEM_COMMAND_DIRS:-/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin}"
     local system_dir
     local -a system_dir_entries=()
 
@@ -245,21 +245,6 @@ _install_find_system_command() {
     for path_entry in "${path_entries[@]}"; do
         [[ "$path_entry" == /* ]] || continue
         _install_path_entry_is_preferred_system_dir "$path_entry" || continue
-        candidate="${path_entry%/}/${command_name}"
-
-        if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
-            continue
-        fi
-
-        if [[ -f "$candidate" && -x "$candidate" ]]; then
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-    done
-
-    for path_entry in "${path_entries[@]}"; do
-        [[ "$path_entry" == /* ]] || continue
-        _install_path_entry_is_preferred_system_dir "$path_entry" && continue
         candidate="${path_entry%/}/${command_name}"
 
         if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
@@ -387,7 +372,7 @@ _install_create_system_bin_links() {
             else
                 log_info "[dry-run] Would create bin link for ${command_name} after system package install."
             fi
-        else
+        elif ! shim_command_is_optional "$command_name"; then
             log_warn "Installed command not found in PATH: ${command_name}"
         fi
     done

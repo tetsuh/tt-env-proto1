@@ -39,7 +39,7 @@ setup() {
   chmod +x "${TT_HOME}/shims/tt-smi"
   ln -sfn "${TT_HOME}/shims/tt-smi" "${bridge_bin}/tt-smi"
 
-  run env PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
+  run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${TT_HOME}/shims:${bridge_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
   [ -x "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
   [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
@@ -73,6 +73,30 @@ EOF
   [ "$status" -eq 0 ]
   [ -L "${TT_HOME}/versions/2026.05.16/bin/tt-flash" ]
   [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-flash")" = "${fake_bin}/tt-flash" ]
+}
+
+@test "tt-env install ignores optional user-local tt commands" {
+  fake_bin="$(make_fake_sudo)"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
+  user_bin="${BATS_TEST_TMPDIR}/user-bin"
+  mkdir -p "$user_bin"
+  cat >"${user_bin}/tt-studio" <<'EOF'
+#!/usr/bin/env bash
+printf 'user tt-studio %s\n' "$*"
+EOF
+  chmod +x "${user_bin}/tt-studio"
+
+  run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${user_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 0 ]
+  [ ! -e "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
+  [[ "$output" != *"user-bin/tt-studio"* ]]
+  [[ "$output" != *"[WARN] Installed command not found in PATH: tt-studio"* ]]
+
+  run "$TT_ENV" use 2026.05.16
+  [ "$status" -eq 0 ]
+  run "${TT_HOME}/shims/tt-studio"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Active tt-env command not found or not executable:"* ]]
 }
 
 @test "tt-env install prefers venv command entrypoints for Python CLI packages" {
