@@ -270,7 +270,6 @@ VIRT_PKG_KMD="tenstorrent-dkms-24"
 VIRT_PKG_SMI="tt-smi-24"
 VIRT_PKG_FLASH="tt-flash-24"
 VIRT_PKG_TOPOLOGY="tt-topology-24"
-VIRT_PKG_BURNIN="tt-burnin-24"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -296,7 +295,6 @@ VIRT_PKG_KMD="tenstorrent-dkms-mint"
 VIRT_PKG_SMI="tt-smi-mint"
 VIRT_PKG_FLASH="tt-flash-mint"
 VIRT_PKG_TOPOLOGY="tt-topology-mint"
-VIRT_PKG_BURNIN="tt-burnin-mint"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"
@@ -325,7 +323,6 @@ VIRT_PKG_KMD="tenstorrent-dkms-mint"
 VIRT_PKG_SMI="tt-smi-mint"
 VIRT_PKG_FLASH="tt-flash-mint"
 VIRT_PKG_TOPOLOGY="tt-topology-mint"
-VIRT_PKG_BURNIN="tt-burnin-mint"
 WORKAROUNDS=()
 EOF
   bash_env="$(make_command_absent_env sudo)"

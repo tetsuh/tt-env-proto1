@@ -19,7 +19,6 @@ VIRT_PKG_KMD="tenstorrent-dkms"
 VIRT_PKG_SMI="tt-smi"
 VIRT_PKG_FLASH="tt-flash"
 VIRT_PKG_TOPOLOGY="tt-topology"
-VIRT_PKG_BURNIN="tt-burnin"
 WORKAROUNDS=()
 EOF
 }
