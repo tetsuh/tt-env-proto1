@@ -18,6 +18,7 @@ VIRT_PKG_KMD="tenstorrent-dkms"
 VIRT_PKG_SMI="tt-smi"
 VIRT_PKG_FLASH="tt-flash"
 VIRT_PKG_TOPOLOGY="tt-topology"
+VIRT_PKG_BURNIN="tt-burnin"
 WORKAROUNDS=()
 EOF
   cat >"$dnf_manifest_file" <<'EOF'
@@ -33,6 +34,7 @@ VIRT_PKG_KMD="tenstorrent-dkms"
 VIRT_PKG_SMI="tt-smi"
 VIRT_PKG_FLASH="tt-flash"
 VIRT_PKG_TOPOLOGY="tt-topology"
+VIRT_PKG_BURNIN="tt-burnin"
 WORKAROUNDS=()
 EOF
 }
@@ -87,6 +89,7 @@ TT_STACK_SYSTEM_PACKAGES[kmd]="2.8.0"
 TT_STACK_SYSTEM_PACKAGES[smi]="5.0.1"
 TT_STACK_SYSTEM_PACKAGES[flash]="3.6.5"
 TT_STACK_SYSTEM_PACKAGES[topology]="1.2.19"
+TT_STACK_SYSTEM_PACKAGES[burnin]="0.4.0"
 EOF
 }
 
@@ -96,7 +99,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add apt repository: https://repo.example.invalid/tenstorrent"* ]]
   [[ "$output" == *"[dry-run] Would run apt-get update."* ]]
-  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19"* ]]
+  [[ "$output" == *"[dry-run] Would install apt packages: cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19 tt-burnin=0.4.0"* ]]
 }
 
 @test "package manager dispatcher rejects unsupported managers" {
@@ -119,7 +122,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"[dry-run] Would add dnf repository: https://repo.example.invalid/tenstorrent.repo"* ]]
   [[ "$output" == *"[dry-run] Would run dnf makecache."* ]]
-  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19"* ]]
+  [[ "$output" == *"[dry-run] Would install dnf packages: cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19 tt-burnin-0.4.0"* ]]
 }
 
 @test "package manager dispatcher runs dnf repo cache and install commands" {
@@ -133,7 +136,7 @@ EOF
   mapfile -t dnf_calls <"$TT_PKG_LOG"
   [ "${dnf_calls[0]}" = "dnf config-manager --add-repo https://repo.example.invalid/tenstorrent.repo" ]
   [ "${dnf_calls[1]}" = "dnf makecache" ]
-  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19" ]
+  [ "${dnf_calls[2]}" = "dnf install -y cmake ninja-build zlib-devel tenstorrent-dkms-2.8.0 tt-smi-5.0.1 tt-flash-3.6.5 tt-topology-1.2.19 tt-burnin-0.4.0" ]
 }
 
 @test "package manager dispatcher fails clearly when dnf is missing" {
@@ -172,6 +175,7 @@ EOF
     TT_STACK_SYSTEM_PACKAGES[smi]="5.0.1"
     TT_STACK_SYSTEM_PACKAGES[flash]="3.6.5"
     TT_STACK_SYSTEM_PACKAGES[topology]="1.2.19"
+    TT_STACK_SYSTEM_PACKAGES[burnin]="0.4.0"
     package_manager_install_system_packages apt 1
   ' bash "$PACKAGE_MANAGER_SH" "$manifest_file"
   [ "$status" -eq 1 ]
