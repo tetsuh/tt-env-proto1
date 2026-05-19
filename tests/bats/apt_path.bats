@@ -72,6 +72,13 @@ setup() {
   grep -q "${TT_HOME}/versions/.2026.05.16.partial/venv/bin/python" "${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"
   [[ "$output" != *"[WARN] Installed command not found in PATH: tt-smi"* ]]
 
+  ln -sf ../venv/bin/tt-smi "${TT_HOME}/versions/2026.05.16/bin/tt-smi"
+  run env PATH="${fake_bin}:${clean_path}" bash -c \
+    "source '${BATS_TEST_DIRNAME}/../../lib/install.sh'; parse_stack_manifest '${BATS_TEST_DIRNAME}/../../releases/2026.05.16.json'; _install_create_system_bin_links 0 '${TT_HOME}/versions/2026.05.16'"
+  [ "$status" -eq 0 ]
+  [ ! -L "${TT_HOME}/versions/2026.05.16/bin/tt-smi" ]
+  grep -q "${TT_HOME}/versions/.2026.05.16.partial/venv/bin/python" "${TT_HOME}/versions/2026.05.16/venv/bin/tt-smi"
+
   run "$TT_ENV" use 2026.05.16
   [ "$status" -eq 0 ]
   run "${TT_HOME}/shims/tt-smi" probe

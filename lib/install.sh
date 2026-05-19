@@ -263,6 +263,7 @@ _install_write_python_command_wrapper() {
             ;;
     esac
 
+    rm -f -- "$link_path" || return 1
     cat >"$link_path" <<EOF || return 1
 #!/usr/bin/env bash
 set -euo pipefail
