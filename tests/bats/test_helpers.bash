@@ -249,6 +249,7 @@ write_download_release_manifest() {
     }
   },
   "python_packages": {
+    "tt-smi": "5.2.0",
     "tt-umd": "0.9.5",
     "textual": "0.59.0",
     "elasticsearch": "8.11.0"
