@@ -57,6 +57,24 @@ setup() {
   [ "$output" = "system tt-smi probe" ]
 }
 
+@test "tt-env install prefers system command directories over earlier user PATH entries" {
+  fake_bin="$(make_fake_sudo)"
+  clean_path="$(make_clean_path_without_system_shim_commands)"
+  user_bin="${BATS_TEST_TMPDIR}/user-bin"
+  mkdir -p "$user_bin"
+  make_fake_system_shim_commands "$fake_bin"
+  cat >"${user_bin}/tt-flash" <<'EOF'
+#!/usr/bin/env bash
+printf 'user tt-flash %s\n' "$*"
+EOF
+  chmod +x "${user_bin}/tt-flash"
+
+  run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${user_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
+  [ "$status" -eq 0 ]
+  [ -L "${TT_HOME}/versions/2026.05.16/bin/tt-flash" ]
+  [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-flash")" = "${fake_bin}/tt-flash" ]
+}
+
 @test "tt-env install prefers venv command entrypoints for Python CLI packages" {
   symlinks_supported || skip "POSIX symlinks are not supported in this environment"
   fake_bin="$(make_fake_sudo)"

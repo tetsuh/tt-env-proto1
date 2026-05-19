@@ -217,6 +217,23 @@ _install_candidate_is_tt_managed() {
     return 1
 }
 
+_install_path_entry_is_preferred_system_dir() {
+    local path_entry="$1"
+    local system_dirs="${TT_INSTALL_SYSTEM_COMMAND_DIRS:-/usr/bin:/bin:/usr/sbin:/sbin}"
+    local system_dir
+    local -a system_dir_entries=()
+
+    IFS=':' read -r -a system_dir_entries <<<"$system_dirs"
+    for system_dir in "${system_dir_entries[@]}"; do
+        [[ -n "$system_dir" ]] || continue
+        if [[ "$path_entry" == "$system_dir" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 _install_find_system_command() {
     local command_name="$1"
     local tt_home_real="$2"
@@ -227,6 +244,22 @@ _install_find_system_command() {
     IFS=':' read -r -a path_entries <<<"${PATH:-}"
     for path_entry in "${path_entries[@]}"; do
         [[ "$path_entry" == /* ]] || continue
+        _install_path_entry_is_preferred_system_dir "$path_entry" || continue
+        candidate="${path_entry%/}/${command_name}"
+
+        if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
+            continue
+        fi
+
+        if [[ -f "$candidate" && -x "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    for path_entry in "${path_entries[@]}"; do
+        [[ "$path_entry" == /* ]] || continue
+        _install_path_entry_is_preferred_system_dir "$path_entry" && continue
         candidate="${path_entry%/}/${command_name}"
 
         if _install_candidate_is_tt_managed "$candidate" "$tt_home_real"; then
