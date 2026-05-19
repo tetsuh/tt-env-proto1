@@ -256,7 +256,7 @@ _install_write_python_command_wrapper() {
             command_assignment="TARGET_COMMAND=${quoted_command_value}"
             ;;
         venv)
-            command_assignment=$(printf 'VENV_COMMAND_NAME=%s\nTARGET_COMMAND="${VENV_DIR}/bin/${VENV_COMMAND_NAME}"' "$quoted_command_value")
+            command_assignment=$(printf "VENV_COMMAND_NAME=%s\nTARGET_COMMAND=\"\${VENV_DIR}/bin/\${VENV_COMMAND_NAME}\"" "$quoted_command_value")
             ;;
         *)
             return 1
