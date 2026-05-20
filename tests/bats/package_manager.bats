@@ -106,12 +106,12 @@ EOF
   [[ "$output" == *"Unsupported package manager for install: zypper"* ]]
 }
 
-@test "package manager dispatcher requires parsed package mappings" {
-  run bash -c 'source "$1"; package_manager_install_system_packages apt 1' \
-    bash "$PACKAGE_MANAGER_SH"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"Virtual package is not defined: cmake"* ]]
-}
+  @test "package manager dispatcher requires parsed package mappings" {
+    run bash -c 'source "$1"; package_manager_install_system_packages apt 1' \
+      bash "$PACKAGE_MANAGER_SH"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Failed to resolve package from OS manifest: cmake"* ]]
+  }
 
 @test "package manager dispatcher runs dnf dry-run from parsed manifest" {
   run bash -c 'source "$1"; parse_env_manifest "$2"; eval "$3"; package_manager_install_system_packages dnf 1' \

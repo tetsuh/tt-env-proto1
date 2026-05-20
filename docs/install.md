@@ -108,6 +108,15 @@ fails, `tt-env` removes the partial directory and leaves no broken version
 directory. During `--force`, the previous installed version is kept until the
 new install has completed successfully.
 
+## Unmanaged Commands and Exclusions
+
+To avoid breaking or shadowing the user's working local environments, some Tenstorrent-related optional commands are explicitly excluded from `tt-env` management:
+
+- **`tt-inference-server` and `tt-studio`**: These are installed locally under `${HOME}/.local/lib/` as cloned git repositories with wrapper scripts in `${HOME}/.local/bin/` running them in Python virtual environments. They cannot be pinned or resolved as apt/pip packages, and are bypassed in shim generation to prevent active release shims from shadowing and breaking them.
+- **`tt-metalium-models`**: This is a wrapper script using Podman that launches an OCI container runtime (`ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64`). It is kept as a user-local script and not managed by `tt-env`.
+
+If `tt-env` has no active release or does not manage a command, no shim is written, allowing the shell to fall through to any user-local scripts in `${HOME}/.local/bin/`.
+
 ## Troubleshooting
 
 | Symptom | Fix |

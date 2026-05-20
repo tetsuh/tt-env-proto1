@@ -26,10 +26,7 @@ SHIMS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SHIMS_LIB_DIR}/core.sh"
 
 declare -ga TT_OPTIONAL_SHIM_COMMANDS=(
-    "tt-inference-server"
     "tt-metalium"
-    "tt-metalium-models"
-    "tt-studio"
 )
 declare -ga TT_SHIM_COMMANDS=(
     "tt-smi"

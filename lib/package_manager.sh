@@ -30,6 +30,7 @@ declare -gar TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES=(
     "smi"
     "flash"
     "topology"
+    "metalium"
 )
 declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
     "kmd"
@@ -37,6 +38,18 @@ declare -gar TT_PACKAGE_MANAGER_PINNED_VIRTUAL_PACKAGES=(
     "flash"
     "topology"
 )
+declare -gar TT_PACKAGE_MANAGER_OPTIONAL_VIRTUAL_PACKAGES=(
+    "metalium"
+)
+_package_manager_virtual_package_is_optional() {
+    local virtual_package="$1"
+    local optional_package
+    for optional_package in "${TT_PACKAGE_MANAGER_OPTIONAL_VIRTUAL_PACKAGES[@]}"; do
+        [[ "$virtual_package" == "$optional_package" ]] && return 0
+    done
+    return 1
+}
+
 declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=(
     "tt-smi"
     "tt-umd"
@@ -120,11 +133,17 @@ _package_manager_resolved_packages() {
     _package_manager_validate_system_package_pins
 
     for virtual_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
-        if ! resolved_package="$(resolve_package "$virtual_package")"; then
+        if ! resolved_package="$(resolve_package "$virtual_package" 2>/dev/null)"; then
+            if _package_manager_virtual_package_is_optional "$virtual_package"; then
+                continue
+            fi
             fail "Failed to resolve package from OS manifest: ${virtual_package}"
         fi
         package_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
         if [[ -z "$package_version" ]]; then
+            if _package_manager_virtual_package_is_optional "$virtual_package"; then
+                continue
+            fi
             if _package_manager_virtual_package_requires_pin "$virtual_package"; then
                 fail "Stack manifest is missing system package version: system_packages.${virtual_package}"
             fi
