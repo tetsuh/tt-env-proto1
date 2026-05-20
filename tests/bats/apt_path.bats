@@ -78,7 +78,7 @@ EOF
   [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-flash")" = "${fake_bin}/tt-flash" ]
 }
 
-@test "tt-env install ignores optional user-local tt commands" {
+@test "tt-env install ignores optional user-local tt commands and does not shadow them" {
   fake_bin="$(make_fake_sudo)"
   clean_path="$(make_clean_path_without_system_shim_commands)"
   user_bin="${BATS_TEST_TMPDIR}/user-bin"
@@ -92,14 +92,14 @@ EOF
   run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${user_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
   [ ! -e "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
-  [[ "$output" != *"user-bin/tt-studio"* ]]
-  [[ "$output" != *"[WARN] Installed command not found in PATH: tt-studio"* ]]
+  [ ! -e "${TT_HOME}/shims/tt-studio" ]
 
   run "$TT_ENV" use 2026.05.16
   [ "$status" -eq 0 ]
-  run "${TT_HOME}/shims/tt-studio"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"Active tt-env command not found or not executable:"* ]]
+
+  run env PATH="${TT_HOME}/shims:${user_bin}:${fake_bin}:${clean_path}" tt-studio hello
+  [ "$status" -eq 0 ]
+  [ "$output" = "user tt-studio hello" ]
 }
 
 @test "tt-env install prefers venv command entrypoints for Python CLI packages" {
@@ -254,7 +254,7 @@ EOF
   mapfile -t apt_calls <"$TT_APT_LOG"
   [ "${apt_calls[0]}" = "install -d -m 0755 /etc/apt/keyrings" ]
   [[ "${apt_calls[1]}" == install\ -m\ 0644\ *\ /etc/apt/keyrings/tt-pkg-key.asc ]]
-  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19" ]
+  [ "${apt_calls[4]}" = "apt-get install -y cmake ninja-build zlib1g-dev tenstorrent-dkms=2.8.0 tt-smi=5.0.1 tt-flash=3.6.5 tt-topology=1.2.19 tt-metalium=0.69.0~ubuntu24.04" ]
 }
 
 @test "tt-env install selects Ubuntu 24.04 OS manifest when overridden" {
