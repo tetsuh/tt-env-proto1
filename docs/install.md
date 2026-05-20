@@ -115,7 +115,7 @@ To avoid breaking or shadowing the user's working local environments, some Tenst
 - **`tt-inference-server` and `tt-studio`**: These are installed locally under `${HOME}/.local/lib/` as cloned git repositories with wrapper scripts in `${HOME}/.local/bin/` running them in Python virtual environments. They cannot be pinned or resolved as apt/pip packages, and are bypassed in shim generation to prevent active release shims from shadowing and breaking them.
 - **`tt-metalium-models`**: This is a wrapper script using Podman that launches an OCI container runtime (`ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64`). It is kept as a user-local script and not managed by `tt-env`.
 
-If `tt-env` has no active release or does not manage a command, no shim is written, allowing the shell to fall through to any user-local scripts in `${HOME}/.local/bin/`.
+Because `tt-env` does not manage these commands, no shims are generated for them under `${TT_HOME}/shims/`. This allows the shell to fall through to any user-local scripts in `${HOME}/.local/bin/`. Managed commands (e.g., `tt-smi`, `tt-metalium`) always have shims generated at install time; those shims will report an error if no release is currently active.
 
 ## Troubleshooting
 

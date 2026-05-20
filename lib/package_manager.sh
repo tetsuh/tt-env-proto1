@@ -130,6 +130,10 @@ _package_manager_resolved_packages() {
     for virtual_package in "${TT_PACKAGE_MANAGER_VIRTUAL_PACKAGES[@]}"; do
         if ! resolved_package="$(resolve_package "$virtual_package" 2>/dev/null)"; then
             if _package_manager_virtual_package_is_optional "$virtual_package"; then
+                local pinned_version="${TT_STACK_SYSTEM_PACKAGES[$virtual_package]:-}"
+                if [[ -n "$pinned_version" ]]; then
+                    log_warn "Optional system package '${virtual_package}' is pinned (${pinned_version}) but not defined in OS manifest; skipping."
+                fi
                 continue
             fi
             fail "Failed to resolve package from OS manifest: ${virtual_package}"

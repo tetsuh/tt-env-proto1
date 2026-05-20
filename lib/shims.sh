@@ -11,10 +11,7 @@
 #   - tt-flash
 #   - tt-topology
 #   - tt-burnin
-#   - tt-inference-server
-#   - tt-metalium
-#   - tt-metalium-models
-#   - tt-studio
+#   - tt-metalium (optional)
 
 if [[ -n "${TT_SHIMS_LOADED:-}" ]]; then
     return 0
