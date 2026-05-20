@@ -42,12 +42,7 @@ declare -gar TT_PACKAGE_MANAGER_OPTIONAL_VIRTUAL_PACKAGES=(
     "metalium"
 )
 _package_manager_virtual_package_is_optional() {
-    local virtual_package="$1"
-    local optional_package
-    for optional_package in "${TT_PACKAGE_MANAGER_OPTIONAL_VIRTUAL_PACKAGES[@]}"; do
-        [[ "$virtual_package" == "$optional_package" ]] && return 0
-    done
-    return 1
+    _package_manager_array_contains "$1" "${TT_PACKAGE_MANAGER_OPTIONAL_VIRTUAL_PACKAGES[@]}"
 }
 
 declare -gar TT_PACKAGE_MANAGER_PIP_PACKAGES=(
