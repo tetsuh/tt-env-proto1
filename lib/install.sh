@@ -556,7 +556,7 @@ docker_flags+=("--privileged")
 
 # Run the command using container runtime
 docker run "\${docker_flags[@]}" \\
-  --env=DISPLAY=\${DISPLAY} \\
+  --env=DISPLAY=\${DISPLAY:-} \\
   --env=HOME=/home/user \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\

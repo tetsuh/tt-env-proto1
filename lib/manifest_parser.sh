@@ -156,7 +156,7 @@ _stack_is_git_component_entrypoint() {
 }
 
 _stack_is_manifest_ref() {
-    [[ -n "$1" && "$1" != -* && "$1" != *[[:space:]]* ]] && ! _manifest_has_dangerous_chars "$1"
+    [[ -n "$1" && "$1" != -* && "$1" != *[[:space:]]* && "$1" != *"\""* && "$1" != *"'"* ]] && ! _manifest_has_dangerous_chars "$1"
 }
 
 _stack_is_container_image_tag() {
