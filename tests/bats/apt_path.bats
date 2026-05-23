@@ -88,7 +88,7 @@ EOF
   [ -d "${TT_HOME}/versions/2026.05.16/src/tt-studio" ]
   [ -f "${TT_HOME}/versions/2026.05.16/src/tt-studio/run.py" ]
   [ -d "${TT_HOME}/versions/2026.05.16/src/tt-inference-server" ]
-  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-inference-server/run.py" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-inference-server/main.py" ]
 
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
   grep -q 'src/tt-studio/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-studio"

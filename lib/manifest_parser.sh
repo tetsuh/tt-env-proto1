@@ -147,6 +147,22 @@ _stack_is_system_package_version() {
     [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.!+:~-]*$ ]]
 }
 
+_stack_is_git_component_version() {
+    [[ "$1" =~ ^[A-Fa-f0-9]{40}$ ]]
+}
+
+_stack_is_git_component_entrypoint() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]
+}
+
+_stack_is_manifest_ref() {
+    [[ -n "$1" && "$1" != -* && "$1" != *[[:space:]]* ]] && ! _manifest_has_dangerous_chars "$1"
+}
+
+_stack_is_container_image_tag() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.:-]*$ ]]
+}
+
 _stack_store_system_package() {
     local package_key="$1"
     local package_version="$2"
@@ -173,6 +189,49 @@ _stack_store_python_package() {
 
     # shellcheck disable=SC2034
     TT_STACK_PYTHON_PACKAGES["$package_name"]="$package_version"
+}
+
+_stack_store_git_component() {
+    local component_key="$1"
+    local component_url="$2"
+    local component_version="$3"
+    local component_entrypoint="$4"
+    local line_no="$5"
+
+    _stack_is_python_package_name "$component_key" || \
+        fail "Invalid git component name at line ${line_no}: ${component_key}"
+    _stack_is_manifest_ref "$component_url" || \
+        fail "Invalid git component url for ${component_key} at line ${line_no}: ${component_url}"
+    _stack_is_git_component_version "$component_version" || \
+        fail "Invalid git component version for ${component_key} at line ${line_no}: ${component_version}"
+    _stack_is_git_component_entrypoint "$component_entrypoint" || \
+        fail "Invalid git component entrypoint for ${component_key} at line ${line_no}: ${component_entrypoint}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_URL["$component_key"]="$component_url"
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_VERSION["$component_key"]="$component_version"
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$component_key"]="$component_entrypoint"
+}
+
+_stack_store_container_component() {
+    local component_key="$1"
+    local component_image_url="$2"
+    local component_image_tag="$3"
+    local line_no="$4"
+
+    _stack_is_python_package_name "$component_key" || \
+        fail "Invalid container component name at line ${line_no}: ${component_key}"
+    _stack_is_manifest_ref "$component_image_url" || \
+        fail "Invalid container component image_url for ${component_key} at line ${line_no}: ${component_image_url}"
+    _stack_is_container_image_tag "$component_image_tag" || \
+        fail "Invalid container component image_tag for ${component_key} at line ${line_no}: ${component_image_tag}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$component_key"]="$component_image_url"
+    # shellcheck disable=SC2034
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$component_key"]="$component_image_tag"
 }
 
 _stack_store_component_object() {
@@ -338,7 +397,7 @@ _parse_stack_manifest_with_jq() {
                     (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
                     (if (.value | type) == "object" then
                         ((.value | keys - ["url", "version", "entrypoint"]) | length == 0) and
-                        (.value.url | type == "string" and length > 0) and
+                        (.value.url | type == "string" and test("^[^-\\s][^\\s]*$")) and
                         (.value.version | type == "string" and test("^[A-Fa-f0-9]{40}$")) and
                         ((.value | has("entrypoint") | not) or (.value.entrypoint | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")))
                      else
@@ -354,8 +413,8 @@ _parse_stack_manifest_with_jq() {
                     (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
                     (if (.value | type) == "object" then
                         ((.value | keys - ["image_url", "image_tag"]) | length == 0) and
-                        (.value.image_url | type == "string" and length > 0) and
-                        (.value.image_tag | type == "string" and length > 0)
+                        (.value.image_url | type == "string" and test("^[^-\\s][^\\s]*$")) and
+                        (.value.image_tag | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.:-]*$"))
                      else
                         false
                      end)
@@ -438,16 +497,16 @@ _parse_stack_manifest_with_jq() {
         component_version="${component_version%$'\r'}"
         component_entrypoint="${component_entrypoint%$'\r'}"
         [[ -n "$component_key" ]] || continue
-        # shellcheck disable=SC2034
-        TT_STACK_GIT_COMPONENTS_URL["$component_key"]="$component_url"
-        # shellcheck disable=SC2034
-        TT_STACK_GIT_COMPONENTS_VERSION["$component_key"]="$component_version"
-        # shellcheck disable=SC2034
-        TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$component_key"]="${component_entrypoint:-run.py}"
+        _stack_store_git_component \
+            "$component_key" \
+            "$component_url" \
+            "$component_version" \
+            "${component_entrypoint:-run.py}" \
+            "jq"
     done < <(jq -r '
         .git_components // {} |
         to_entries[] |
-        [.key, .value.url, .value.version, .value.entrypoint] |
+        [.key, .value.url, .value.version, (.value.entrypoint // "")] |
         @tsv
     ' "$manifest_file")
 
@@ -456,10 +515,11 @@ _parse_stack_manifest_with_jq() {
         component_image_url="${component_image_url%$'\r'}"
         component_image_tag="${component_image_tag%$'\r'}"
         [[ -n "$component_key" ]] || continue
-        # shellcheck disable=SC2034
-        TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$component_key"]="$component_image_url"
-        # shellcheck disable=SC2034
-        TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$component_key"]="$component_image_tag"
+        _stack_store_container_component \
+            "$component_key" \
+            "$component_image_url" \
+            "$component_image_tag" \
+            "jq"
     done < <(jq -r '
         .container_components // {} |
         to_entries[] |
@@ -538,12 +598,12 @@ _parse_stack_manifest_fallback() {
             if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
                 [[ -n "$git_component_url" ]] || fail "Missing git component url for ${git_component_object_key} at line ${line_no}"
                 [[ -n "$git_component_version" ]] || fail "Missing git component version for ${git_component_object_key} at line ${line_no}"
-                # shellcheck disable=SC2034
-                TT_STACK_GIT_COMPONENTS_URL["$git_component_object_key"]="$git_component_url"
-                # shellcheck disable=SC2034
-                TT_STACK_GIT_COMPONENTS_VERSION["$git_component_object_key"]="$git_component_version"
-                # shellcheck disable=SC2034
-                TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$git_component_object_key"]="${git_component_entrypoint:-run.py}"
+                _stack_store_git_component \
+                    "$git_component_object_key" \
+                    "$git_component_url" \
+                    "$git_component_version" \
+                    "${git_component_entrypoint:-run.py}" \
+                    "$line_no"
                 in_git_component_object=0
                 git_component_object_key=""
                 git_component_url=""
@@ -580,10 +640,11 @@ _parse_stack_manifest_fallback() {
             if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
                 [[ -n "$container_component_image_url" ]] || fail "Missing container component image_url for ${container_component_object_key} at line ${line_no}"
                 [[ -n "$container_component_image_tag" ]] || fail "Missing container component image_tag for ${container_component_object_key} at line ${line_no}"
-                # shellcheck disable=SC2034
-                TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$container_component_object_key"]="$container_component_image_url"
-                # shellcheck disable=SC2034
-                TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$container_component_object_key"]="$container_component_image_tag"
+                _stack_store_container_component \
+                    "$container_component_object_key" \
+                    "$container_component_image_url" \
+                    "$container_component_image_tag" \
+                    "$line_no"
                 in_container_component_object=0
                 container_component_object_key=""
                 container_component_image_url=""
@@ -702,6 +763,7 @@ parse_stack_manifest() {
 # that build TT_STACK_* values in memory.
 validate_stack_manifest() {
     local component
+    local entrypoint
 
     [[ -n "${TT_STACK_RELEASE:-}" ]] || fail "Missing required stack manifest key: release"
 
@@ -709,5 +771,26 @@ validate_stack_manifest() {
         if [[ -z "${TT_STACK_COMPONENTS[$component]:-}" ]]; then
             fail "Missing required stack manifest key: components.${component}"
         fi
+    done
+
+    for component in "${!TT_STACK_GIT_COMPONENTS_URL[@]}"; do
+        entrypoint="${TT_STACK_GIT_COMPONENTS_ENTRYPOINT[$component]:-run.py}"
+        _stack_is_python_package_name "$component" || \
+            fail "Invalid git component name: ${component}"
+        _stack_is_manifest_ref "${TT_STACK_GIT_COMPONENTS_URL[$component]}" || \
+            fail "Invalid git component url for ${component}: ${TT_STACK_GIT_COMPONENTS_URL[$component]}"
+        _stack_is_git_component_version "${TT_STACK_GIT_COMPONENTS_VERSION[$component]:-}" || \
+            fail "Invalid git component version for ${component}: ${TT_STACK_GIT_COMPONENTS_VERSION[$component]:-}"
+        _stack_is_git_component_entrypoint "$entrypoint" || \
+            fail "Invalid git component entrypoint for ${component}: ${entrypoint}"
+    done
+
+    for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
+        _stack_is_python_package_name "$component" || \
+            fail "Invalid container component name: ${component}"
+        _stack_is_manifest_ref "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}" || \
+            fail "Invalid container component image_url for ${component}: ${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}"
+        _stack_is_container_image_tag "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]:-}" || \
+            fail "Invalid container component image_tag for ${component}: ${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]:-}"
     done
 }

@@ -427,9 +427,11 @@ _install_git_and_container_components() {
                 # Verify existing git remote URL matches the stack manifest
                 local current_remote_url=""
                 if current_remote_url="$(cd "$component_dir" && git remote get-url origin 2>/dev/null)"; then
-                    # Normalize URLs (e.g. removing trailing .git or spaces) to compare
-                    local normalized_current="${current_remote_url%.git}"
-                    local normalized_manifest="${url%.git}"
+                    # Normalize common URL spelling differences before deciding to re-clone.
+                    local normalized_current="${current_remote_url%/}"
+                    normalized_current="${normalized_current%.git}"
+                    local normalized_manifest="${url%/}"
+                    normalized_manifest="${normalized_manifest%.git}"
                     if [[ "$normalized_current" != "$normalized_manifest" ]]; then
                         log_warn "Git remote URL mismatch for ${component}. Expected: ${url}, Found: ${current_remote_url}. Re-cloning..."
                         rm -rf -- "$component_dir"
@@ -442,14 +444,17 @@ _install_git_and_container_components() {
 
             if [[ ! -d "$component_dir" ]]; then
                 log_info "Cloning git component ${component} from ${url}"
-                git clone "$url" "$component_dir" || fail "Failed to clone ${component} from ${url}"
+                git clone --filter=blob:none -- "$url" "$component_dir" || fail "Failed to clone ${component} from ${url}"
             fi
 
             ( 
                 cd "$component_dir" && \
-                git fetch --all && \
-                git checkout "$version"
+                git fetch origin && \
+                git checkout --detach "$version"
             ) || fail "Failed to checkout ${component} to version ${version}"
+
+            [[ -f "${component_dir}/${entrypoint}" ]] || \
+                fail "Entrypoint ${entrypoint} not found in ${component_dir}"
 
             log_info "Creating wrapper script for git component ${component} at ${wrapper_path}"
             cat >"$wrapper_path" <<EOF || fail "Failed to write wrapper script: ${wrapper_path}"
@@ -470,6 +475,10 @@ PYTHONPATH="\${VERSION_DIR}/src/${component}\${PYTHONPATH:+:\${PYTHONPATH}}"
 export PYTHONPATH
 
 TARGET_COMMAND="\${VERSION_DIR}/src/${component}/${entrypoint}"
+if [[ ! -f "\$TARGET_COMMAND" ]]; then
+  echo "[ERROR] Git component entrypoint not found: \$TARGET_COMMAND" >&2
+  exit 127
+fi
 
 first_line=""
 IFS= read -r -n 128 first_line <"\$TARGET_COMMAND" || true
@@ -505,6 +514,7 @@ EOF
             cat >"$wrapper_path" <<EOF || fail "Failed to write container wrapper script: ${wrapper_path}"
 #!/usr/bin/env bash
 # Wrapper script for ${component} using OCI container runtime
+set -euo pipefail
 
 # Verify docker is installed
 if ! command -v docker >/dev/null 2>&1; then
@@ -512,13 +522,8 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-# Tenstorrent hardware preflight check
-if [[ ! -c /dev/tenstorrent && ! -d /dev/tenstorrent ]]; then
-    echo "[WARNING] Tenstorrent device /dev/tenstorrent not found. The model container may fail to run." >&2
-fi
-
 echo "================================================================================"
-echo "NOTE: This container tool for tt-metalium is meant to enable users to try out"
+echo "NOTE: This container tool (${component}) is meant to enable users to try out"
 echo "      demos, and is not meant for production use. This container is liable"
 echo "      to change at any time."
 echo ""
@@ -526,25 +531,37 @@ echo "      For more information see https://github.com/tenstorrent/tt-metal/iss
 echo "================================================================================"
 
 # Image configuration
-METALIUM_IMAGE="${image_url}:${image_tag}"
+COMPONENT_IMAGE="${image_url}:${image_tag}"
 
-# Determine if we should run in TTY/interactive mode
+# Determine runtime flags from the current host.
 docker_flags=("--rm")
 if [[ -t 0 ]]; then
     docker_flags+=("-it")
 fi
+if [[ -c /dev/tenstorrent ]]; then
+    docker_flags+=("--device=/dev/tenstorrent:/dev/tenstorrent")
+elif [[ -d /dev/tenstorrent ]]; then
+    docker_flags+=("--volume=/dev/tenstorrent:/dev/tenstorrent")
+else
+    echo "[WARNING] Tenstorrent device /dev/tenstorrent not found. The model container may fail to run." >&2
+fi
+if [[ -d /dev/hugepages-1G ]]; then
+    docker_flags+=("--volume=/dev/hugepages-1G:/dev/hugepages-1G")
+else
+    echo "[WARNING] Hugepage mount /dev/hugepages-1G not found. The model container may fail to run." >&2
+fi
+
+# Tenstorrent model containers require broad host/device access today.
+docker_flags+=("--privileged")
 
 # Run the command using container runtime
 docker run "\${docker_flags[@]}" \\
-  --privileged \\
-  --volume=/dev/hugepages-1G:/dev/hugepages-1G \\
-  --device=/dev/tenstorrent:/dev/tenstorrent \\
   --env=DISPLAY=\${DISPLAY} \\
   --env=HOME=/home/user \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\
   --security-opt label=disable \\
-  \${METALIUM_IMAGE} "\$@"
+  "\${COMPONENT_IMAGE}" "\$@"
 EOF
             chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"
         done
@@ -578,7 +595,6 @@ _install_system_packages() {
         true)
             package_manager_install_system_packages "$pkg_manager" "$dry_run"
             package_manager_install_pip_packages "$dry_run" "$target_dir"
-            _install_git_and_container_components "$dry_run" "$target_dir"
             _install_create_system_bin_links "$dry_run" "$target_dir"
             ;;
         false)
@@ -589,6 +605,8 @@ _install_system_packages() {
             fail "Invalid USE_SYSTEM_PACKAGES or USE_PPA value in ${os_manifest}: ${use_system_packages}"
             ;;
     esac
+
+    _install_git_and_container_components "$dry_run" "$target_dir"
 }
 
 _install_remove_version_dir() {

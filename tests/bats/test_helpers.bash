@@ -137,9 +137,12 @@ EOF
   cat >"${fake_bin}/git" <<'EOF'
 #!/usr/bin/env bash
 if [[ "$1" == "clone" ]]; then
-  mkdir -p "$3"
-  printf "" > "$3/run.py"
-  printf "%s\n" "$2" > "$3/.git_url_mock"
+  dest="${!#}"
+  url="${@:$(($# - 1)):1}"
+  mkdir -p "$dest"
+  printf "" > "$dest/run.py"
+  printf "" > "$dest/main.py"
+  printf "%s\n" "$url" > "$dest/.git_url_mock"
   exit 0
 elif [[ "$1" == "remote" && "$2" == "get-url" ]]; then
   if [[ -f .git_url_mock ]]; then
