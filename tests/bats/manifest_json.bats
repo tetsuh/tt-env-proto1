@@ -193,6 +193,51 @@ EOF
   [ "$output" = "$jq_output" ]
 }
 
+@test "parse_stack_manifest resolves container component refs" {
+  manifest_file="${BATS_TEST_TMPDIR}/container-ref.json"
+  cat >"$manifest_file" <<'EOF'
+{
+  "release": "2026.05.16",
+  "components": {
+    "tt-kmd": "ttkmd-2.8.0",
+    "tt-smi": "v5.2.0",
+    "firmware": "v19.6.0",
+    "tt-metal": "v0.70.1"
+  },
+  "container_components": {
+    "tt-metalium": {
+      "ref": "tt-metalium-ubuntu24"
+    },
+    "tt-metalium-ubuntu24": {
+      "image_url": "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64",
+      "image_tag": "sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4"
+    }
+  }
+}
+EOF
+
+  run env TT_MANIFEST_DISABLE_JQ=1 bash -c '
+    source "$1"
+    parse_stack_manifest "$2"
+    printf "%s\n" "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[tt-metalium]}"
+    printf "%s\n" "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[tt-metalium]}"
+  ' bash "$MANIFEST_PARSER" "$manifest_file"
+
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64" ]
+  [ "${lines[1]}" = "sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4" ]
+
+  command -v jq >/dev/null 2>&1 || skip "jq not available"
+  run bash -c '
+    source "$1"
+    parse_stack_manifest "$2"
+    printf "%s|%s\n" "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[tt-metalium]}" "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[tt-metalium]}"
+  ' bash "$MANIFEST_PARSER" "$manifest_file"
+
+  [ "$status" -eq 0 ]
+  [ "$output" = "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64|sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4" ]
+}
+
 @test "parse_stack_manifest rejects object components with invalid sha256" {
   manifest_file="${BATS_TEST_TMPDIR}/bad-sha.json"
   write_download_stack_manifest "$manifest_file"
