@@ -580,7 +580,7 @@ docker run "\${docker_flags[@]}" \\
   --security-opt label=disable \\
   "\${COMPONENT_IMAGE}" /bin/bash -lc '
 if [[ -n "\${TT_ENV_CONTAINER_BIN:-}" ]]; then
-  export PATH="\${TT_ENV_CONTAINER_BIN}:\${PATH}"
+  export PATH="\${TT_ENV_CONTAINER_BIN}\${PATH:+:\${PATH}}"
 fi
 if [[ "\$#" -eq 0 ]]; then
   if [[ -t 0 ]]; then
