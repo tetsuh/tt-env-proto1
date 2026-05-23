@@ -386,11 +386,13 @@ _install_git_and_container_components() {
     local target_dir="$2"
     local src_dir="${target_dir}/src"
     local bin_dir="${target_dir}/bin"
+    local venv_subdir="$TT_PACKAGE_MANAGER_VENV_SUBDIR"
     local component
     local url
     local version
     local component_dir
     local wrapper_path
+    local entrypoint
     local image_url
     local image_tag
 
@@ -403,9 +405,15 @@ _install_git_and_container_components() {
             mkdir -p "$bin_dir" || fail "Failed to create bin directory: ${bin_dir}"
         fi
 
+        # Check if git is installed (once, outside the loop)
+        if [[ "$dry_run" -ne 1 ]]; then
+            command_exists git || fail "git is required to install git components."
+        fi
+
         for component in "${!TT_STACK_GIT_COMPONENTS_URL[@]}"; do
             url="${TT_STACK_GIT_COMPONENTS_URL[$component]}"
             version="${TT_STACK_GIT_COMPONENTS_VERSION[$component]}"
+            entrypoint="${TT_STACK_GIT_COMPONENTS_ENTRYPOINT[$component]:-run.py}"
             component_dir="${src_dir}/${component}"
             wrapper_path="${bin_dir}/${component}"
 
@@ -415,11 +423,25 @@ _install_git_and_container_components() {
                 continue
             fi
 
-            # Check if git is installed
-            command_exists git || fail "git is required to install ${component}."
+            if [[ -d "$component_dir" ]]; then
+                # Verify existing git remote URL matches the stack manifest
+                local current_remote_url=""
+                if current_remote_url="$(cd "$component_dir" && git remote get-url origin 2>/dev/null)"; then
+                    # Normalize URLs (e.g. removing trailing .git or spaces) to compare
+                    local normalized_current="${current_remote_url%.git}"
+                    local normalized_manifest="${url%.git}"
+                    if [[ "$normalized_current" != "$normalized_manifest" ]]; then
+                        log_warn "Git remote URL mismatch for ${component}. Expected: ${url}, Found: ${current_remote_url}. Re-cloning..."
+                        rm -rf -- "$component_dir"
+                    fi
+                else
+                    log_warn "Invalid git repository at ${component_dir}. Re-cloning..."
+                    rm -rf -- "$component_dir"
+                fi
+            fi
 
-            log_info "Cloning git component ${component} from ${url}"
             if [[ ! -d "$component_dir" ]]; then
+                log_info "Cloning git component ${component} from ${url}"
                 git clone "$url" "$component_dir" || fail "Failed to clone ${component} from ${url}"
             fi
 
@@ -436,15 +458,26 @@ set -euo pipefail
 
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
-VENV_DIR="\${VERSION_DIR}/venv"
+VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
 VENV_PYTHON="\${VENV_DIR}/bin/python"
 
 VIRTUAL_ENV="\${VENV_DIR}"
 PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
 export VIRTUAL_ENV PATH
 
-cd "\${VERSION_DIR}/src/${component}"
-exec "\${VENV_PYTHON}" "\${VERSION_DIR}/src/${component}/run.py" "\$@"
+# Set PYTHONPATH to the component src directory to allow imports
+PYTHONPATH="\${VERSION_DIR}/src/${component}\${PYTHONPATH:+:\${PYTHONPATH}}"
+export PYTHONPATH
+
+TARGET_COMMAND="\${VERSION_DIR}/src/${component}/${entrypoint}"
+
+first_line=""
+IFS= read -r -n 128 first_line <"\$TARGET_COMMAND" || true
+if [[ -x "\$VENV_PYTHON" && ( "\$first_line" == '#!'*python* || "\$TARGET_COMMAND" == *.py ) ]]; then
+  exec "\$VENV_PYTHON" "\$TARGET_COMMAND" "\$@"
+fi
+
+exec "\$TARGET_COMMAND" "\$@"
 EOF
             chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"
         done
@@ -473,10 +506,21 @@ EOF
 #!/usr/bin/env bash
 # Wrapper script for ${component} using OCI container runtime
 
+# Verify docker is installed
+if ! command -v docker >/dev/null 2>&1; then
+    echo "[ERROR] docker command not found. Please install Docker to run this tool." >&2
+    exit 1
+fi
+
+# Tenstorrent hardware preflight check
+if [[ ! -c /dev/tenstorrent && ! -d /dev/tenstorrent ]]; then
+    echo "[WARNING] Tenstorrent device /dev/tenstorrent not found. The model container may fail to run." >&2
+fi
+
 echo "================================================================================"
 echo "NOTE: This container tool for tt-metalium is meant to enable users to try out"
-echo "      demos, and is not meant for production use. This container is liable to"
-echo "      to change at anytime."
+echo "      demos, and is not meant for production use. This container is liable"
+echo "      to change at any time."
 echo ""
 echo "      For more information see https://github.com/tenstorrent/tt-metal/issues/25602"
 echo "================================================================================"
@@ -484,10 +528,15 @@ echo "==========================================================================
 # Image configuration
 METALIUM_IMAGE="${image_url}:${image_tag}"
 
+# Determine if we should run in TTY/interactive mode
+docker_flags=("--rm")
+if [[ -t 0 ]]; then
+    docker_flags+=("-it")
+fi
+
 # Run the command using container runtime
-docker run --rm -it \\
+docker run "\${docker_flags[@]}" \\
   --privileged \\
-  --log-driver none \\
   --volume=/dev/hugepages-1G:/dev/hugepages-1G \\
   --device=/dev/tenstorrent:/dev/tenstorrent \\
   --env=DISPLAY=\${DISPLAY} \\
@@ -495,7 +544,6 @@ docker run --rm -it \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\
   --security-opt label=disable \\
-  --entrypoint /bin/bash \\
   \${METALIUM_IMAGE} "\$@"
 EOF
             chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"

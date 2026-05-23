@@ -59,6 +59,7 @@ declare -gA TT_STACK_SYSTEM_PACKAGES=()
 declare -gA TT_STACK_PYTHON_PACKAGES=()
 declare -gA TT_STACK_GIT_COMPONENTS_URL=()
 declare -gA TT_STACK_GIT_COMPONENTS_VERSION=()
+declare -gA TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
 declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
 declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
 declare -ga TT_REQUIRED_STACK_COMPONENTS=("tt-kmd" "tt-smi" "firmware" "tt-metal")
@@ -121,6 +122,7 @@ _stack_reset_state() {
     TT_STACK_PYTHON_PACKAGES=()
     TT_STACK_GIT_COMPONENTS_URL=()
     TT_STACK_GIT_COMPONENTS_VERSION=()
+    TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
 }
@@ -335,9 +337,10 @@ _parse_stack_manifest_with_jq() {
                 (to_entries | all(
                     (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
                     (if (.value | type) == "object" then
-                        ((.value | keys - ["url", "version"]) | length == 0) and
+                        ((.value | keys - ["url", "version", "entrypoint"]) | length == 0) and
                         (.value.url | type == "string" and length > 0) and
-                        (.value.version | type == "string" and length > 0)
+                        (.value.version | type == "string" and test("^[A-Fa-f0-9]{40}$")) and
+                        ((.value | has("entrypoint") | not) or (.value.entrypoint | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")))
                      else
                         false
                      end)
@@ -429,19 +432,22 @@ _parse_stack_manifest_with_jq() {
         @tsv
     ' "$manifest_file")
 
-    while IFS=$'\t' read -r component_key component_url component_version; do
+    while IFS=$'\t' read -r component_key component_url component_version component_entrypoint; do
         component_key="${component_key%$'\r'}"
         component_url="${component_url%$'\r'}"
         component_version="${component_version%$'\r'}"
+        component_entrypoint="${component_entrypoint%$'\r'}"
         [[ -n "$component_key" ]] || continue
         # shellcheck disable=SC2034
         TT_STACK_GIT_COMPONENTS_URL["$component_key"]="$component_url"
         # shellcheck disable=SC2034
         TT_STACK_GIT_COMPONENTS_VERSION["$component_key"]="$component_version"
+        # shellcheck disable=SC2034
+        TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$component_key"]="${component_entrypoint:-run.py}"
     done < <(jq -r '
         .git_components // {} |
         to_entries[] |
-        [.key, .value.url, .value.version] |
+        [.key, .value.url, .value.version, .value.entrypoint] |
         @tsv
     ' "$manifest_file")
 
@@ -485,6 +491,7 @@ _parse_stack_manifest_fallback() {
     local git_component_object_key=""
     local git_component_url=""
     local git_component_version=""
+    local git_component_entrypoint=""
     local container_component_object_key=""
     local container_component_image_url=""
     local container_component_image_tag=""
@@ -535,14 +542,19 @@ _parse_stack_manifest_fallback() {
                 TT_STACK_GIT_COMPONENTS_URL["$git_component_object_key"]="$git_component_url"
                 # shellcheck disable=SC2034
                 TT_STACK_GIT_COMPONENTS_VERSION["$git_component_object_key"]="$git_component_version"
+                # shellcheck disable=SC2034
+                TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$git_component_object_key"]="${git_component_entrypoint:-run.py}"
                 in_git_component_object=0
                 git_component_object_key=""
                 git_component_url=""
                 git_component_version=""
+                git_component_entrypoint=""
             elif [[ "$line" =~ ^[[:space:]]*\"url\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 git_component_url="${BASH_REMATCH[1]}"
             elif [[ "$line" =~ ^[[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 git_component_version="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\"entrypoint\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                git_component_entrypoint="${BASH_REMATCH[1]}"
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
             fi
@@ -557,6 +569,7 @@ _parse_stack_manifest_fallback() {
                 git_component_object_key="${BASH_REMATCH[1]}"
                 git_component_url=""
                 git_component_version=""
+                git_component_entrypoint=""
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
             fi

@@ -139,6 +139,14 @@ EOF
 if [[ "$1" == "clone" ]]; then
   mkdir -p "$3"
   printf "" > "$3/run.py"
+  printf "%s\n" "$2" > "$3/.git_url_mock"
+  exit 0
+elif [[ "$1" == "remote" && "$2" == "get-url" ]]; then
+  if [[ -f .git_url_mock ]]; then
+    cat .git_url_mock
+  else
+    printf "https://github.com/tenstorrent/mock.git\n"
+  fi
   exit 0
 fi
 exit 0

@@ -28,7 +28,8 @@
     },
     "tt-inference-server": {
       "url": "https://github.com/tenstorrent/tt-inference-server.git",
-      "version": "e6b3d5e90f2c08d872ef91c1389dde3e1e9a8a45"
+      "version": "e6b3d5e90f2c08d872ef91c1389dde3e1e9a8a45",
+      "entrypoint": "main.py"
     }
   },
   "container_components": {
