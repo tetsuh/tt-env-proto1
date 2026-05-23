@@ -536,8 +536,16 @@ COMPONENT_IMAGE="${image_ref}"
 
 # Determine runtime flags from the current host.
 docker_flags=("--rm")
+container_home="/root"
 if [[ -t 0 ]]; then
     docker_flags+=("-it")
+fi
+if [[ -n "\${HOME:-}" && -d "\${HOME}" ]]; then
+    container_home="/home/user"
+    docker_flags+=("--volume=\${HOME}:/home/user")
+    docker_flags+=("--workdir=/home/user")
+else
+    echo "[WARNING] Host HOME is not available. The container will use /root as HOME." >&2
 fi
 if [[ -c /dev/tenstorrent ]]; then
     docker_flags+=("--device=/dev/tenstorrent:/dev/tenstorrent")
@@ -558,7 +566,7 @@ docker_flags+=("--privileged")
 # Run the command using container runtime
 docker run "\${docker_flags[@]}" \\
   --env=DISPLAY=\${DISPLAY:-} \\
-  --env=HOME=/home/user \\
+  --env=HOME="\${container_home}" \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\
   --security-opt label=disable \\

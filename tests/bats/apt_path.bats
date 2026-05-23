@@ -96,6 +96,9 @@ EOF
   grep -q 'src/tt-inference-server/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium" ]
   grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-amd64@sha256:6150fb8c1ff468b015d5ff4fd866b4f7253273b68918b72f5ede135313a976bb' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q -- '--volume=${HOME}:/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q -- '--workdir=/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q -- '--env=HOME="${container_home}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu24" ]
   grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64@sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu24"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models" ]
