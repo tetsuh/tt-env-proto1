@@ -24,12 +24,11 @@
   "git_components": {
     "tt-studio": {
       "url": "https://github.com/tenstorrent/tt-studio.git",
-      "version": "172fc038f36dfa298bf129ecd78534efaa82e09e"
+      "version": "b56466a568ff5326f9404b2bfbf3873b49aa80f8"
     },
     "tt-inference-server": {
       "url": "https://github.com/tenstorrent/tt-inference-server.git",
-      "version": "e6b3d5e90f2c08d872ef91c1389dde3e1e9a8a45",
-      "entrypoint": "main.py"
+      "version": "e7df585293a04d5b5a315dd3032ffd6379576d35"
     }
   },
   "container_components": {
