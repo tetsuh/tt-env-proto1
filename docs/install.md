@@ -113,7 +113,7 @@ new install has completed successfully.
 Some Tenstorrent-related developer commands are optional and only become active when a release manifest provides them:
 
 - **`tt-inference-server` and `tt-studio`**: These are cloned from pinned git commits and wrapped by the active release.
-- **`tt-metalium`, `tt-metalium-ubuntu24`, and `tt-metalium-models`**: These are wrapper scripts that launch OCI container runtimes pinned by the active release manifest. `tt-metalium` keeps the existing Ubuntu 22.04 image, while `tt-metalium-ubuntu24` selects the Ubuntu 24.04 image.
+- **`tt-metalium`, `tt-metalium-ubuntu22`, `tt-metalium-ubuntu24`, and `tt-metalium-models`**: These are wrapper scripts that launch OCI container runtimes pinned by the active release manifest. `tt-metalium` uses the Ubuntu 24.04 image by default, `tt-metalium-ubuntu22` keeps the Ubuntu 22.04 compatibility image, and `tt-metalium-ubuntu24` is the explicit Ubuntu 24.04 command.
 
 `tt-env` generates shims for these command names. If the active release does not provide a command, the shim reports that the active command is missing instead of falling through to an unpinned user-local script.
 

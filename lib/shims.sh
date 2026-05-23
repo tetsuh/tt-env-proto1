@@ -12,6 +12,7 @@
 #   - tt-topology
 #   - tt-burnin
 #   - tt-metalium (optional)
+#   - tt-metalium-ubuntu22 (optional)
 #   - tt-metalium-ubuntu24 (optional)
 #   - tt-studio (optional)
 #   - tt-inference-server (optional)
@@ -28,6 +29,7 @@ source "${SHIMS_LIB_DIR}/core.sh"
 
 declare -ga TT_OPTIONAL_SHIM_COMMANDS=(
     "tt-metalium"
+    "tt-metalium-ubuntu22"
     "tt-metalium-ubuntu24"
     "tt-studio"
     "tt-inference-server"
