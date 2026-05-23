@@ -84,7 +84,7 @@ This section reflects the workflow merged in #157. Keep it consistent with
 - Treat GitHub Copilot review author as:
   - `Copilot`
 - For Gemini rereview, reply to the specific review comment thread with:
-  - `@gemini-code-assist review`
+  - `/gemini review`
 - For GitHub Copilot review comments, address required changes, request a new
   Copilot review using the PR's GitHub-supported Copilot review trigger, then
   poll for the response.
