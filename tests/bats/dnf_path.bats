@@ -50,8 +50,17 @@ PYEOF
 fi
 printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
+  cat >"${fake_bin}/git" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "clone" ]]; then
+  mkdir -p "$3"
+  printf "" > "$3/run.py"
+  exit 0
+fi
+exit 0
+EOF
   touch "${fake_bin}/dnf"
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/python3" "${fake_bin}/dnf"
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/python3" "${fake_bin}/dnf" "${fake_bin}/git"
   printf '%s\n' "$fake_bin"
 }
 

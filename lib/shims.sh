@@ -24,6 +24,9 @@ source "${SHIMS_LIB_DIR}/core.sh"
 
 declare -ga TT_OPTIONAL_SHIM_COMMANDS=(
     "tt-metalium"
+    "tt-studio"
+    "tt-inference-server"
+    "tt-metalium-models"
 )
 declare -ga TT_SHIM_COMMANDS=(
     "tt-smi"

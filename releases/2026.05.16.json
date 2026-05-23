@@ -20,5 +20,21 @@
     "textual": "0.59.0",
     "elasticsearch": "8.11.0",
     "tt-burnin": "0.4.0"
+  },
+  "git_components": {
+    "tt-studio": {
+      "url": "https://github.com/tenstorrent/tt-studio.git",
+      "version": "172fc038f36dfa298bf129ecd78534efaa82e09e"
+    },
+    "tt-inference-server": {
+      "url": "https://github.com/tenstorrent/tt-inference-server.git",
+      "version": "e6b3d5e90f2c08d872ef91c1389dde3e1e9a8a45"
+    }
+  },
+  "container_components": {
+    "tt-metalium-models": {
+      "image_url": "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64",
+      "image_tag": "latest-rc"
+    }
   }
 }

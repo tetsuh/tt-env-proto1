@@ -342,6 +342,9 @@ _install_create_system_bin_links() {
     # package_manager.sh owns the mapping from commands to release-local pip packages.
     for command_name in "${TT_SHIM_COMMANDS[@]}"; do
         link_path="${bin_dir}/${command_name}"
+        if [[ -n "${TT_STACK_GIT_COMPONENTS_URL[$command_name]:-}" || -n "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$command_name]:-}" ]]; then
+            continue
+        fi
         venv_command_path="${target_dir}/${TT_PACKAGE_MANAGER_VENV_SUBDIR}/bin/${command_name}"
         if [[ "$dry_run" -eq 1 ]] && package_manager_command_needs_pip_packages "$command_name"; then
             log_info "[dry-run] Would use venv command if installed: ${venv_command_path}"
@@ -378,6 +381,128 @@ _install_create_system_bin_links() {
     done
 }
 
+_install_git_and_container_components() {
+    local dry_run="$1"
+    local target_dir="$2"
+    local src_dir="${target_dir}/src"
+    local bin_dir="${target_dir}/bin"
+    local component
+    local url
+    local version
+    local component_dir
+    local wrapper_path
+    local image_url
+    local image_tag
+
+    # 1. Git Components (tt-studio, tt-inference-server, etc.)
+    if [[ "${#TT_STACK_GIT_COMPONENTS_URL[@]}" -gt 0 ]]; then
+        if [[ "$dry_run" -eq 1 ]]; then
+            log_info "[dry-run] Would create src directory: ${src_dir}"
+        else
+            mkdir -p "$src_dir" || fail "Failed to create src directory: ${src_dir}"
+            mkdir -p "$bin_dir" || fail "Failed to create bin directory: ${bin_dir}"
+        fi
+
+        for component in "${!TT_STACK_GIT_COMPONENTS_URL[@]}"; do
+            url="${TT_STACK_GIT_COMPONENTS_URL[$component]}"
+            version="${TT_STACK_GIT_COMPONENTS_VERSION[$component]}"
+            component_dir="${src_dir}/${component}"
+            wrapper_path="${bin_dir}/${component}"
+
+            if [[ "$dry_run" -eq 1 ]]; then
+                log_info "[dry-run] Would git clone ${url} at ${version} into ${component_dir}"
+                log_info "[dry-run] Would create git component wrapper: ${wrapper_path}"
+                continue
+            fi
+
+            # Check if git is installed
+            command_exists git || fail "git is required to install ${component}."
+
+            log_info "Cloning git component ${component} from ${url}"
+            if [[ ! -d "$component_dir" ]]; then
+                git clone "$url" "$component_dir" || fail "Failed to clone ${component} from ${url}"
+            fi
+
+            ( 
+                cd "$component_dir" && \
+                git fetch --all && \
+                git checkout "$version"
+            ) || fail "Failed to checkout ${component} to version ${version}"
+
+            log_info "Creating wrapper script for git component ${component} at ${wrapper_path}"
+            cat >"$wrapper_path" <<EOF || fail "Failed to write wrapper script: ${wrapper_path}"
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
+VENV_DIR="\${VERSION_DIR}/venv"
+VENV_PYTHON="\${VENV_DIR}/bin/python"
+
+VIRTUAL_ENV="\${VENV_DIR}"
+PATH="\${VENV_DIR}/bin\${PATH:+:\${PATH}}"
+export VIRTUAL_ENV PATH
+
+cd "\${VERSION_DIR}/src/${component}"
+exec "\${VENV_PYTHON}" "\${VERSION_DIR}/src/${component}/run.py" "\$@"
+EOF
+            chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"
+        done
+    fi
+
+    # 2. Container Components (tt-metalium-models, etc.)
+    if [[ "${#TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}" -gt 0 ]]; then
+        if [[ "$dry_run" -eq 1 ]]; then
+            log_info "[dry-run] Would create bin directory: ${bin_dir}"
+        else
+            mkdir -p "$bin_dir" || fail "Failed to create bin directory: ${bin_dir}"
+        fi
+
+        for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
+            image_url="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}"
+            image_tag="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]}"
+            wrapper_path="${bin_dir}/${component}"
+
+            if [[ "$dry_run" -eq 1 ]]; then
+                log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_url}:${image_tag}"
+                continue
+            fi
+
+            log_info "Creating container component wrapper for ${component} at ${wrapper_path}"
+            cat >"$wrapper_path" <<EOF || fail "Failed to write container wrapper script: ${wrapper_path}"
+#!/usr/bin/env bash
+# Wrapper script for ${component} using OCI container runtime
+
+echo "================================================================================"
+echo "NOTE: This container tool for tt-metalium is meant to enable users to try out"
+echo "      demos, and is not meant for production use. This container is liable to"
+echo "      to change at anytime."
+echo ""
+echo "      For more information see https://github.com/tenstorrent/tt-metal/issues/25602"
+echo "================================================================================"
+
+# Image configuration
+METALIUM_IMAGE="${image_url}:${image_tag}"
+
+# Run the command using container runtime
+docker run --rm -it \\
+  --privileged \\
+  --log-driver none \\
+  --volume=/dev/hugepages-1G:/dev/hugepages-1G \\
+  --device=/dev/tenstorrent:/dev/tenstorrent \\
+  --env=DISPLAY=\${DISPLAY} \\
+  --env=HOME=/home/user \\
+  --env=TERM=\${TERM:-xterm-256color} \\
+  --network=host \\
+  --security-opt label=disable \\
+  --entrypoint /bin/bash \\
+  \${METALIUM_IMAGE} "\$@"
+EOF
+            chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"
+        done
+    fi
+}
+
 _install_system_packages() {
     local dry_run="$1"
     local target_dir="$2"
@@ -405,6 +530,7 @@ _install_system_packages() {
         true)
             package_manager_install_system_packages "$pkg_manager" "$dry_run"
             package_manager_install_pip_packages "$dry_run" "$target_dir"
+            _install_git_and_container_components "$dry_run" "$target_dir"
             _install_create_system_bin_links "$dry_run" "$target_dir"
             ;;
         false)

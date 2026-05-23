@@ -134,7 +134,16 @@ PYEOF
 fi
 printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/python3"
+  cat >"${fake_bin}/git" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "clone" ]]; then
+  mkdir -p "$3"
+  printf "" > "$3/run.py"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/python3" "${fake_bin}/git"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"
