@@ -13,6 +13,9 @@
 #   - tt-burnin
 #   - tt-metalium (optional)
 #   - tt-metalium-ubuntu24 (optional)
+#   - tt-studio (optional)
+#   - tt-inference-server (optional)
+#   - tt-metalium-models (optional)
 
 if [[ -n "${TT_SHIMS_LOADED:-}" ]]; then
     return 0
