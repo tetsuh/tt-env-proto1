@@ -32,6 +32,10 @@
     }
   },
   "container_components": {
+    "tt-metalium": {
+      "image_url": "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-amd64",
+      "image_tag": "sha256:6150fb8c1ff468b015d5ff4fd866b4f7253273b68918b72f5ede135313a976bb"
+    },
     "tt-metalium-models": {
       "image_url": "ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64",
       "image_tag": "sha256:02151bea82bc345afe6171b72d9232332d90699f550e6c5b35a645fa19569b3e"
