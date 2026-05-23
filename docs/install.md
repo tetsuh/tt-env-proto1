@@ -115,7 +115,7 @@ Some Tenstorrent-related developer commands are optional and only become active 
 - **`tt-inference-server` and `tt-studio`**: These are cloned from pinned git commits and wrapped by the active release.
 - **`tt-metalium` and `tt-metalium-models`**: These are wrapper scripts that launch OCI container runtimes pinned by the active release manifest.
 
-`tt-env` still generates shims for these command names. If the active release does not provide a command, the shim reports that the active command is missing instead of falling through to an unpinned user-local script.
+`tt-env` generates shims for these command names. If the active release does not provide a command, the shim reports that the active command is missing instead of falling through to an unpinned user-local script.
 
 ## Troubleshooting
 
