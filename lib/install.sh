@@ -395,6 +395,7 @@ _install_git_and_container_components() {
     local entrypoint
     local image_url
     local image_tag
+    local image_ref
 
     # 1. Git Components (tt-studio, tt-inference-server, etc.)
     if [[ "${#TT_STACK_GIT_COMPONENTS_URL[@]}" -gt 0 ]]; then
@@ -503,10 +504,11 @@ EOF
         for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
             image_url="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}"
             image_tag="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]}"
+            if [[ "$image_tag" == sha256:* ]]; then image_ref="${image_url}@${image_tag}"; else image_ref="${image_url}:${image_tag}"; fi
             wrapper_path="${bin_dir}/${component}"
 
             if [[ "$dry_run" -eq 1 ]]; then
-                log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_url}:${image_tag}"
+                log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_ref}"
                 continue
             fi
 
@@ -530,8 +532,7 @@ echo ""
 echo "      For more information see https://github.com/tenstorrent/tt-metal/issues/25602"
 echo "================================================================================"
 
-# Image configuration
-COMPONENT_IMAGE="${image_url}:${image_tag}"
+COMPONENT_IMAGE="${image_ref}"
 
 # Determine runtime flags from the current host.
 docker_flags=("--rm")

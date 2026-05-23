@@ -88,14 +88,14 @@ EOF
   [ -d "${TT_HOME}/versions/2026.05.16/src/tt-studio" ]
   [ -f "${TT_HOME}/versions/2026.05.16/src/tt-studio/run.py" ]
   [ -d "${TT_HOME}/versions/2026.05.16/src/tt-inference-server" ]
-  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-inference-server/main.py" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-inference-server/run.py" ]
 
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
   grep -q 'src/tt-studio/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-studio"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server" ]
-  grep -q 'src/tt-inference-server/main.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
+  grep -q 'src/tt-inference-server/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models" ]
-  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64:latest-rc' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models"
+  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64@sha256:02151bea82bc345afe6171b72d9232332d90699f550e6c5b35a645fa19569b3e' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models"
 
   [ -f "${TT_HOME}/shims/tt-studio" ]
   [ -f "${TT_HOME}/shims/tt-inference-server" ]
