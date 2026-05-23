@@ -504,11 +504,7 @@ EOF
         for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
             image_url="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}"
             image_tag="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]}"
-            if [[ "$image_tag" == sha256:* ]]; then
-                image_ref="${image_url}@${image_tag}"
-            else
-                image_ref="${image_url}:${image_tag}"
-            fi
+            if [[ "$image_tag" == sha256:* ]]; then image_ref="${image_url}@${image_tag}"; else image_ref="${image_url}:${image_tag}"; fi
             wrapper_path="${bin_dir}/${component}"
 
             if [[ "$dry_run" -eq 1 ]]; then
