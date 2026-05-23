@@ -95,7 +95,7 @@ EOF
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server" ]
   grep -q 'src/tt-inference-server/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models" ]
-  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64:latest-rc' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models"
+  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64@sha256:56936508bc544c7320adab7356d0645f5fe0f0b9c32bb0ea6da97f3ae0318dc6' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models"
 
   [ -f "${TT_HOME}/shims/tt-studio" ]
   [ -f "${TT_HOME}/shims/tt-inference-server" ]

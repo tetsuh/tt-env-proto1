@@ -506,7 +506,11 @@ EOF
             wrapper_path="${bin_dir}/${component}"
 
             if [[ "$dry_run" -eq 1 ]]; then
-                log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_url}:${image_tag}"
+                if [[ "$image_tag" == sha256:* ]]; then
+                    log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_url}@${image_tag}"
+                else
+                    log_info "[dry-run] Would create container component wrapper for ${component} using image ${image_url}:${image_tag}"
+                fi
                 continue
             fi
 
@@ -531,7 +535,11 @@ echo "      For more information see https://github.com/tenstorrent/tt-metal/iss
 echo "================================================================================"
 
 # Image configuration
-COMPONENT_IMAGE="${image_url}:${image_tag}"
+if [[ "${image_tag}" == sha256:* ]]; then
+    COMPONENT_IMAGE="${image_url}@${image_tag}"
+else
+    COMPONENT_IMAGE="${image_url}:${image_tag}"
+fi
 
 # Determine runtime flags from the current host.
 docker_flags=("--rm")
