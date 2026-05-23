@@ -12,6 +12,7 @@
 #   - tt-topology
 #   - tt-burnin
 #   - tt-metalium (optional)
+#   - tt-metalium-ubuntu24 (optional)
 
 if [[ -n "${TT_SHIMS_LOADED:-}" ]]; then
     return 0
@@ -24,6 +25,7 @@ source "${SHIMS_LIB_DIR}/core.sh"
 
 declare -ga TT_OPTIONAL_SHIM_COMMANDS=(
     "tt-metalium"
+    "tt-metalium-ubuntu24"
     "tt-studio"
     "tt-inference-server"
     "tt-metalium-models"
