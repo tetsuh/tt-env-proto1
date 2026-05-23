@@ -528,6 +528,9 @@ echo "==========================================================================
 echo "NOTE: This container tool (${component}) is meant to enable users to try out"
 echo "      demos, and is not meant for production use. This container is liable"
 echo "      to change at any time."
+if [[ "${component}" == "tt-metalium" ]]; then
+    echo "NOTE: tt-env defaults tt-metalium to Ubuntu 24.04; use tt-metalium-ubuntu22 for the Ubuntu 22.04."
+fi
 echo ""
 echo "      For more information see https://github.com/tenstorrent/tt-metal/issues/25602"
 echo "================================================================================"
