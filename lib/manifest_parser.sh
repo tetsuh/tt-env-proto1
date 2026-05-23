@@ -57,6 +57,11 @@ declare -gA TT_STACK_COMPONENT_DOWNLOAD_URLS=()
 declare -gA TT_STACK_COMPONENT_SHA256S=()
 declare -gA TT_STACK_SYSTEM_PACKAGES=()
 declare -gA TT_STACK_PYTHON_PACKAGES=()
+declare -gA TT_STACK_GIT_COMPONENTS_URL=()
+declare -gA TT_STACK_GIT_COMPONENTS_VERSION=()
+declare -gA TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
+declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
+declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
 declare -ga TT_REQUIRED_STACK_COMPONENTS=("tt-kmd" "tt-smi" "firmware" "tt-metal")
 
 _manifest_is_key() {
@@ -115,6 +120,11 @@ _stack_reset_state() {
     TT_STACK_COMPONENT_SHA256S=()
     TT_STACK_SYSTEM_PACKAGES=()
     TT_STACK_PYTHON_PACKAGES=()
+    TT_STACK_GIT_COMPONENTS_URL=()
+    TT_STACK_GIT_COMPONENTS_VERSION=()
+    TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
 }
 
 _stack_is_sha256() {
@@ -135,6 +145,22 @@ _stack_is_system_package_key() {
 
 _stack_is_system_package_version() {
     [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.!+:~-]*$ ]]
+}
+
+_stack_is_git_component_version() {
+    [[ "$1" =~ ^[A-Fa-f0-9]{40}$ ]]
+}
+
+_stack_is_git_component_entrypoint() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]
+}
+
+_stack_is_manifest_ref() {
+    [[ -n "$1" && "$1" != -* && "$1" != *[[:space:]]* && "$1" != *"\""* && "$1" != *"'"* ]] && ! _manifest_has_dangerous_chars "$1"
+}
+
+_stack_is_container_image_tag() {
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.:-]*$ ]]
 }
 
 _stack_store_system_package() {
@@ -163,6 +189,49 @@ _stack_store_python_package() {
 
     # shellcheck disable=SC2034
     TT_STACK_PYTHON_PACKAGES["$package_name"]="$package_version"
+}
+
+_stack_store_git_component() {
+    local component_key="$1"
+    local component_url="$2"
+    local component_version="$3"
+    local component_entrypoint="$4"
+    local line_no="$5"
+
+    _stack_is_python_package_name "$component_key" || \
+        fail "Invalid git component name at line ${line_no}: ${component_key}"
+    _stack_is_manifest_ref "$component_url" || \
+        fail "Invalid git component url for ${component_key} at line ${line_no}: ${component_url}"
+    _stack_is_git_component_version "$component_version" || \
+        fail "Invalid git component version for ${component_key} at line ${line_no}: ${component_version}"
+    _stack_is_git_component_entrypoint "$component_entrypoint" || \
+        fail "Invalid git component entrypoint for ${component_key} at line ${line_no}: ${component_entrypoint}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_URL["$component_key"]="$component_url"
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_VERSION["$component_key"]="$component_version"
+    # shellcheck disable=SC2034
+    TT_STACK_GIT_COMPONENTS_ENTRYPOINT["$component_key"]="$component_entrypoint"
+}
+
+_stack_store_container_component() {
+    local component_key="$1"
+    local component_image_url="$2"
+    local component_image_tag="$3"
+    local line_no="$4"
+
+    _stack_is_python_package_name "$component_key" || \
+        fail "Invalid container component name at line ${line_no}: ${component_key}"
+    _stack_is_manifest_ref "$component_image_url" || \
+        fail "Invalid container component image_url for ${component_key} at line ${line_no}: ${component_image_url}"
+    _stack_is_container_image_tag "$component_image_tag" || \
+        fail "Invalid container component image_tag for ${component_key} at line ${line_no}: ${component_image_tag}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$component_key"]="$component_image_url"
+    # shellcheck disable=SC2034
+    TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$component_key"]="$component_image_tag"
 }
 
 _stack_store_component_object() {
@@ -322,6 +391,37 @@ _parse_stack_manifest_with_jq() {
                 (.key | test("^[a-z0-9][a-z0-9_]*$")) and
                 (.value | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.!+:~-]*$"))
             ));
+        def git_component_ok:
+            if type == "object" then
+                (to_entries | all(
+                    (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
+                    (if (.value | type) == "object" then
+                        ((.value | keys - ["url", "version", "entrypoint"]) | length == 0) and
+                        (.value.url | type == "string" and test("^[^-\\s][^\\s]*$")) and
+                        (.value.version | type == "string" and test("^[A-Fa-f0-9]{40}$")) and
+                        ((.value | has("entrypoint") | not) or (.value.entrypoint | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")))
+                     else
+                        false
+                     end)
+                ))
+            else
+                false
+            end;
+        def container_component_ok:
+            if type == "object" then
+                (to_entries | all(
+                    (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
+                    (if (.value | type) == "object" then
+                        ((.value | keys - ["image_url", "image_tag"]) | length == 0) and
+                        (.value.image_url | type == "string" and test("^[^-\\s][^\\s]*$")) and
+                        (.value.image_tag | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.:-]*$"))
+                     else
+                        false
+                     end)
+                ))
+            else
+                false
+            end;
 
         type == "object" and
         ((has("release") | not) or (.release | type == "string")) and
@@ -330,7 +430,9 @@ _parse_stack_manifest_with_jq() {
             (.components | type == "object" and all(.[]; component_ok))) and
         ((has("system_packages") | not) or (.system_packages | system_package_ok)) and
         ((has("python_packages") | not) or (.python_packages | python_package_ok)) and
-        ((keys - ["release", "description", "components", "system_packages", "python_packages"]) | length == 0)
+        ((has("git_components") | not) or (.git_components | git_component_ok)) and
+        ((has("container_components") | not) or (.container_components | container_component_ok)) and
+        ((keys - ["release", "description", "components", "system_packages", "python_packages", "git_components", "container_components"]) | length == 0)
     ' "$manifest_file" >/dev/null || fail "Unsupported stack manifest shape: ${manifest_file}"
 
     TT_STACK_RELEASE="$(jq -r '.release // ""' "$manifest_file")"
@@ -388,6 +490,42 @@ _parse_stack_manifest_with_jq() {
         [.key, .value] |
         @tsv
     ' "$manifest_file")
+
+    while IFS=$'\t' read -r component_key component_url component_version component_entrypoint; do
+        component_key="${component_key%$'\r'}"
+        component_url="${component_url%$'\r'}"
+        component_version="${component_version%$'\r'}"
+        component_entrypoint="${component_entrypoint%$'\r'}"
+        [[ -n "$component_key" ]] || continue
+        _stack_store_git_component \
+            "$component_key" \
+            "$component_url" \
+            "$component_version" \
+            "${component_entrypoint:-run.py}" \
+            "jq"
+    done < <(jq -r '
+        .git_components // {} |
+        to_entries[] |
+        [.key, .value.url, .value.version, (.value.entrypoint // "")] |
+        @tsv
+    ' "$manifest_file")
+
+    while IFS=$'\t' read -r component_key component_image_url component_image_tag; do
+        component_key="${component_key%$'\r'}"
+        component_image_url="${component_image_url%$'\r'}"
+        component_image_tag="${component_image_tag%$'\r'}"
+        [[ -n "$component_key" ]] || continue
+        _stack_store_container_component \
+            "$component_key" \
+            "$component_image_url" \
+            "$component_image_tag" \
+            "jq"
+    done < <(jq -r '
+        .container_components // {} |
+        to_entries[] |
+        [.key, .value.image_url, .value.image_tag] |
+        @tsv
+    ' "$manifest_file")
 }
 
 _parse_stack_manifest_fallback() {
@@ -400,12 +538,23 @@ _parse_stack_manifest_fallback() {
     local in_component_object=0
     local in_system_packages=0
     local in_python_packages=0
+    local in_git_components=0
+    local in_git_component_object=0
+    local in_container_components=0
+    local in_container_component_object=0
     local key
     local value
     local component_object_key=""
     local component_version=""
     local component_download_url=""
     local component_sha256=""
+    local git_component_object_key=""
+    local git_component_url=""
+    local git_component_version=""
+    local git_component_entrypoint=""
+    local container_component_object_key=""
+    local container_component_image_url=""
+    local container_component_image_tag=""
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         line_no=$((line_no + 1))
@@ -439,6 +588,85 @@ _parse_stack_manifest_fallback() {
                 in_python_packages=0
             elif [[ "$line" =~ ^[[:space:]]*\"([A-Za-z0-9_.-]+)\"[[:space:]]*:[[:space:]]*\"([A-Za-z0-9_.!+-]+)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 _stack_store_python_package "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "$line_no"
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
+        fi
+
+        if [[ "$in_git_component_object" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                [[ -n "$git_component_url" ]] || fail "Missing git component url for ${git_component_object_key} at line ${line_no}"
+                [[ -n "$git_component_version" ]] || fail "Missing git component version for ${git_component_object_key} at line ${line_no}"
+                _stack_store_git_component \
+                    "$git_component_object_key" \
+                    "$git_component_url" \
+                    "$git_component_version" \
+                    "${git_component_entrypoint:-run.py}" \
+                    "$line_no"
+                in_git_component_object=0
+                git_component_object_key=""
+                git_component_url=""
+                git_component_version=""
+                git_component_entrypoint=""
+            elif [[ "$line" =~ ^[[:space:]]*\"url\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                git_component_url="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                git_component_version="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\"entrypoint\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                git_component_entrypoint="${BASH_REMATCH[1]}"
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
+        fi
+
+        if [[ "$in_git_components" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                in_git_components=0
+            elif [[ "$line" =~ ^[[:space:]]*\"([A-Za-z0-9_.-]+)\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+                in_git_component_object=1
+                git_component_object_key="${BASH_REMATCH[1]}"
+                git_component_url=""
+                git_component_version=""
+                git_component_entrypoint=""
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
+        fi
+
+        if [[ "$in_container_component_object" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                [[ -n "$container_component_image_url" ]] || fail "Missing container component image_url for ${container_component_object_key} at line ${line_no}"
+                [[ -n "$container_component_image_tag" ]] || fail "Missing container component image_tag for ${container_component_object_key} at line ${line_no}"
+                _stack_store_container_component \
+                    "$container_component_object_key" \
+                    "$container_component_image_url" \
+                    "$container_component_image_tag" \
+                    "$line_no"
+                in_container_component_object=0
+                container_component_object_key=""
+                container_component_image_url=""
+                container_component_image_tag=""
+            elif [[ "$line" =~ ^[[:space:]]*\"image_url\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                container_component_image_url="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\"image_tag\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                container_component_image_tag="${BASH_REMATCH[1]}"
+            else
+                fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
+            fi
+            continue
+        fi
+
+        if [[ "$in_container_components" -eq 1 ]]; then
+            if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
+                in_container_components=0
+            elif [[ "$line" =~ ^[[:space:]]*\"([A-Za-z0-9_.-]+)\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+                in_container_component_object=1
+                container_component_object_key="${BASH_REMATCH[1]}"
+                container_component_image_url=""
+                container_component_image_tag=""
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
             fi
@@ -502,12 +730,16 @@ _parse_stack_manifest_fallback() {
             in_system_packages=1
         elif [[ "$line" =~ ^[[:space:]]*\"python_packages\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
             in_python_packages=1
+        elif [[ "$line" =~ ^[[:space:]]*\"git_components\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+            in_git_components=1
+        elif [[ "$line" =~ ^[[:space:]]*\"container_components\"[[:space:]]*:[[:space:]]*\{[[:space:]]*$ ]]; then
+            in_container_components=1
         else
             fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
         fi
     done <"$manifest_file"
 
-    if [[ "$saw_open" -ne 1 || "$saw_close" -ne 1 || "$in_components" -ne 0 || "$in_component_object" -ne 0 || "$in_system_packages" -ne 0 || "$in_python_packages" -ne 0 ]]; then
+    if [[ "$saw_open" -ne 1 || "$saw_close" -ne 1 || "$in_components" -ne 0 || "$in_component_object" -ne 0 || "$in_system_packages" -ne 0 || "$in_python_packages" -ne 0 || "$in_git_components" -ne 0 || "$in_git_component_object" -ne 0 || "$in_container_components" -ne 0 || "$in_container_component_object" -ne 0 ]]; then
         fail "Unsupported stack manifest shape: ${manifest_file}"
     fi
 }
@@ -531,6 +763,7 @@ parse_stack_manifest() {
 # that build TT_STACK_* values in memory.
 validate_stack_manifest() {
     local component
+    local entrypoint
 
     [[ -n "${TT_STACK_RELEASE:-}" ]] || fail "Missing required stack manifest key: release"
 
@@ -538,5 +771,26 @@ validate_stack_manifest() {
         if [[ -z "${TT_STACK_COMPONENTS[$component]:-}" ]]; then
             fail "Missing required stack manifest key: components.${component}"
         fi
+    done
+
+    for component in "${!TT_STACK_GIT_COMPONENTS_URL[@]}"; do
+        entrypoint="${TT_STACK_GIT_COMPONENTS_ENTRYPOINT[$component]:-run.py}"
+        _stack_is_python_package_name "$component" || \
+            fail "Invalid git component name: ${component}"
+        _stack_is_manifest_ref "${TT_STACK_GIT_COMPONENTS_URL[$component]}" || \
+            fail "Invalid git component url for ${component}: ${TT_STACK_GIT_COMPONENTS_URL[$component]}"
+        _stack_is_git_component_version "${TT_STACK_GIT_COMPONENTS_VERSION[$component]:-}" || \
+            fail "Invalid git component version for ${component}: ${TT_STACK_GIT_COMPONENTS_VERSION[$component]:-}"
+        _stack_is_git_component_entrypoint "$entrypoint" || \
+            fail "Invalid git component entrypoint for ${component}: ${entrypoint}"
+    done
+
+    for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
+        _stack_is_python_package_name "$component" || \
+            fail "Invalid container component name: ${component}"
+        _stack_is_manifest_ref "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}" || \
+            fail "Invalid container component image_url for ${component}: ${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$component]}"
+        _stack_is_container_image_tag "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]:-}" || \
+            fail "Invalid container component image_tag for ${component}: ${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$component]:-}"
     done
 }

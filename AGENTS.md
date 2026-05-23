@@ -55,6 +55,7 @@ session.
   - `docs(workflow): document agent instructions`
 - Include the appropriate co-author trailer when creating commits. Use generic, non-ID email addresses to avoid creating links to specific tool-provider bot or user accounts:
   - For Copilot: `Co-authored-by: Copilot <noreply@github.com>`
+  - For Antigravity: `Co-authored-by: Antigravity <noreply@google.com>`
   - For Gemini CLI: `Co-authored-by: Gemini CLI <noreply@google.com>`
   - For Claude: `Co-authored-by: Claude <noreply@anthropic.com>`
 
@@ -83,7 +84,7 @@ This section reflects the workflow merged in #157. Keep it consistent with
 - Treat GitHub Copilot review author as:
   - `Copilot`
 - For Gemini rereview, reply to the specific review comment thread with:
-  - `@gemini-code-assist review`
+  - `/gemini review`
 - For GitHub Copilot review comments, address required changes, request a new
   Copilot review using the PR's GitHub-supported Copilot review trigger, then
   poll for the response.
@@ -106,7 +107,7 @@ docs(workflow): add agent instructions
 - Add Copilot and Gemini entry points.
 - Document branch, issue, review, and validation rules.
 
-Co-authored-by: Gemini CLI <noreply@google.com>
+Co-authored-by: Antigravity <noreply@google.com>
 ```
 
 ## Validation

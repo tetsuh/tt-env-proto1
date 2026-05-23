@@ -5,7 +5,7 @@ const REVIEW_CONTEXT = `Repository AI review workflow:
 - For Gemini, match both gemini-code-assist and gemini-code-assist[bot].
 - For GitHub Copilot review, match review authors shown as Copilot.
 - After first creating a PR, poll for Gemini or GitHub Copilot review feedback every 1 minute for up to 8 minutes before proceeding.
-- If a Gemini review comment requires a fix, address it in code and reply to that specific review thread with "@gemini-code-assist review".
+- If a Gemini review comment requires a fix, address it in code and reply to that specific review thread with "/gemini review".
 - If a GitHub Copilot review comment requires a fix, address it in code and request Copilot rereview using the GitHub-supported Copilot review trigger for that PR.
 - After pushing fixes for AI review feedback, explicitly request Gemini or GitHub Copilot rereview before polling; polling alone does not trigger rereview.
 - After requesting rereview, poll for Gemini or GitHub Copilot review feedback every 1 minute for up to 8 minutes before proceeding.

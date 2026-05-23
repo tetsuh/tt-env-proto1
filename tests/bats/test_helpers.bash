@@ -134,7 +134,27 @@ PYEOF
 fi
 printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/python3"
+  cat >"${fake_bin}/git" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "clone" ]]; then
+  dest="${!#}"
+  url="${@:$(($# - 1)):1}"
+  mkdir -p "$dest"
+  printf "" > "$dest/run.py"
+  printf "" > "$dest/main.py"
+  printf "%s\n" "$url" > "$dest/.git_url_mock"
+  exit 0
+elif [[ "$1" == "remote" && "$2" == "get-url" ]]; then
+  if [[ -f .git_url_mock ]]; then
+    cat .git_url_mock
+  else
+    printf "https://github.com/tenstorrent/mock.git\n"
+  fi
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/curl" "${fake_bin}/gpg" "${fake_bin}/python3" "${fake_bin}/git"
   touch "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   chmod +x "${fake_bin}/add-apt-repository" "${fake_bin}/apt-get"
   printf '%s\n' "$fake_bin"

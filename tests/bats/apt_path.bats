@@ -78,28 +78,44 @@ EOF
   [ "$(readlink "${TT_HOME}/versions/2026.05.16/bin/tt-flash")" = "${fake_bin}/tt-flash" ]
 }
 
-@test "tt-env install ignores optional user-local tt commands and does not shadow them" {
+@test "tt-env install manages optional developer tools and dispatches them via shims" {
   fake_bin="$(make_fake_sudo)"
   clean_path="$(make_clean_path_without_system_shim_commands)"
-  user_bin="${BATS_TEST_TMPDIR}/user-bin"
-  mkdir -p "$user_bin"
-  cat >"${user_bin}/tt-studio" <<'EOF'
-#!/usr/bin/env bash
-printf 'user tt-studio %s\n' "$*"
-EOF
-  chmod +x "${user_bin}/tt-studio"
 
-  run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${user_bin}:${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
+  run env TT_INSTALL_SYSTEM_COMMAND_DIRS="$fake_bin" PATH="${fake_bin}:${clean_path}" "$TT_ENV" install 2026.05.16
   [ "$status" -eq 0 ]
-  [ ! -e "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
-  [ ! -e "${TT_HOME}/shims/tt-studio" ]
+
+  [ -d "${TT_HOME}/versions/2026.05.16/src/tt-studio" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-studio/run.py" ]
+  [ -d "${TT_HOME}/versions/2026.05.16/src/tt-inference-server" ]
+  [ -f "${TT_HOME}/versions/2026.05.16/src/tt-inference-server/main.py" ]
+
+  [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-studio" ]
+  grep -q 'src/tt-studio/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-studio"
+  [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server" ]
+  grep -q 'src/tt-inference-server/main.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
+  [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models" ]
+  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-models-amd64:latest-rc' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models"
+
+  [ -f "${TT_HOME}/shims/tt-studio" ]
+  [ -f "${TT_HOME}/shims/tt-inference-server" ]
+  [ -f "${TT_HOME}/shims/tt-metalium-models" ]
 
   run "$TT_ENV" use 2026.05.16
   [ "$status" -eq 0 ]
 
-  run env PATH="${TT_HOME}/shims:${user_bin}:${fake_bin}:${clean_path}" tt-studio hello
+  cat >"${TT_HOME}/versions/2026.05.16/src/tt-studio/run.py" <<'EOF'
+#!/usr/bin/env python
+print("exec-studio")
+EOF
+  chmod +x "${TT_HOME}/versions/2026.05.16/src/tt-studio/run.py"
+
+  run env PATH="${TT_HOME}/shims:${fake_bin}:${clean_path}" tt-studio hello
   [ "$status" -eq 0 ]
-  [ "$output" = "user tt-studio hello" ]
+  
+  mapfile -t pip_calls <"$TT_PIP_LOG"
+  last_idx=$((${#pip_calls[@]} - 1))
+  [[ "${pip_calls[$last_idx]}" == *"venv python"* && "${pip_calls[$last_idx]}" == *"run.py hello"* ]]
 }
 
 @test "tt-env install prefers venv command entrypoints for Python CLI packages" {

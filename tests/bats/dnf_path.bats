@@ -50,8 +50,28 @@ PYEOF
 fi
 printf 'python3 %s\n' "$*" >>"$TT_PIP_LOG"
 EOF
+  cat >"${fake_bin}/git" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "clone" ]]; then
+  dest="${!#}"
+  url="${@:$(($# - 1)):1}"
+  mkdir -p "$dest"
+  printf "" > "$dest/run.py"
+  printf "" > "$dest/main.py"
+  printf "%s\n" "$url" > "$dest/.git_url_mock"
+  exit 0
+elif [[ "$1" == "remote" && "$2" == "get-url" ]]; then
+  if [[ -f .git_url_mock ]]; then
+    cat .git_url_mock
+  else
+    printf "https://github.com/tenstorrent/mock.git\n"
+  fi
+  exit 0
+fi
+exit 0
+EOF
   touch "${fake_bin}/dnf"
-  chmod +x "${fake_bin}/sudo" "${fake_bin}/python3" "${fake_bin}/dnf"
+  chmod +x "${fake_bin}/sudo" "${fake_bin}/python3" "${fake_bin}/dnf" "${fake_bin}/git"
   printf '%s\n' "$fake_bin"
 }
 
