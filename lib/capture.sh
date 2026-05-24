@@ -201,7 +201,7 @@ _capture_apt_latest_version() {
         [[ -n "$version" ]] && break
     done < <(apt-cache madison "$package_name")
 
-    [[ -n "$version" ]] || fail "Could not determine latest apt version for ${package_name}."
+    [[ -n "$version" ]] || return 1
     printf '%s\n' "$version"
 }
 
@@ -236,7 +236,7 @@ _capture_system_packages() {
                 TT_STACK_SYSTEM_PACKAGES["$virtual_package"]="${TT_CAPTURE_BASE_SYSTEM_PACKAGES[$virtual_package]}"
             fi
         else
-            return 1
+            fail "Could not determine latest apt version for ${package_name}."
         fi
     done
 }
@@ -433,11 +433,14 @@ _capture_write_manifest() {
             "$(_capture_json_escape "$TT_CAPTURE_BASE_RELEASE")"
 
         _capture_json_object_start "components"
-        mapfile -t keys < <(printf '%s\n' "tt-kmd" "tt-smi" "firmware" "tt-metal")
+        mapfile -t keys < <(
+            for component in "tt-kmd" "tt-smi" "firmware" "tt-metal"; do
+                [[ -n "${TT_STACK_COMPONENTS[$component]:-}" ]] && printf '%s\n' "$component"
+            done
+        )
         last_index=$((${#keys[@]} - 1))
         for i in "${!keys[@]}"; do
             component="${keys[$i]}"
-            [[ -n "${TT_STACK_COMPONENTS[$component]:-}" ]] || continue
             comma=","
             [[ "$i" -eq "$last_index" ]] && comma=""
             _capture_json_pair "$component" "${TT_STACK_COMPONENTS[$component]}" "$comma"

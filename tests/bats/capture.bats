@@ -123,6 +123,15 @@ case "$url" in
   *) exit 1 ;;
 esac
 EOF
+  cat >"${fake_bin}/python3" <<'EOF'
+#!/usr/bin/env bash
+payload="$(cat)"
+case "$payload" in
+  *'"token"'*) printf 'test-token\n' ;;
+  *'"version"'*) printf '%s\n' "$payload" | sed -E 's/.*"version":"([^"]+)".*/\1/' ;;
+  *) exit 1 ;;
+esac
+EOF
   cat >"${fake_bin}/git" <<'EOF'
 #!/usr/bin/env bash
 if [[ "$*" == *"--tags --refs"* ]]; then
@@ -144,7 +153,7 @@ case "$*" in
     ;;
 esac
 EOF
-  chmod +x "${fake_bin}/apt-cache" "${fake_bin}/curl" "${fake_bin}/git"
+  chmod +x "${fake_bin}/apt-cache" "${fake_bin}/curl" "${fake_bin}/python3" "${fake_bin}/git"
   printf '%s\n' "$fake_bin"
 }
 
