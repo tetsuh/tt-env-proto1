@@ -62,6 +62,7 @@ declare -gA TT_STACK_GIT_COMPONENTS_VERSION=()
 declare -gA TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
 declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
 declare -gA TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
+declare -gA TT_STACK_CONTAINER_COMPONENTS_REF=()
 declare -ga TT_REQUIRED_STACK_COMPONENTS=("tt-kmd" "tt-smi" "firmware" "tt-metal")
 
 _manifest_is_key() {
@@ -125,6 +126,7 @@ _stack_reset_state() {
     TT_STACK_GIT_COMPONENTS_ENTRYPOINT=()
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL=()
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG=()
+    TT_STACK_CONTAINER_COMPONENTS_REF=()
 }
 
 _stack_is_sha256() {
@@ -232,6 +234,45 @@ _stack_store_container_component() {
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$component_key"]="$component_image_url"
     # shellcheck disable=SC2034
     TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$component_key"]="$component_image_tag"
+}
+
+_stack_store_container_component_ref() {
+    local component_key="$1"
+    local component_ref="$2"
+    local line_no="$3"
+
+    _stack_is_python_package_name "$component_key" || \
+        fail "Invalid container component name at line ${line_no}: ${component_key}"
+    _stack_is_python_package_name "$component_ref" || \
+        fail "Invalid container component ref for ${component_key} at line ${line_no}: ${component_ref}"
+
+    # shellcheck disable=SC2034
+    TT_STACK_CONTAINER_COMPONENTS_REF["$component_key"]="$component_ref"
+}
+
+_stack_resolve_container_component_refs() {
+    local component
+    local ref
+    local depth
+
+    for component in "${!TT_STACK_CONTAINER_COMPONENTS_REF[@]}"; do
+        ref="${TT_STACK_CONTAINER_COMPONENTS_REF[$component]}"
+        depth=0
+
+        while [[ -n "${TT_STACK_CONTAINER_COMPONENTS_REF[$ref]:-}" ]]; do
+            [[ "$ref" != "$component" ]] || fail "Container component ref cycle: ${component}"
+            ((depth += 1))
+            [[ "$depth" -le 16 ]] || fail "Container component ref chain too deep: ${component}"
+            ref="${TT_STACK_CONTAINER_COMPONENTS_REF[$ref]}"
+        done
+
+        [[ "$ref" != "$component" ]] || fail "Container component ref cycle: ${component}"
+        [[ -n "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$ref]:-}" && -n "${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$ref]:-}" ]] || \
+            fail "Container component ref target not found for ${component}: ${TT_STACK_CONTAINER_COMPONENTS_REF[$component]}"
+
+        TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL["$component"]="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[$ref]}"
+        TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG["$component"]="${TT_STACK_CONTAINER_COMPONENTS_IMAGE_TAG[$ref]}"
+    done
 }
 
 _stack_store_component_object() {
@@ -412,10 +453,15 @@ _parse_stack_manifest_with_jq() {
                 (to_entries | all(
                     (.key | test("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) and
                     (if (.value | type) == "object" then
-                        ((.value | keys - ["image_url", "image_tag"]) | length == 0) and
-                        (.value.image_url | type == "string" and test("^[^-\\s][^\\s]*$")) and
-                        (.value.image_tag | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.:-]*$"))
-                     else
+                       (if (.value | has("ref")) then
+                           ((.value | keys - ["ref"]) | length == 0) and
+                           (.value.ref | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.-]*$"))
+                        else
+                           ((.value | keys - ["image_url", "image_tag"]) | length == 0) and
+                           (.value.image_url | type == "string" and test("^[^-\\s][^\\s]*$")) and
+                           (.value.image_tag | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.:-]*$"))
+                        end)
+                    else
                         false
                      end)
                 ))
@@ -510,20 +556,32 @@ _parse_stack_manifest_with_jq() {
         @tsv
     ' "$manifest_file")
 
-    while IFS=$'\t' read -r component_key component_image_url component_image_tag; do
+    while IFS=$'\t' read -r component_key component_kind component_value component_extra; do
         component_key="${component_key%$'\r'}"
-        component_image_url="${component_image_url%$'\r'}"
-        component_image_tag="${component_image_tag%$'\r'}"
+        component_kind="${component_kind%$'\r'}"
+        component_value="${component_value%$'\r'}"
+        component_extra="${component_extra%$'\r'}"
         [[ -n "$component_key" ]] || continue
-        _stack_store_container_component \
-            "$component_key" \
-            "$component_image_url" \
-            "$component_image_tag" \
-            "jq"
+        if [[ "$component_kind" == "ref" ]]; then
+            _stack_store_container_component_ref \
+                "$component_key" \
+                "$component_value" \
+                "jq"
+        else
+            _stack_store_container_component \
+                "$component_key" \
+                "$component_value" \
+                "$component_extra" \
+                "jq"
+        fi
     done < <(jq -r '
         .container_components // {} |
         to_entries[] |
-        [.key, .value.image_url, .value.image_tag] |
+        (if (.value | has("ref")) then
+            [.key, "ref", .value.ref, ""]
+         else
+            [.key, "image", .value.image_url, .value.image_tag]
+         end) |
         @tsv
     ' "$manifest_file")
 }
@@ -555,6 +613,7 @@ _parse_stack_manifest_fallback() {
     local container_component_object_key=""
     local container_component_image_url=""
     local container_component_image_tag=""
+    local container_component_ref=""
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         line_no=$((line_no + 1))
@@ -638,21 +697,32 @@ _parse_stack_manifest_fallback() {
 
         if [[ "$in_container_component_object" -eq 1 ]]; then
             if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$ ]]; then
-                [[ -n "$container_component_image_url" ]] || fail "Missing container component image_url for ${container_component_object_key} at line ${line_no}"
-                [[ -n "$container_component_image_tag" ]] || fail "Missing container component image_tag for ${container_component_object_key} at line ${line_no}"
-                _stack_store_container_component \
-                    "$container_component_object_key" \
-                    "$container_component_image_url" \
-                    "$container_component_image_tag" \
-                    "$line_no"
+                if [[ -n "$container_component_ref" ]]; then
+                    [[ -z "$container_component_image_url" && -z "$container_component_image_tag" ]] || fail "Container component ref cannot include image_url or image_tag for ${container_component_object_key} at line ${line_no}"
+                    _stack_store_container_component_ref \
+                        "$container_component_object_key" \
+                        "$container_component_ref" \
+                        "$line_no"
+                else
+                    [[ -n "$container_component_image_url" ]] || fail "Missing container component image_url for ${container_component_object_key} at line ${line_no}"
+                    [[ -n "$container_component_image_tag" ]] || fail "Missing container component image_tag for ${container_component_object_key} at line ${line_no}"
+                    _stack_store_container_component \
+                        "$container_component_object_key" \
+                        "$container_component_image_url" \
+                        "$container_component_image_tag" \
+                        "$line_no"
+                fi
                 in_container_component_object=0
                 container_component_object_key=""
                 container_component_image_url=""
                 container_component_image_tag=""
+                container_component_ref=""
             elif [[ "$line" =~ ^[[:space:]]*\"image_url\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 container_component_image_url="${BASH_REMATCH[1]}"
             elif [[ "$line" =~ ^[[:space:]]*\"image_tag\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
                 container_component_image_tag="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]*\"ref\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"[[:space:]]*,?[[:space:]]*$ ]]; then
+                container_component_ref="${BASH_REMATCH[1]}"
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
             fi
@@ -667,6 +737,7 @@ _parse_stack_manifest_fallback() {
                 container_component_object_key="${BASH_REMATCH[1]}"
                 container_component_image_url=""
                 container_component_image_tag=""
+                container_component_ref=""
             else
                 fail "Unsupported stack manifest shape at line ${line_no}: ${line}"
             fi
@@ -784,6 +855,8 @@ validate_stack_manifest() {
         _stack_is_git_component_entrypoint "$entrypoint" || \
             fail "Invalid git component entrypoint for ${component}: ${entrypoint}"
     done
+
+    _stack_resolve_container_component_refs
 
     for component in "${!TT_STACK_CONTAINER_COMPONENTS_IMAGE_URL[@]}"; do
         _stack_is_python_package_name "$component" || \

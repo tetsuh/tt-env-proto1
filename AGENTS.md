@@ -81,8 +81,12 @@ This section reflects the workflow merged in #157. Keep it consistent with
 - Treat Gemini authors as either:
   - `gemini-code-assist`
   - `gemini-code-assist[bot]`
-- Treat GitHub Copilot review author as:
+- Treat GitHub Copilot review authors as:
+  - `copilot-pull-request-reviewer` for submitted review summaries
   - `Copilot`
+- For GitHub Copilot reviews, check both submitted reviews and inline PR review
+  comments. Inline comments can appear from `Copilot` even when the review
+  summary author is `copilot-pull-request-reviewer`.
 - For Gemini rereview, reply to the specific review comment thread with:
   - `/gemini review`
 - For GitHub Copilot review comments, address required changes, request a new

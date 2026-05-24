@@ -95,10 +95,20 @@ EOF
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server" ]
   grep -q 'src/tt-inference-server/run.py' "${TT_HOME}/versions/2026.05.16/bin/tt-inference-server"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium" ]
-  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-amd64@sha256:6150fb8c1ff468b015d5ff4fd866b4f7253273b68918b72f5ede135313a976bb' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64@sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q 'NOTE: tt-env defaults tt-metalium to Ubuntu 24.04; use tt-metalium-ubuntu22 for the Ubuntu 22.04.' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q 'Usage: tt-metalium \[COMMAND \[ARG...\]\]' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q 'VERSION_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q -- '--volume=${VERSION_DIR}:${VERSION_DIR}:ro' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q -- '--env=TT_ENV_CONTAINER_BIN="${container_tt_env_bin}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q '/bin/sh -lc' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q 'export PATH="${TT_ENV_CONTAINER_BIN}${PATH:+:${PATH}}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--volume=${HOME}:/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--workdir=/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--env=HOME="${container_home}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu22" ]
+  grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-22.04-release-amd64@sha256:6150fb8c1ff468b015d5ff4fd866b4f7253273b68918b72f5ede135313a976bb' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu22"
+  ! grep -q 'NOTE: tt-env defaults tt-metalium to Ubuntu 24.04; use tt-metalium-ubuntu22 for the Ubuntu 22.04.' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu22"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu24" ]
   grep -q 'ghcr.io/tenstorrent/tt-metal/tt-metalium-ubuntu-24.04-release-amd64@sha256:ead7b800bdb6bebb9425c377222314447c5b2052f6e8b1e3c9caa1818cb7d8c4' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-ubuntu24"
   [ -f "${TT_HOME}/versions/2026.05.16/bin/tt-metalium-models" ]
@@ -107,6 +117,7 @@ EOF
   [ -f "${TT_HOME}/shims/tt-studio" ]
   [ -f "${TT_HOME}/shims/tt-inference-server" ]
   [ -f "${TT_HOME}/shims/tt-metalium" ]
+  [ -f "${TT_HOME}/shims/tt-metalium-ubuntu22" ]
   [ -f "${TT_HOME}/shims/tt-metalium-ubuntu24" ]
   [ -f "${TT_HOME}/shims/tt-metalium-models" ]
 

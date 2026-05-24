@@ -286,8 +286,8 @@ _install_write_python_command_wrapper() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
-VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd -P)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd -P)"
 VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
 VENV_PYTHON="\${VENV_DIR}/bin/python"
 
@@ -462,8 +462,8 @@ _install_git_and_container_components() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
-VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd -P)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd -P)"
 VENV_DIR="\${VERSION_DIR}/${venv_subdir}"
 VENV_PYTHON="\${VENV_DIR}/bin/python"
 
@@ -528,17 +528,39 @@ echo "==========================================================================
 echo "NOTE: This container tool (${component}) is meant to enable users to try out"
 echo "      demos, and is not meant for production use. This container is liable"
 echo "      to change at any time."
+if [[ "${component}" == "tt-metalium" ]]; then
+    echo "NOTE: tt-env defaults tt-metalium to Ubuntu 24.04; use tt-metalium-ubuntu22 for the Ubuntu 22.04."
+fi
 echo ""
 echo "      For more information see https://github.com/tenstorrent/tt-metal/issues/25602"
 echo "================================================================================"
 
 COMPONENT_IMAGE="${image_ref}"
 
+if [[ "\${1:-}" == "-h" || "\${1:-}" == "--help" ]]; then
+    cat <<HELP
+Usage: ${component} [COMMAND [ARG...]]
+
+Run ${component} inside its pinned container image.
+
+With no command, an interactive shell is started. Arguments are executed as a
+command inside the container after the active tt-env release bin is added to PATH.
+HELP
+    exit 0
+fi
+
 # Determine runtime flags from the current host.
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd -P)"
+VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd -P)"
 docker_flags=("--rm")
 container_home="/root"
+container_tt_env_bin=""
 if [[ -t 0 ]]; then
     docker_flags+=("-it")
+fi
+if [[ -d "\${VERSION_DIR}/bin" ]]; then
+    container_tt_env_bin="\${VERSION_DIR}/bin"
+    docker_flags+=("--volume=\${VERSION_DIR}:\${VERSION_DIR}:ro")
 fi
 if [[ -n "\${HOME:-}" && -d "\${HOME}" ]]; then
     container_home="/home/user"
@@ -567,10 +589,29 @@ docker_flags+=("--privileged")
 docker run "\${docker_flags[@]}" \\
   --env=DISPLAY=\${DISPLAY:-} \\
   --env=HOME="\${container_home}" \\
+  --env=TT_ENV_CONTAINER_BIN="\${container_tt_env_bin}" \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\
   --security-opt label=disable \\
-  "\${COMPONENT_IMAGE}" "\$@"
+  "\${COMPONENT_IMAGE}" /bin/sh -lc '
+if [ -n "\${TT_ENV_CONTAINER_BIN:-}" ]; then
+  export PATH="\${TT_ENV_CONTAINER_BIN}\${PATH:+:\${PATH}}"
+fi
+if [ "\$#" -eq 0 ]; then
+  if command -v bash >/dev/null 2>&1; then
+    if [ -t 0 ]; then
+      exec bash -i
+    fi
+    exec bash
+  fi
+  if [ -t 0 ]; then
+    exec /bin/sh -i
+  else
+    exec /bin/sh
+  fi
+fi
+exec "\$@"
+' -- "\$@"
 EOF
             chmod 755 "$wrapper_path" || fail "Failed to make wrapper executable: ${wrapper_path}"
         done
