@@ -537,6 +537,18 @@ echo "==========================================================================
 
 COMPONENT_IMAGE="${image_ref}"
 
+if [[ "\${1:-}" == "-h" || "\${1:-}" == "--help" ]]; then
+    cat <<HELP
+Usage: ${component} [COMMAND [ARG...]]
+
+Run ${component} inside its pinned container image.
+
+With no command, an interactive shell is started. Arguments are executed as a
+command inside the container after the active tt-env release bin is added to PATH.
+HELP
+    exit 0
+fi
+
 # Determine runtime flags from the current host.
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd -P)"
 VERSION_DIR="\$(cd "\${SCRIPT_DIR}/.." && pwd -P)"
