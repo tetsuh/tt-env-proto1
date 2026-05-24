@@ -124,15 +124,6 @@ _capture_copy_base_stack() {
     done
 }
 
-_capture_load_base_release() {
-    local base_release="$1"
-    local manifest_file
-
-    manifest_file="$(_capture_stack_manifest_path "$base_release")"
-    parse_stack_manifest "$manifest_file"
-    _capture_copy_base_stack
-}
-
 _capture_latest_base_release() {
     local target_release="$1"
     local manifest_file
