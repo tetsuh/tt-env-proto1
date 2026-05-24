@@ -100,6 +100,7 @@ EOF
   grep -q 'VERSION_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--volume=${VERSION_DIR}:${VERSION_DIR}:ro' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--env=TT_ENV_CONTAINER_BIN="${container_tt_env_bin}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
+  grep -q '/bin/sh -lc' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q 'export PATH="${TT_ENV_CONTAINER_BIN}${PATH:+:${PATH}}"' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--volume=${HOME}:/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"
   grep -q -- '--workdir=/home/user' "${TT_HOME}/versions/2026.05.16/bin/tt-metalium"

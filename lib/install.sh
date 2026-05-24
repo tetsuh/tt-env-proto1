@@ -581,15 +581,22 @@ docker run "\${docker_flags[@]}" \\
   --env=TERM=\${TERM:-xterm-256color} \\
   --network=host \\
   --security-opt label=disable \\
-  "\${COMPONENT_IMAGE}" /bin/bash -lc '
-if [[ -n "\${TT_ENV_CONTAINER_BIN:-}" ]]; then
+  "\${COMPONENT_IMAGE}" /bin/sh -lc '
+if [ -n "\${TT_ENV_CONTAINER_BIN:-}" ]; then
   export PATH="\${TT_ENV_CONTAINER_BIN}\${PATH:+:\${PATH}}"
 fi
-if [[ "\$#" -eq 0 ]]; then
-  if [[ -t 0 ]]; then
-    exec /bin/bash -i
+if [ "\$#" -eq 0 ]; then
+  if command -v bash >/dev/null 2>&1; then
+    if [ -t 0 ]; then
+      exec bash -i
+    fi
+    exec bash
   fi
-  exec /bin/bash
+  if [ -t 0 ]; then
+    exec /bin/sh -i
+  else
+    exec /bin/sh
+  fi
 fi
 exec "\$@"
 ' -- "\$@"
