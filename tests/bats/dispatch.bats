@@ -17,7 +17,7 @@ setup() {
   run "$TT_ENV" help
   [ "$status" -eq 0 ]
 
-  for command in install remove use diff list status update help; do
+  for command in install remove use diff capture list status update help; do
     [[ "$output" == *"$command"* ]]
   done
 }
@@ -67,4 +67,10 @@ EOF
   run "$TT_ENV" remove
   [ "$status" -ne 0 ]
   [[ "$output" == *"tt-env remove <release>"* ]]
+}
+
+@test "tt-env capture requires a release argument" {
+  run "$TT_ENV" capture
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"tt-env capture [--dry-run] [--force] [--base <release>] <release>"* ]]
 }

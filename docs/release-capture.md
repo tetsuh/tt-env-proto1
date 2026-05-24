@@ -7,6 +7,33 @@ This workflow is best-effort. It records version pins that upstream package
 repositories can currently resolve; `tt-env` does not mirror apt/dnf packages,
 PyPI wheels, firmware bundles, or container images.
 
+## Local-only capture command
+
+Use `tt-env capture` to create a personal snapshot manifest without publishing it
+to the manifests repository:
+
+```sh
+tt-env capture 2026.05.24
+tt-env diff 2026.05.16 2026.05.24
+tt-env install --dry-run 2026.05.24
+```
+
+The command writes only to `$TT_HOME/releases/<release>.json`, which defaults to
+`~/.tt-env/releases/<release>.json`. It uses the newest existing dated manifest
+as a template unless `--base <release>` is provided, refuses to overwrite an
+existing local manifest unless `--force` is provided, and supports `--dry-run`
+to print the generated JSON.
+
+`tt-env capture` queries the currently configured apt metadata, PyPI, git
+remotes, and GHCR image metadata. It is intended for local experimentation; do
+not rely on KMD, system package, or hardware behavior without real hardware
+validation.
+
+## Manual capture workflow
+
+Use this workflow when you want to curate or publish a manifest rather than
+creating a local-only snapshot.
+
 ## 1. Choose the release name
 
 Use the date that represents the stack snapshot:

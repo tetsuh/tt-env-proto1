@@ -20,6 +20,8 @@ source "${LIB_DIR}/status.sh"
 source "${LIB_DIR}/updater.sh"
 # shellcheck disable=SC1091
 source "${LIB_DIR}/release_diff.sh"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/capture.sh"
 
 usage() {
     cat <<'EOF'
@@ -34,6 +36,7 @@ Commands:
   remove     Remove an installed Tenstorrent stack release
   use        Switch the active Tenstorrent stack release
   diff       Compare two stack release manifests
+  capture    Capture a local-only stack release manifest
   list       List available and installed stack releases
   status     Show hardware and environment status
   update     Sync manifests and metadata
@@ -145,6 +148,29 @@ Exit codes:
 EOF
 }
 
+help_capture() {
+    cat <<'EOF'
+tt-env capture - capture a local-only stack release manifest
+
+Synopsis:
+  tt-env capture [--dry-run] [--force] [--base <release>] <release>
+
+Options:
+  --dry-run      Print the captured manifest without writing it
+  --force        Overwrite an existing local manifest
+  --base         Use an existing release manifest as the capture template
+  -h, --help     Show this help message
+
+Examples:
+  tt-env capture 2026.05.24
+  tt-env capture --dry-run --base 2026.05.16 2026.05.24
+
+Exit codes:
+  0  Release manifest was captured or printed
+  1  Invalid arguments, unsupported OS manifest, fetch failure, or validation failure
+EOF
+}
+
 help_status() {
     cat <<'EOF'
 tt-env status - show hardware and environment status
@@ -212,6 +238,9 @@ help_command() {
             ;;
         diff)
             help_diff
+            ;;
+        capture)
+            help_capture
             ;;
         status)
             help_status
@@ -332,6 +361,15 @@ main() {
             fi
             maybe_update_manifests
             diff_releases "$@"
+            ;;
+        capture)
+            init_tt_home
+            shift || true
+            if args_request_help "$@"; then
+                help_capture
+                return 0
+            fi
+            capture_release "$@"
             ;;
         update)
             init_tt_home
