@@ -31,6 +31,16 @@ declare -gA TT_CAPTURE_BASE_GIT_COMPONENTS_ENTRYPOINT=()
 declare -gA TT_CAPTURE_BASE_CONTAINER_COMPONENTS_IMAGE_URL=()
 # shellcheck disable=SC2034
 declare -gA TT_CAPTURE_BASE_CONTAINER_COMPONENTS_REF=()
+declare -g TT_CAPTURE_CLEANUP_MANIFEST=""
+
+_capture_enable_cleanup() {
+    TT_CAPTURE_CLEANUP_MANIFEST="$1"
+    trap 'if [[ -n "${TT_CAPTURE_CLEANUP_MANIFEST:-}" ]]; then rm -f -- "$TT_CAPTURE_CLEANUP_MANIFEST"; fi' EXIT
+}
+
+_capture_disable_cleanup() {
+    TT_CAPTURE_CLEANUP_MANIFEST=""
+}
 
 _capture_usage() {
     cat <<'EOF'
@@ -600,16 +610,19 @@ capture_release() {
     mkdir -p "$tmp_root" || fail "Failed to create capture temp directory: ${tmp_root}"
     tmp_manifest="$(mktemp "${tmp_root}/capture.${release}.XXXXXX.json")" || \
         fail "Failed to create capture temp manifest."
+    _capture_enable_cleanup "$tmp_manifest"
     _capture_write_manifest "$tmp_manifest" "$release"
     _capture_validate_manifest_file "$tmp_manifest"
 
     if [[ "$dry_run" -eq 1 ]]; then
         cat "$tmp_manifest"
         rm -f -- "$tmp_manifest"
+        _capture_disable_cleanup
         return 0
     fi
 
     mkdir -p "${TT_HOME}/releases" || fail "Failed to create release manifest directory: ${TT_HOME}/releases"
     mv -f -- "$tmp_manifest" "$target_manifest" || fail "Failed to write release manifest: ${target_manifest}"
+    _capture_disable_cleanup
     log_info "Captured local release manifest: ${target_manifest}"
 }

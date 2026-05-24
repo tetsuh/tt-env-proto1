@@ -18,10 +18,11 @@ tt-env diff 2026.05.16 2026.05.24
 tt-env install --dry-run 2026.05.24
 ```
 
-The command writes only to `~/.tt-env/releases/<release>.json`. It uses the
-newest existing dated manifest as a template unless `--base <release>` is
-provided, refuses to overwrite an existing local manifest unless `--force` is
-provided, and supports `--dry-run` to print the generated JSON.
+The command writes only to `$TT_HOME/releases/<release>.json`, which defaults to
+`~/.tt-env/releases/<release>.json`. It uses the newest existing dated manifest
+as a template unless `--base <release>` is provided, refuses to overwrite an
+existing local manifest unless `--force` is provided, and supports `--dry-run`
+to print the generated JSON.
 
 `tt-env capture` queries the currently configured apt metadata, PyPI, git
 remotes, and GHCR image metadata. It is intended for local experimentation; do

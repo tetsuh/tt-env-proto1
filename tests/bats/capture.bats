@@ -209,6 +209,19 @@ EOF
   [[ "$output" == *"Use --force to overwrite"* ]]
 }
 
+@test "tt-env capture removes temporary manifest when validation fails" {
+  tmp_manifest="${TT_HOME}/.tmp/capture.2026.05.24.test.json"
+  mkdir -p "${TT_HOME}/.tmp"
+  touch "$tmp_manifest"
+
+  run bash -c 'source "$1"; _capture_enable_cleanup "$2"; fail "forced validation failure"' \
+    bash "${BATS_TEST_DIRNAME}/../../lib/capture.sh" "$tmp_manifest"
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"forced validation failure"* ]]
+  [ ! -e "$tmp_manifest" ]
+}
+
 @test "tt-env capture help documents local snapshot options" {
   run "$TT_ENV" help capture
 
